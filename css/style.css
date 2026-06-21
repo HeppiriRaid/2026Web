@@ -41,7 +41,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* image placeholders / photos */
 .box{background:var(--c,#d1d1d1);overflow:hidden}
-.ph{overflow:hidden}
+.ph{overflow:visible}
 
 /* type ---------------------------------------------------- */
 .h{font-family:var(--disp);font-weight:700;color:#404040;text-transform:uppercase;
@@ -78,17 +78,17 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .sqg{background:#b3b1b1}
 
 /* corner crop-ticks on the two photos */
-.fr>i{position:absolute;width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(.75px,calc(.5 * var(--k)));z-index:2}
-.fr>i.tl{top:calc(-3 * var(--k));left:calc(-3 * var(--k));border-top:var(--b) solid #000;border-left:var(--b) solid #000}
-.fr>i.tr{top:calc(-3 * var(--k));right:calc(-3 * var(--k));border-top:var(--b) solid #000;border-right:var(--b) solid #000}
-.fr>i.bl{bottom:calc(-3 * var(--k));left:calc(-3 * var(--k));border-bottom:var(--b) solid #000;border-left:var(--b) solid #000}
-.fr>i.br{bottom:calc(-3 * var(--k));right:calc(-3 * var(--k));border-bottom:var(--b) solid #000;border-right:var(--b) solid #000}
+.fr>i{position:absolute;width:calc(3 * var(--k));height:calc(3 * var(--k));--b:max(1px,calc(1.4 * var(--k)));z-index:2}
+.fr>i.tl{top:calc(-3 * var(--k));left:calc(-3 * var(--k));border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
+.fr>i.tr{top:calc(-3 * var(--k));right:calc(-3 * var(--k));border-top:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
+.fr>i.bl{bottom:calc(-3 * var(--k));left:calc(-3 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
+.fr>i.br{bottom:calc(-3 * var(--k));right:calc(-3 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 
 /* link corner-tick frame marks (positioned independently in artboard space) */
 .ltick{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
-   width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(.75px,calc(.5 * var(--k)))}
-.ltick.tl{border-top:var(--b) solid #000;border-left:var(--b) solid #000}
-.ltick.br{border-bottom:var(--b) solid #000;border-right:var(--b) solid #000}
+   width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(1px,calc(1.4 * var(--k)))}
+.ltick.tl{border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
+.ltick.br{border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 
 /* small filled triangle accent (right angle at top-right, hypotenuse to lower-left) */
 .tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
