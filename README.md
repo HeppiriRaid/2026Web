@@ -16,7 +16,32 @@ A static, pixel‑accurate reproduction of the Illustrator artboard, converted t
 - **The portrait and calligraphy photos are the real images from the file.** The Back Ground,
   Graphic Paint and Ressolve Steps panels are **grey placeholder boxes** — that's how they are in
   the source artboard (`#B3B3B3` / `#D1D1D1`). Drop real images in later if you want.
-- No animation. This is the layout foundation.
+
+## Animation layer
+
+The motion is **purely additive** — it never changes a single resting position. Every reveal
+animates only `opacity`, `transform` and `clip-path`, and on completion the transform/clip are
+stripped so each element rasterises **exactly** like the static layout (verified pixel-for-pixel:
+the settled page is a 0‑pixel diff against the no‑animation render).
+
+- **Smooth scroll** — [Lenis](https://github.com/darkroomengineering/lenis), wired into GSAP's
+  ticker and ScrollTrigger.
+- **Preloader** — the `KOKI TAKAMATSU` wordmark wipes up behind a progress bar, then the overlay
+  lifts away.
+- **Intro** — the first screen cascades in top‑to‑bottom once the preloader clears.
+- **Scroll reveals** — below‑fold elements fade/slide, marks pop, photos wipe in from a slight
+  zoom and the grey panels wipe left→right as they enter view ([GSAP](https://gsap.com) +
+  ScrollTrigger, batched by type). A catch‑all reveals the final screen, which sits too low to
+  reach a normal trigger line.
+- **Custom cursor** — a dot + easing ring on fine‑pointer devices, growing over links.
+- **Nav** — `ABOUT / WORK / CONTACT` smooth‑scroll to their sections.
+
+Everything degrades safely: the `.anim` gate is set before paint (no flash), a head‑script
+failsafe reveals the static page if the JS never loads, and **`prefers-reduced-motion`** (or
+JavaScript disabled) shows the plain static layout with no preloader or cursor.
+
+Libraries are vendored locally in `vendor/` (GSAP 3.12.5, ScrollTrigger, Lenis); the driver is
+`js/anim.js` and its styles are `css/anim.css`.
 
 ## Run
 
@@ -38,6 +63,9 @@ To replace the grey placeholder panels with images, add an `<img>` inside the re
 ```
 index.html      every element, positioned in artboard points
 css/style.css   @font-face, the --k coordinate system, type, bands, marks
+css/anim.css    pre-hide states (gated by .anim), preloader, cursor, reduced-motion
+js/anim.js      Lenis smooth scroll + GSAP/ScrollTrigger reveals + cursor
+vendor/         gsap.min.js, ScrollTrigger.min.js, lenis.min.js
 assets/fonts/   Avant Garde (display) + Nunito Sans (body)
 assets/img/     about-portrait.webp, calligraphy.webp (real, from the file)
 ```

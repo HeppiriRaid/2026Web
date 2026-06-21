@@ -1,0 +1,97 @@
+/* ============================================================
+   KOKI TAKAMATSU — animation layer (additive)
+   Pre-hide states are gated behind `.anim` on <html> and use
+   ONLY opacity / clip-path — never a transform offset and never
+   will-change. The motion (slide / scale / wipe) is supplied by
+   GSAP at run time and is fully stripped on completion, so every
+   element rasterises exactly like the static page at rest (no
+   leftover compositing layer, identical antialiasing). If JS
+   never runs, a head-script failsafe removes `.anim` and the page
+   is the original static layout.
+   ============================================================ */
+
+/* ---- pre-hide (only while .anim is present and JS is driving) ---- */
+.anim .brand,
+.anim .nav,
+.anim .h,
+.anim .copy,
+.anim .cap,
+.anim .tri,
+.anim .sq,
+.anim .sqg,
+.anim .ltick,
+.anim .fr > i,
+.anim .plus{
+  opacity:0;
+}
+/* photos wipe in (top→down); only the <img> is clipped */
+.anim .ph img{ clip-path:inset(0 0 100% 0); }
+/* placeholder boxes wipe in left→right */
+.anim .box{ clip-path:inset(0 100% 0 0); }
+
+/* ---- preloader ------------------------------------------------- */
+.preloader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--paper);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.pl-inner{display:inline-block;overflow:hidden;padding:.16em 0}
+.pl-name{
+  display:inline-block;
+  font-family:var(--disp);font-weight:400;color:#434343;
+  letter-spacing:.04em;
+  font-size:clamp(15px,3.2vw,46px);
+  white-space:nowrap;
+  transform:translate3d(0,110%,0);
+}
+.pl-bar{
+  position:absolute;left:0;bottom:0;height:2px;width:0%;
+  background:#434343;opacity:.5;
+}
+html:not(.anim) .preloader{display:none}
+
+/* ---- custom cursor (fine pointers only) ------------------------ */
+.cursor-dot,
+.cursor-ring{
+  position:fixed;top:0;left:0;z-index:10000;
+  border-radius:50%;pointer-events:none;
+  transform:translate3d(-50%,-50%,0);
+  opacity:0;
+}
+.cursor-dot{
+  width:6px;height:6px;background:#f20000;
+  transition:opacity .3s ease;
+}
+.cursor-ring{
+  width:34px;height:34px;border:1px solid rgba(67,67,67,.55);
+  transition:width .25s ease,height .25s ease,border-color .25s ease,
+             background-color .25s ease,opacity .3s ease;
+}
+.cursor-ring.is-hover{
+  width:54px;height:54px;border-color:rgba(242,0,0,0);
+  background:rgba(242,0,0,.08);
+}
+@media (pointer:fine){
+  html.cursor-ready,
+  html.cursor-ready body,
+  html.cursor-ready a{cursor:none}
+  html.cursor-ready .cursor-dot,
+  html.cursor-ready .cursor-ring{opacity:1}
+}
+@media (hover:none),(pointer:coarse){
+  .cursor-dot,.cursor-ring{display:none}
+}
+
+/* ---- reduced motion: everything static, instantly ------------- */
+@media (prefers-reduced-motion:reduce){
+  .anim .brand,.anim .nav,.anim .h,.anim .copy,.anim .cap,
+  .anim .tri,.anim .sq,.anim .sqg,.anim .ltick,.anim .fr > i,
+  .anim .plus,.anim .ph img,.anim .box{
+    opacity:1 !important;
+    clip-path:none !important;
+  }
+  .preloader{display:none !important}
+  .cursor-dot,.cursor-ring{display:none !important}
+  html.cursor-ready,html.cursor-ready body,html.cursor-ready a{cursor:auto !important}
+}

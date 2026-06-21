@@ -7,8 +7,36 @@
 <meta name="description" content="Portfolio of Koki Takamatsu — calligrapher, designer and illustrator." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/anim.css" />
+<script>
+  /* Arm the animation layer before paint (no FOUC). If the user prefers
+     reduced motion we never hide anything. A failsafe reveals the static
+     page should the animation JS fail to load. */
+  (function () {
+    var d = document.documentElement;
+    if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      d.classList.add("anim");
+      window.__revealFailsafe = setTimeout(function () {
+        d.classList.remove("anim");
+        var p = document.getElementById("preloader");
+        if (p) p.style.display = "none";
+      }, 5000);
+    }
+  })();
+</script>
 </head>
 <body>
+
+<!-- preloader -->
+<div class="preloader" id="preloader" aria-hidden="true">
+  <span class="pl-inner"><span class="pl-name">KOKI TAKAMATSU</span></span>
+  <span class="pl-bar"></span>
+</div>
+
+<!-- custom cursor (fine pointers only) -->
+<div class="cursor-ring" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+
 <main class="stage">
 
   <!-- background bands (white / grey / white / grey) -->
@@ -32,7 +60,7 @@
   </figure>
   <div class="tri" style="--x:372.2;--y:36"></div>
 
-  <h2 class="a h" style="--x:239.5;--y:31.8;--w:160;--fs:18;color:#403838">ABOUT ME</h2>
+  <h2 id="about" class="a h" style="--x:239.5;--y:31.8;--w:160;--fs:18;color:#403838">ABOUT ME</h2>
 
   <div class="a copy j" style="--x:238.5;--y:56.8;--w:145.7;color:#403838">
     <p>I am Koki Takamatsu, a senior at the School of the Art Institute of Chicago pursuing a
@@ -84,7 +112,7 @@
   <div class="a cap" style="--x:339.2;--y:486.4">Title: &#8220;My House&#8221; | Date: 6/15/2026 | Made with: Graphic Paint |  Location: Redmond, WA</div>
 
   <!-- ========================= SELECTED WORKS ========================= -->
-  <h2 class="a h" style="--x:11.7;--y:526.3;--w:260;--fs:18">SELECTED WORKS</h2>
+  <h2 id="works" class="a h" style="--x:11.7;--y:526.3;--w:260;--fs:18">SELECTED WORKS</h2>
   <div class="a plus" style="--x:180.45;--y:534.5"></div>
   <div class="tri" style="--x:152.5;--y:530.5"></div>
 
@@ -121,7 +149,7 @@
   <i class="ltick tl" style="--x:424.3;--y:759"></i><i class="ltick br" style="--x:446.55;--y:763.45"></i>
 
   <!-- ========================= CALLIGRAPHY ========================= -->
-  <h2 class="a h" style="--x:88;--y:792.9;--w:240;--fs:18;letter-spacing:0">CALLIGRAPHY</h2>
+  <h2 id="contact" class="a h" style="--x:88;--y:792.9;--w:240;--fs:18;letter-spacing:0">CALLIGRAPHY</h2>
   <div class="tri" style="--x:220;--y:797"></div>
 
   <div class="a copy j" style="--x:88.9;--y:823.6;--w:143.1">
@@ -149,5 +177,10 @@
   <i class="ltick tl" style="--x:88.5;--y:1016.5"></i><i class="ltick br" style="--x:110.75;--y:1020.95"></i>
 
 </main>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/anim.js"></script>
 </body>
 </html>
