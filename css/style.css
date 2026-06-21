@@ -10,10 +10,9 @@
 @font-face{font-family:"AvantGarde";src:url("../assets/fonts/avantgarde-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
-/* body = Nunito Sans ExtraLight */
-@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-200-normal.woff2") format("woff2");font-weight:200;font-style:normal;font-display:swap}
-@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-200-italic.woff2") format("woff2");font-weight:200;font-style:italic;font-display:swap}
-@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-300-normal.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
+/* body = Nunito Sans 12pt ExtraLight (exact subset extracted from the PDF) */
+@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunitosans-extralight.woff2") format("woff2");font-weight:200;font-style:normal;font-display:swap}
+@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunitosans-extralight-italic.woff2") format("woff2");font-weight:200;font-style:italic;font-display:swap}
 
 :root{
   --paper:#fffefc;
@@ -46,19 +45,26 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* type ---------------------------------------------------- */
 .h{font-family:var(--disp);font-weight:700;color:#404040;text-transform:uppercase;
-   line-height:1;white-space:nowrap;font-size:calc(var(--fs) * var(--k));letter-spacing:0}
+   line-height:1;white-space:nowrap;font-size:calc(var(--fs) * var(--k));letter-spacing:-.025em;
+   top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
 .copy{font-family:var(--text);font-weight:200;color:#000;
-   font-size:calc(var(--fs,4) * var(--k));line-height:1.2;letter-spacing:0}
+   font-size:calc(var(--fs,4) * var(--k));line-height:1.2;letter-spacing:-.008em;
+   top:calc((var(--y) + var(--fs,4)/12 + .25) * var(--k))}
 .copy p{margin:0 0 calc(4.8 * var(--k))}
 .copy p:last-child{margin-bottom:0}
-.copy.j p{text-align:justify}
-.copy.j p:last-of-type{text-align:left}     /* keep a real last paragraph natural if flagged */
+/* body copy is left-aligned (ragged right) in the source, not justified */
 
 .brand,.nav span{font-family:var(--disp);font-weight:400;color:#434343;line-height:1;
-   font-size:calc(var(--fs) * var(--k));white-space:nowrap}
+   font-size:calc(var(--fs) * var(--k));white-space:nowrap;letter-spacing:-.008em}
+.brand,.nav{top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
 .cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
-   font-size:calc(3 * var(--k));white-space:nowrap}
-.plus{font-family:var(--text);font-weight:200;color:#000;line-height:1;font-size:calc(9.3 * var(--k))}
+   font-size:calc(3 * var(--k));white-space:nowrap;top:calc((var(--y) + .5) * var(--k))}
+
+/* "+" mark — exact 4.5x4.5pt cross, ~0.6pt stroke, centred on --x,--y */
+.plus{width:calc(4.5 * var(--k));height:calc(4.5 * var(--k));transform:translate(-50%,-50%);z-index:5}
+.plus::before,.plus::after{content:"";position:absolute;background:#000}
+.plus::before{left:0;top:50%;width:100%;height:max(.75px,calc(.6 * var(--k)));transform:translateY(-50%)}
+.plus::after{top:0;left:50%;height:100%;width:max(.75px,calc(.6 * var(--k)));transform:translateX(-50%)}
 
 /* link with corner-tick frame */
 .tag{font-family:var(--text);font-weight:200;color:#000;line-height:1;
@@ -87,4 +93,4 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 /* small filled triangle accent (right angle at top-right, hypotenuse to lower-left) */
 .tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
    width:calc(12 * var(--k));height:calc(12 * var(--k));
-   background:#b3b3b3;clip-path:polygon(100% 0,100% 100%,0 0)}
+   background:#ccc9c9;clip-path:polygon(100% 0,100% 100%,0 0)}
