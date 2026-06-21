@@ -99,16 +99,18 @@
     function boxIn(t, o) {      // grey panels — sideways wipe (L→R)
       o = o || {};
       // panels marked data-fade (Selected Works) also get a short, smooth
-      // fade-in layered on the wipe (even ease so it reads against the clip)
+      // fade-in layered on the wipe — gentle ease so it eases in (no fast start)
       var fadeEls = gsap.utils.toArray(t).filter(function (e) { return e.hasAttribute("data-fade"); });
       if (fadeEls.length) {
         gsap.fromTo(fadeEls, { opacity: 0 },
-          { opacity: 1, duration: 0.65, ease: "sine.out", stagger: o.stagger });
+          { opacity: 1, duration: 0.7, ease: "power2.inOut", stagger: o.stagger });
       }
+      // power2.inOut starts at zero velocity (eases in) so the wipe never lurches
+      // on the first frames — that fast start was reading as a stutter.
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
+          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.4, ease: "power2.inOut",
             onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
     }
 
