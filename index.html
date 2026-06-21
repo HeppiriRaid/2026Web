@@ -6,6 +6,8 @@
 <title>Koki Takamatsu — Portfolio</title>
 <meta name="description" content="Portfolio of Koki Takamatsu — calligrapher, designer and illustrator." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
+<!-- start the hero photo downloading immediately so the preloader rarely has to wait on it -->
+<link rel="preload" as="image" href="assets/img/about-portrait.webp" fetchpriority="high" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/anim.css" />
 <script>
@@ -55,7 +57,7 @@
 
   <!-- ========================= ABOUT ME ========================= -->
   <figure class="a wh ph fr" style="--x:81.9;--y:36;--w:137.8;--h:206.7">
-    <img src="assets/img/about-portrait.webp" alt="Koki Takamatsu" data-noscale />
+    <img src="assets/img/about-portrait.webp" alt="Koki Takamatsu" data-noscale fetchpriority="high" />
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
   </figure>
   <div class="tri" style="--x:372.2;--y:36"></div>

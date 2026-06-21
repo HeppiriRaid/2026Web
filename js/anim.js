@@ -195,20 +195,47 @@
     var pre = document.getElementById("preloader");
     function runIntro() { introTL.play(); setupScroll(); }
 
+    // resolves once an image is actually paintable (loaded + decoded)
+    function whenReady(img) {
+      if (!img) return Promise.resolve();
+      if (img.decode) { return img.decode().then(null, function () {}); }
+      if (img.complete && img.naturalWidth) return Promise.resolve();
+      return new Promise(function (res) {
+        img.addEventListener("load", res, { once: true });
+        img.addEventListener("error", res, { once: true });
+      });
+    }
+    function withTimeout(p, ms) {
+      return Promise.race([p, new Promise(function (res) { setTimeout(res, ms); })]);
+    }
+
     if (pre && !REDUCE) {
       var name = pre.querySelector(".pl-name");
       var bar = pre.querySelector(".pl-bar");
       if (lenis) lenis.stop();
-      var ptl = gsap.timeline();
-      ptl.to(name, { y: "0%", duration: 0.9, ease: "power3.out" })
-         .to(bar, { width: "100%", duration: 1.0, ease: "power2.inOut" }, "-=0.75")
-         .to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.2")
-         .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
-         .add(function () {
-           pre.style.display = "none";
-           if (lenis) lenis.start();
-         })
-         .add(runIntro, "-=0.45");
+
+      // The hero photo must be painted before the curtain lifts. Otherwise the
+      // wipe plays over an empty frame and the image pops in mid-animation.
+      var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
+      var heroReady = withTimeout(whenReady(hero), 6000);
+
+      // entrance (wordmark + bar) runs regardless; the curtain only lifts once
+      // BOTH the entrance has played and the hero image is ready to paint.
+      var enter = gsap.timeline();
+      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" })
+           .to(bar, { width: "100%", duration: 1.0, ease: "power2.inOut" }, "-=0.75");
+      var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+
+      Promise.all([entered, heroReady]).then(function () {
+        var exit = gsap.timeline();
+        exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
+            .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
+            .add(function () {
+              pre.style.display = "none";
+              if (lenis) lenis.start();
+            })
+            .add(runIntro, "-=0.45");
+      });
     } else {
       if (pre) pre.style.display = "none";
       runIntro();
