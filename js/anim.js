@@ -32,6 +32,17 @@
     if (window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
     var ST = window.ScrollTrigger;
 
+    /* Pre-decode the photos and rasterise their compositing layer up front
+       (this happens during the preloader, behind the overlay). Otherwise the
+       large source image decodes + paints synchronously on the first frame of
+       its wipe, dropping one long frame — the stutter at the start of the
+       reveal. will-change is stripped again on completion (see strip()), so the
+       resting layout stays pixel-identical. */
+    gsap.utils.toArray(".ph img").forEach(function (im) {
+      if (im.decode) { try { im.decode().catch(function () {}); } catch (e) {} }
+      im.style.willChange = "transform";
+    });
+
     /* ---------- smooth scroll (Lenis), wired to ScrollTrigger ---------- */
     var lenis = null;
     if (typeof window.Lenis !== "undefined") {
