@@ -21,13 +21,13 @@
   --text:"Nunito Sans",system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{background:#d7d5d2}
+html,body{background:var(--paper)}
 body{font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 img{display:block;width:100%;height:100%;object-fit:cover}
 
-/* the artboard: 460.807 x 1036.66 pt */
+/* the artboard: 460.807 x 1036.66 pt — fills the viewport width (designed for 1920) */
 .stage{
-  position:relative;width:100%;max-width:1180px;margin:0 auto;
+  position:relative;width:100%;margin:0;
   aspect-ratio:460.807 / 1036.66;background:var(--paper);overflow:hidden;
   container-type:inline-size;--k:calc(100cqw / 460.807);font-family:var(--text);
 }
@@ -54,9 +54,9 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .copy p:last-child{margin-bottom:0}
 /* body copy is left-aligned (ragged right) in the source, not justified */
 
-.brand,.nav span{font-family:var(--disp);font-weight:400;color:#434343;line-height:1;
-   font-size:calc(var(--fs) * var(--k));white-space:nowrap;letter-spacing:-.008em}
-.brand,.nav{top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
+.brand,.nav{font-family:var(--disp);font-weight:400;color:#434343;line-height:1;
+   font-size:calc(var(--fs) * var(--k));white-space:nowrap;letter-spacing:-.008em;
+   top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
 .cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
    font-size:calc(3 * var(--k));white-space:nowrap;top:calc((var(--y) + .5) * var(--k))}
 
@@ -78,7 +78,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .sqg{background:#b3b1b1}
 
 /* corner crop-ticks on the two photos */
-.fr>i{position:absolute;width:calc(3 * var(--k));height:calc(3 * var(--k));--b:max(1px,calc(1.4 * var(--k)));z-index:2}
+.fr>i{position:absolute;width:calc(3 * var(--k));height:calc(3 * var(--k));--b:max(1px,calc(1.25 * var(--k)));z-index:2}
 .fr>i.tl{top:calc(-3 * var(--k));left:calc(-3 * var(--k));border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
 .fr>i.tr{top:calc(-3 * var(--k));right:calc(-3 * var(--k));border-top:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 .fr>i.bl{bottom:calc(-3 * var(--k));left:calc(-3 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
@@ -86,7 +86,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* link corner-tick frame marks (positioned independently in artboard space) */
 .ltick{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
-   width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(1px,calc(1.4 * var(--k)))}
+   width:calc(2.75 * var(--k));height:calc(2.75 * var(--k));--b:max(1px,calc(1 * var(--k)))}
 .ltick.tl{border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
 .ltick.br{border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 
