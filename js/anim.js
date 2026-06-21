@@ -198,7 +198,14 @@
 
     /* ---------- preloader → intro -------------------------------------- */
     var pre = document.getElementById("preloader");
-    function runIntro() { introTL.play(); setupScroll(); }
+    function runIntro() { introTL.play(); }
+
+    // Build + measure the ScrollTriggers NOW, up front, behind the still
+    // preloader. ScrollTrigger.refresh() forces a synchronous layout of every
+    // trigger; doing it at the preloader→intro handoff dropped an ~80ms frame
+    // right as the profile reveal started (the stutter). Scroll is locked until
+    // the reveal, so the triggers being ready early is harmless.
+    setupScroll();
 
     // resolves once an image is actually paintable (loaded + decoded)
     function whenReady(img) {
