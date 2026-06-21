@@ -75,12 +75,15 @@
       return gsap.fromTo(t, { opacity: 0 }, Object.assign(
         { opacity: 1, duration: 0.6, ease: "power2.out" }, o || {}));
     }
-    function imageIn(t, o) {    // photos — wipe (top→down) + settle from a slight zoom
-      return gsap.fromTo(t,
-        { clipPath: "inset(0px 0px 100% 0px)", scale: 1.12 },
-        Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", scale: 1, duration: 1.25, ease: "power3.out",
-            onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o || {}));
+    function imageIn(t, o) {    // photos — wipe in (top→down); optional settle from a slight zoom
+      // images marked data-noscale wipe at their natural size (no size change)
+      var els = gsap.utils.toArray(t);
+      var noScale = els.length && els[0].hasAttribute("data-noscale");
+      var from = { clipPath: "inset(0px 0px 100% 0px)" };
+      var to = { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
+                 onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } };
+      if (!noScale) { from.scale = 1.12; to.scale = 1; }
+      return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
     function boxIn(t, o) {      // grey placeholder panels — wipe L→R
       return gsap.fromTo(t,
