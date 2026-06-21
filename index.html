@@ -4,212 +4,112 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Koki Takamatsu — Portfolio</title>
-<meta name="description" content="Portfolio of Koki Takamatsu — calligrapher, designer and illustrator. Selected works 2020–2026." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f0271a'/%3E%3C/svg%3E" />
+<meta name="description" content="Portfolio of Koki Takamatsu — calligrapher, designer and illustrator." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body class="is-loading">
+<body>
+<main class="stage">
 
-<!-- ───────────────────────── PRELOADER ───────────────────────── -->
-<div class="preloader" aria-hidden="true">
-  <div class="preloader__inner">
-    <div class="preloader__name">
-      <span class="preloader__line"><span>KOKI</span></span>
-      <span class="preloader__line"><span>TAKAMATSU</span></span>
-    </div>
-    <div class="preloader__count"><span data-count>0</span><i>%</i></div>
-  </div>
-  <div class="preloader__curtain"></div>
-</div>
+  <!-- ===== background bands ===== -->
+  <div class="band" style="top:calc(259.2 * var(--k))"></div>
+  <div class="band" style="top:calc(777.9 * var(--k))"></div>
 
-<!-- ───────────────────────── CUSTOM CURSOR ───────────────────── -->
-<div class="cursor" aria-hidden="true">
-  <div class="cursor__dot"></div>
-  <div class="cursor__ring"></div>
-</div>
-
-<!-- ───────────────────────── HEADER ──────────────────────────── -->
-<header class="site-header" data-header>
-  <a href="#top" class="brand" data-magnetic>
-    <span class="brand__main">KOKI TAKAMATSU</span>
-  </a>
-  <nav class="nav">
-    <a href="#about"   class="nav__link" data-magnetic><span>ABOUT</span></a>
-    <a href="#work"    class="nav__link" data-magnetic><span>WORK</span></a>
-    <a href="#contact" class="nav__link" data-magnetic><span>CONTACT</span></a>
+  <!-- ===== header ===== -->
+  <div class="a brand" style="--x:22;--y:11;--fs:6">KOKI TAKAMATSU</div>
+  <nav class="a nav" style="--x:344;--y:11;--fs:6">
+    <a href="#">ABOUT</a><a href="#">WORK</a><a href="#">CONTACT</a>
   </nav>
-</header>
+  <i class="tick" style="--x:448.8;--y:0;--w:12;--h:12"></i>
+  <i class="tick" style="--x:448.8;--y:24;--w:12;--h:12"></i>
 
-<main id="top" class="page" data-scroll-container>
+  <!-- ===== ABOUT ME ===== -->
+  <figure class="a wh box empty fr" style="--x:78;--y:37;--w:144;--h:226">
+    <img src="assets/img/about-portrait.jpg" alt="Koki Takamatsu" />
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </figure>
+  <h2 class="a h" style="--x:238.5;--y:40;--w:160;--fs:17">ABOUT ME</h2>
+  <div class="a copy" style="--x:238.5;--y:62;--w:145.7;--fs:5.4">
+    <p>I am Koki Takamatsu, a senior at the School of the Art Institute of Chicago pursuing a
+    bachelor's degree in fine arts in studio, with a focus on design and illustration.</p>
+    <p>As a Japanese who has spent half of my life in Japan and the other half in the United
+    States, I draw inspiration from the diverse cultural experiences of both countries.</p>
+    <p>This website showcases my work from 2020 to 2026.</p>
+    <p>My calligraphy works have been recognized — winning an award at the 2023 Under-25 Mainichi
+    National Calligraphy Competition, and the 2015 National High School Calligraphy Championship,
+    granted by The Mainichi Newspapers Co.</p>
+    <p>Thank you for visiting.</p>
+  </div>
+  <div class="a wh sq" style="--x:372.2;--y:230.7;--w:12;--h:12"></div>
 
-  <!-- ═══════════════════════ ABOUT ME ═══════════════════════════ -->
-  <section class="section section--about" id="about">
-    <div class="about__media">
-      <figure class="media media--portrait frame" data-parallax-wrap>
-        <img class="media__img" data-parallax data-webgl
-             src="assets/img/about-portrait.jpg" alt="Koki Takamatsu practicing calligraphy" />
-        <span class="frame__corner frame__corner--tl"></span>
-        <span class="frame__corner frame__corner--tr"></span>
-        <span class="frame__corner frame__corner--bl"></span>
-        <span class="frame__corner frame__corner--br"></span>
-      </figure>
-    </div>
+  <!-- ===== BACK GROUND ===== -->
+  <h2 class="a h" style="--x:12;--y:300;--w:170;--fs:23">BACK GROUND</h2>
+  <div class="a copy" style="--x:12;--y:352;--w:152.5;--fs:5.2">
+    <p>From the age of five I cultivated discipline and focus through the practice of karate and
+    hands-in-hand calligraphy — continuing my training year after year in Kanazawa, Japan.</p>
+    <p>Alongside martial arts I studied Shod&#333; (Japanese calligraphy) under Master Yoshiyuki
+    Fujii, whose mentorship connected me with a strong foundation in visual composition and the
+    language of abstract shapes. Through the study of line, form and the balance of black and
+    white space I developed a deep appreciation for restraint and intention.</p>
+  </div>
+  <figure class="a wh box empty fr" style="--x:176.5;--y:294.7;--w:284.3;--h:188.2">
+    <img src="assets/img/background.jpg" alt="Calligraphy in progress" />
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </figure>
+  <div class="a cap" style="--x:337.7;--y:486;--w:123;--fs:4">Mai Murakami &times; Koki Takamatsu — Shod&#333; &amp; ink performance, Kanazawa. Sumi on paper, 2023.</div>
 
-    <div class="about__body">
-      <h2 class="title title--xl reveal-lines" data-reveal>ABOUT ME</h2>
-      <div class="rich">
-        <p class="reveal" data-reveal>I am Koki Takamatsu, a senior at the School of the Art Institute of
-        Chicago pursuing a bachelor's degree in fine arts in studio, with a focus on design and illustration.</p>
+  <!-- ===== SELECTED WORKS ===== -->
+  <h2 class="a h" style="--x:22;--y:524;--w:300;--fs:27">SELECTED WORKS</h2>
 
-        <p class="reveal" data-reveal>As a Japanese who has spent half of my life in Japan and the other half in
-        the United States, I draw inspiration from the diverse cultural experiences of both countries.</p>
+  <!-- GRAPHIC PAINT -->
+  <h3 class="a h" style="--x:12;--y:557;--w:160;--fs:12">GRAPHIC PAINT</h3>
+  <div class="a copy tiny" style="--x:12;--y:577;--w:152.5;--fs:4.8">
+    <p>Every painting app I tried has the same pieces, so I'm building the one that doesn't exist —
+    from scratch, down to the compositor. A Morph brush whose bristles reshape under tilt, off-mix
+    colour that bleeds like wet paint, and a recorded stroke you can replay frame by frame.</p>
+  </div>
+  <div class="a tags" style="--x:16.4;--y:630;--fs:5">
+    <a class="tag" href="#"><i>[</i> Details <i>]</i></a>
+    <a class="tag" href="#"><i>[</i> Kickstarter <i>]</i></a>
+  </div>
+  <figure class="a wh box empty fr" style="--x:176.5;--y:530.5;--w:272.3;--h:111.7">
+    <img src="assets/img/work-graphic.jpg" alt="Graphic Paint" />
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </figure>
 
-        <p class="reveal" data-reveal>This website showcases my work from 2020 to 2026.</p>
+  <!-- RESSOLVE STEPS -->
+  <figure class="a wh box empty fr" style="--x:12;--y:654;--w:273.2;--h:111.7">
+    <img src="assets/img/work-resolve.jpg" alt="Ressolve Steps" />
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </figure>
+  <h3 class="a h" style="--x:297.2;--y:648;--w:160;--fs:12">RESSOLVE STEPS</h3>
+  <div class="a copy tiny" style="--x:297.2;--y:668;--w:151.6;--fs:4.8">
+    <p>A puzzle-platformer about momentum and second chances. Every wrong move is recorded as a
+    translucent echo, and to clear a room you must out-think the ghosts of your own mistakes.
+    Hand-drawn environments, an original score, and a level editor made to be discovered.</p>
+  </div>
+  <div class="a tags" style="--x:393.2;--y:754;--fs:5">
+    <a class="tag" href="#"><i>[</i> Details <i>]</i></a>
+    <a class="tag" href="#"><i>[</i> Steam <i>]</i></a>
+  </div>
 
-        <p class="reveal" data-reveal>My calligraphy works have been recognized — winning an award at the 2023
-        Under-25 Mainichi National Calligraphy Competition, and the 2015 National High School Calligraphy
-        Championship, granted by The Mainichi Newspapers Co.</p>
-
-        <p class="reveal" data-reveal>Thank you for visiting.</p>
-      </div>
-      <span class="accent-square" data-reveal aria-hidden="true"></span>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════ BACK GROUND ════════════════════════ -->
-  <section class="section section--background band">
-    <div class="background__body">
-      <h2 class="title title--lg reveal-lines" data-reveal>BACK<br>GROUND</h2>
-      <div class="rich rich--narrow">
-        <p class="reveal" data-reveal>From the age of five I cultivated discipline and focus through the practice
-        of karate and hands-in-hand calligraphy — continuing my training year after year in Kanazawa, Japan,
-        a city steeped in tradition.</p>
-        <p class="reveal" data-reveal>Alongside martial arts I studied Shodō (Japanese calligraphy) under Master
-        Yoshiyuki Fujii, whose mentorship connected me with a strong foundation in visual composition and the
-        language of abstract shapes. Through the study of line, form and the balance of black and white space I
-        developed a deep appreciation for restraint, intention and the moment where word and art meet.</p>
-      </div>
-    </div>
-
-    <div class="background__media">
-      <figure class="media media--wide frame" data-parallax-wrap>
-        <img class="media__img" data-parallax data-webgl
-             src="assets/img/background.jpg" alt="Calligraphy in progress" />
-        <span class="frame__corner frame__corner--tl"></span>
-        <span class="frame__corner frame__corner--tr"></span>
-        <span class="frame__corner frame__corner--bl"></span>
-        <span class="frame__corner frame__corner--br"></span>
-      </figure>
-      <figcaption class="caption reveal" data-reveal>Mai Murakami × Koki Takamatsu — Shodō &amp; ink performance,
-      Kanazawa. Sumi on paper, 2023.</figcaption>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════ SELECTED WORKS ═════════════════════ -->
-  <section class="section section--works" id="work">
-    <header class="works__head">
-      <span class="plus" aria-hidden="true">+</span>
-      <h2 class="title title--xl reveal-lines" data-reveal>SELECTED WORKS</h2>
-    </header>
-
-    <!-- Work 01 — GRAPHIC PAINT -->
-    <article class="work">
-      <div class="work__text">
-        <h3 class="title title--md reveal-lines" data-reveal>GRAPHIC PAINT</h3>
-        <p class="rich reveal" data-reveal>Every painting app I tried has the same pieces, so I'm building the one
-        that doesn't exist — from scratch, down to the compositor. A Morph brush whose bristles reshape under tilt,
-        off-mix color that bleeds like wet paint, and a recorded stroke you can replay frame by frame. An honest
-        sketch tool for people who miss the feel of writing.</p>
-        <div class="links">
-          <a class="link-tag" href="#" data-magnetic><i>[</i><span>Details</span><i>]</i></a>
-          <a class="link-tag" href="#" data-magnetic><i>[</i><span>Kickstarter</span><i>]</i></a>
-        </div>
-      </div>
-      <figure class="media media--work frame" data-parallax-wrap>
-        <img class="media__img" data-parallax data-webgl
-             src="assets/img/work-graphic.jpg" alt="Graphic Paint — application interface" />
-        <span class="frame__corner frame__corner--tl"></span>
-        <span class="frame__corner frame__corner--tr"></span>
-        <span class="frame__corner frame__corner--bl"></span>
-        <span class="frame__corner frame__corner--br"></span>
-        <span class="plus plus--media" aria-hidden="true">+</span>
-      </figure>
-    </article>
-
-    <!-- Work 02 — RESSOLVE STEPS -->
-    <article class="work work--reverse">
-      <figure class="media media--work frame" data-parallax-wrap>
-        <img class="media__img" data-parallax data-webgl
-             src="assets/img/work-resolve.jpg" alt="Ressolve Steps — game screenshot" />
-        <span class="frame__corner frame__corner--tl"></span>
-        <span class="frame__corner frame__corner--tr"></span>
-        <span class="frame__corner frame__corner--bl"></span>
-        <span class="frame__corner frame__corner--br"></span>
-        <span class="plus plus--media" aria-hidden="true">+</span>
-      </figure>
-      <div class="work__text">
-        <h3 class="title title--md reveal-lines" data-reveal>RESSOLVE STEPS</h3>
-        <p class="rich reveal" data-reveal>A puzzle-platformer about momentum and second chances. Every wrong move
-        is recorded as a translucent echo, and to clear a room you must out-think the ghosts of your own mistakes.
-        Hand-drawn environments, an original score, and a level editor designed to be discovered rather than
-        explained.</p>
-        <div class="links">
-          <a class="link-tag" href="#" data-magnetic><i>[</i><span>Details</span><i>]</i></a>
-          <a class="link-tag" href="#" data-magnetic><i>[</i><span>Steam</span><i>]</i></a>
-        </div>
-      </div>
-    </article>
-  </section>
-
-  <!-- ═══════════════════════ CALLIGRAPHY ════════════════════════ -->
-  <section class="section section--calligraphy">
-    <h2 class="title title--hero reveal-lines" data-reveal>CALLIGRAPHY</h2>
-    <div class="calligraphy__grid">
-      <div class="calligraphy__text">
-        <p class="rich reveal" data-reveal>Calligraphy is, to me, a record of a single breath. The brush touches
-        the paper once and there is no correction, no second attempt — only the honest trace of attention, balance
-        and nerve. Each character carries the speed of the hand and the weight of the silence around it.</p>
-        <p class="rich reveal" data-reveal>I work primarily in the cursive (sōsho) and semi-cursive styles, where
-        legibility yields to rhythm and the line becomes pure movement. The pieces below were created with sumi
-        ink on hand-made paper, sealed with my own carved hanko.</p>
-        <div class="links">
-          <a class="link-tag" href="#" data-magnetic><i>[</i><span>Details</span><i>]</i></a>
-        </div>
-      </div>
-      <figure class="media media--scroll frame band--media" data-parallax-wrap>
-        <img class="media__img" data-parallax data-webgl
-             src="assets/img/calligraphy.jpg" alt="Cursive calligraphy, sumi on paper" />
-        <span class="frame__corner frame__corner--tl"></span>
-        <span class="frame__corner frame__corner--tr"></span>
-        <span class="frame__corner frame__corner--bl"></span>
-        <span class="frame__corner frame__corner--br"></span>
-      </figure>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════ CONTACT / FOOTER ═══════════════════ -->
-  <footer class="section section--contact band" id="contact">
-    <div class="contact__inner">
-      <p class="contact__label reveal" data-reveal>GET IN TOUCH</p>
-      <a class="contact__mail title title--lg reveal-lines" data-reveal data-magnetic
-         href="mailto:hello@example.com">HELLO@<br>EXAMPLE.COM</a>
-      <div class="contact__meta">
-        <span class="reveal" data-reveal>© 2026 Koki Takamatsu</span>
-        <span class="accent-square accent-square--sm" aria-hidden="true"></span>
-        <span class="reveal" data-reveal>Chicago · Kanazawa</span>
-      </div>
-    </div>
-  </footer>
+  <!-- ===== CALLIGRAPHY ===== -->
+  <h2 class="a h" style="--x:20;--y:792;--w:340;--fs:30">CALLIGRAPHY</h2>
+  <div class="a copy" style="--x:88.9;--y:825;--w:143.1;--fs:5.2">
+    <p>Calligraphy is, to me, a record of a single breath. The brush touches the paper once and
+    there is no correction — only the honest trace of attention, balance and nerve.</p>
+    <p>I work primarily in cursive (s&#333;sho) and semi-cursive styles, where legibility yields to
+    rhythm and the line becomes pure movement. The pieces here were made with sumi ink on hand-made
+    paper, sealed with my own carved hanko.</p>
+  </div>
+  <figure class="a wh box empty fr" style="--x:248;--y:805;--w:162;--h:205">
+    <img src="assets/img/calligraphy.jpg" alt="Cursive calligraphy" />
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+  </figure>
+  <div class="a tags" style="--x:93.4;--y:1011;--fs:5">
+    <a class="tag" href="#"><i>[</i> Details <i>]</i></a>
+  </div>
 
 </main>
-
-<!-- progress / scroll indicator -->
-<div class="scroll-progress" aria-hidden="true"><span data-progress></span></div>
-
-<!-- ───────────────────────── SCRIPTS ─────────────────────────── -->
-<script src="vendor/gsap.min.js"></script>
-<script src="vendor/ScrollTrigger.min.js"></script>
-<script src="vendor/lenis.min.js"></script>
-<script type="module" src="js/main.js"></script>
 </body>
 </html>

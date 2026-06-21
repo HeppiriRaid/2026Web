@@ -1,106 +1,58 @@
 # KOKI TAKAMATSU — Portfolio
 
-A faithful, animated rebuild of the Illustrator artboard (`Artboard_1.ai`) as a
-modern, single-page website — with smooth scrolling and motion inspired by
-[minhpham.design](https://minhpham.design/).
+A static, **1:1 reproduction** of the Illustrator draft (`Artboard_1.ai`) converted to a
+website — the layout foundation. No animation; every element is placed by exact artboard
+coordinates so it reads as the same design.
 
-The layout, typography, palette, alternating section bands, crop-mark framing and
-red accents were reconstructed directly from the source file (artboard geometry +
-embedded font list + fill colours were extracted from the `.ai`).
+## How it's built
 
----
+- The artboard is **460.807 × 1037.167 pt**. The page is a single `.stage` container with that
+  exact aspect ratio. Every element is positioned in **artboard units** via the custom property
+  `--k` (`1 unit = calc(100cqw / 460.807)`), so the whole design scales proportionally to any
+  width while staying pixel‑faithful to the draft.
+- Element coordinates (image boxes, text frames, bands, the red square, registration crop‑marks,
+  link underlines) were **extracted directly from the `.ai`** by decompressing Illustrator's
+  private art stream. Headings and the two photos (linked, not embedded in the file) are placed
+  from the draft reference.
+- **Type:** ITC Avant Garde Gothic → bundled **URW Gothic** (a free metric clone, Book + Demi)
+  for display; **Nunito Sans ExtraLight** for body — the families named in the file.
+- **Palette from the artboard:** red `#f20000`, image grey `#d1d1d1`, light band `#f2f1ef`.
 
-## ✨ What's included
+## Run
 
-**Faithful to the draft**
-- Display type set in **URW Gothic** — a metric-compatible clone of the
-  *ITC Avant Garde Gothic* used in the original file (Book + Demi).
-- Body copy in **Nunito Sans ExtraLight** (the exact family named in the file).
-- Palette pulled from the artboard: red `#f0271a`, image grey `#d1d1d1`,
-  light band `#f2f1ec`, ink `#1b1b1b`.
-- Registration / crop-mark corners, `+` motifs, the red accent square and the
-  bracketed `[ Details ]` link style — all rebuilt as live CSS/SVG vectors.
-
-**Smooth modern motion**
-- **Lenis** smooth scrolling, synced to **GSAP ScrollTrigger**.
-- Intro **preloader** (name reveal + counter + curtain wipe).
-- Line-by-line **text reveals**, **clip-path image reveals**, and **parallax**.
-- **Custom cursor**, **magnetic** nav/links, hide-on-scroll header, scroll-progress bar.
-- A **Three.js** hover effect on images (ripple + RGB-split that follows the cursor) —
-  loaded lazily and isolated, so the page is fully functional even if WebGL is off.
-- Respects `prefers-reduced-motion` and falls back gracefully on touch devices.
-
-Everything is **vendored locally** (`/vendor`, `/assets/fonts`) — no CDN, no build
-step, works offline.
-
----
-
-## ▶️ Run locally
-
-ES modules require a server (opening `index.html` from `file://` will not work):
+ES‑module‑free, but still needs a static server for relative paths:
 
 ```bash
-# any static server is fine, e.g.
-python3 -m http.server 8000
-# then open http://localhost:8000
+python3 -m http.server 8000      # then open http://localhost:8000
 ```
 
----
+## Replace the placeholder images
 
-## 🖼 Replace the placeholder images  ← do this
+Drop your files into `assets/img/` with these exact names (cropped with `object-fit:cover`):
 
-The grey boxes are placeholders. Drop your real images into `assets/img/` using
-these exact names (any common ratio works — they're cropped with `object-fit:cover`):
+| File | Section |
+|------|---------|
+| `about-portrait.jpg` | About me (portrait of you at the brush) |
+| `background.jpg`     | Back Ground |
+| `work-graphic.jpg`   | Graphic Paint |
+| `work-resolve.jpg`   | Ressolve Steps |
+| `calligraphy.jpg`    | Calligraphy (the cursive scroll) |
 
-| File                            | Where it appears        | Suggested ratio |
-|---------------------------------|-------------------------|-----------------|
-| `assets/img/about-portrait.jpg` | About me (portrait)     | 3 : 4 (vertical)|
-| `assets/img/background.jpg`     | Back Ground             | 16 : 10         |
-| `assets/img/work-graphic.jpg`   | Graphic Paint           | 4 : 3           |
-| `assets/img/work-resolve.jpg`   | Ressolve Steps          | 4 : 3           |
-| `assets/img/calligraphy.jpg`    | Calligraphy (tall)      | ~1 : 1.9        |
+## Tuning the layout
 
-> The two photos you shared (the portrait at the brush, and the cursive
-> calligraphy scroll) are the intended `about-portrait.jpg` and `calligraphy.jpg`.
-> If an image is missing the site shows a clean grey panel instead of a broken
-> icon, so it always looks intentional.
+All coordinates are inline on each element as `--x --y --w --h` (artboard units) and font sizes
+as `--fs`. To nudge anything, edit those numbers in `index.html` — e.g.
+`style="--x:238.5;--y:40;--w:160;--fs:17"`. Background bands, marks and colours live in
+`css/style.css`.
 
-## ✍️ Edit the text
-
-- All copy lives in `index.html`. The **About** section is real; the project
-  blurbs and contact email (`hello@example.com`) are placeholders — swap them.
-- Section labels (`GRAPHIC PAINT`, `RESSOLVE STEPS`, links to *Kickstarter* /
-  *Steam*, etc.) match the draft; change freely.
-
----
-
-## 🚀 Deploy
-
-It's a static site — host the folder anywhere:
-
-- **GitHub Pages**: push, then enable Pages on the branch (a `.nojekyll` file is
-  already included so `vendor/` and friends are served as-is).
-- **Netlify / Vercel / Cloudflare Pages**: drag-and-drop or connect the repo;
-  no build command, publish directory = project root.
-
----
-
-## 📁 Structure
+## Structure
 
 ```
-index.html              markup for every section
-css/style.css           @font-face, tokens, layout, motifs, responsive
-js/main.js              Lenis + GSAP reveals, cursor, header, preloader
-js/webgl.js             Three.js hover distortion (lazy, optional)
-assets/fonts/           URW Gothic (Avant Garde clone) + Nunito Sans (woff2)
-assets/img/             your images (placeholders for now)
-vendor/                 gsap, ScrollTrigger, lenis, three (vendored)
+index.html      every element, positioned in artboard units
+css/style.css   @font-face, the --k coordinate system, type, bands, crop-marks
+assets/fonts/   URW Gothic (display) + Nunito Sans (body)
+assets/img/     placeholder images to replace
 ```
 
-## 🔤 Fonts & licensing
-
-- **URW Gothic** (AGPL/GPL+font-exception, URW++) stands in for *ITC Avant Garde
-  Gothic*, which is commercial. If you own ITC Avant Garde Gothic, drop its webfonts
-  in `assets/fonts/` and update the `@font-face` `src` in `css/style.css`.
-- **Nunito Sans** — SIL Open Font License.
-- **GSAP**, **Lenis**, **Three.js** — their respective standard licenses.
+> This is the static foundation only — animation was intentionally left out. Motion (smooth
+> scroll, reveals, etc.) can be layered on later once the layout is locked.
