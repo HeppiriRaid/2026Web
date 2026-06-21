@@ -139,13 +139,26 @@
     intro.sort(function (a, b) { return a.__top - b.__top; });
 
     /* ---------- intro timeline (top→down cascade after preloader) ------ */
+    /* DIAGNOSTIC: the profile-photo reveal is slowed right down and made linear
+       so the wipe is easy to watch frame by frame. Tweak live from the console
+       BEFORE load, e.g.  window.__photoReveal = { duration: 1.25, ease: "power3.out" }
+       to restore the normal speed. */
+    var PHOTO = window.__photoReveal || { duration: 6, ease: "none" };
     var introTL = gsap.timeline({ paused: true });
     var dur = { slide: 1.0, pop: 0.7, tick: 0.5, plus: 0.6, image: 1.25, box: 1.0 };
     var at = 0;
     intro.forEach(function (el) {
       var ty = typeOf(el);
-      introTL.add(revealBy(ty, el, { duration: dur[ty] }), at);
-      at += (ty === "image" ? 0.12 : 0.075);
+      if (ty === "image") {
+        // The hero photo LEADS the cascade (position 0). Because the intro
+        // overlaps the curtain lift, the wipe is already underway by the time
+        // the curtain clears — so the photo's spot is never left blank (no
+        // "progressing without photo, then it suddenly appears").
+        introTL.add(revealBy(ty, el, { duration: PHOTO.duration, ease: PHOTO.ease }), 0);
+      } else {
+        introTL.add(revealBy(ty, el, { duration: dur[ty] }), at);
+        at += 0.075;
+      }
     });
 
     var TYPES = ["slide", "pop", "tick", "plus", "image", "box"];
