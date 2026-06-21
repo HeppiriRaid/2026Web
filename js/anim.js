@@ -96,12 +96,20 @@
       if (!noScale) { from.scale = 1.12; to.scale = 1; }
       return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
-    function boxIn(t, o) {      // grey panels — same wipe as the photos, but sideways (L→R)
+    function boxIn(t, o) {      // grey panels — sideways wipe (L→R)
+      o = o || {};
+      // panels marked data-fade (Selected Works) also get a short, smooth
+      // fade-in layered on the wipe (even ease so it reads against the clip)
+      var fadeEls = gsap.utils.toArray(t).filter(function (e) { return e.hasAttribute("data-fade"); });
+      if (fadeEls.length) {
+        gsap.fromTo(fadeEls, { opacity: 0 },
+          { opacity: 1, duration: 0.65, ease: "sine.out", stagger: o.stagger });
+      }
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
           { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
-            onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o || {}));
+            onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
     }
 
     function typeOf(el) {
