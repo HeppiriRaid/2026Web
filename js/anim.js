@@ -96,11 +96,11 @@
       if (!noScale) { from.scale = 1.12; to.scale = 1; }
       return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
-    function boxIn(t, o) {      // grey placeholder panels — wipe L→R
+    function boxIn(t, o) {      // grey panels — same wipe as the photos, but sideways (L→R)
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.0, ease: "power3.inOut",
+          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
             onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o || {}));
     }
 

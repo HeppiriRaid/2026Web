@@ -29,10 +29,11 @@ the settled page is a 0‑pixel diff against the no‑animation render).
 - **Preloader** — the `KOKI TAKAMATSU` wordmark wipes up behind a progress bar, then the overlay
   lifts away.
 - **Intro** — the first screen cascades in top‑to‑bottom once the preloader clears.
-- **Scroll reveals** — below‑fold elements fade/slide, marks pop, photos wipe in from a slight
-  zoom and the grey panels wipe left→right as they enter view ([GSAP](https://gsap.com) +
-  ScrollTrigger, batched by type). A catch‑all reveals the final screen, which sits too low to
-  reach a normal trigger line.
+- **Scroll reveals** — below‑fold elements fade/slide and marks pop as they enter view
+  ([GSAP](https://gsap.com) + ScrollTrigger, batched by type). Photos wipe in vertically
+  (top→down) and the grey panels wipe in sideways (left→right) — the same clip‑path reveal,
+  no zoom. A catch‑all reveals the final screen, which sits too low to reach a normal trigger
+  line.
 - **Custom cursor** — a dot + easing ring on fine‑pointer devices, growing over links.
 - **Nav** — `ABOUT / WORK / CONTACT` smooth‑scroll to their sections.
 
