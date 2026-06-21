@@ -1,58 +1,43 @@
 # KOKI TAKAMATSU — Portfolio
 
-A static, **1:1 reproduction** of the Illustrator draft (`Artboard_1.ai`) converted to a
-website — the layout foundation. No animation; every element is placed by exact artboard
-coordinates so it reads as the same design.
+A static, pixel‑accurate reproduction of the Illustrator artboard, converted to a website.
 
 ## How it's built
 
-- The artboard is **460.807 × 1037.167 pt**. The page is a single `.stage` container with that
-  exact aspect ratio. Every element is positioned in **artboard units** via the custom property
-  `--k` (`1 unit = calc(100cqw / 460.807)`), so the whole design scales proportionally to any
-  width while staying pixel‑faithful to the draft.
-- Element coordinates (image boxes, text frames, bands, the red square, registration crop‑marks,
-  link underlines) were **extracted directly from the `.ai`** by decompressing Illustrator's
-  private art stream. Headings and the two photos (linked, not embedded in the file) are placed
-  from the draft reference.
-- **Type:** ITC Avant Garde Gothic → bundled **URW Gothic** (a free metric clone, Book + Demi)
-  for display; **Nunito Sans ExtraLight** for body — the families named in the file.
-- **Palette from the artboard:** red `#f20000`, image grey `#d1d1d1`, light band `#f2f1ef`.
+- The artboard is **460.807 × 1036.66 pt**. The page is one `.stage` container at that exact
+  aspect ratio. Every element is positioned in **artboard points** via the custom property `--k`
+  (`1 pt = calc(100cqw / 460.807)`), so the whole design scales proportionally to any width while
+  staying faithful to the source.
+- Coordinates, font sizes, colours and the copy text were **extracted from the rendered PDF**
+  (`Artboard_1_correctone.pdf`) — text spans, image placements and vector rectangles — so positions
+  match the source rather than being estimated.
+- **Type:** ITC Avant Garde Gothic (Book + Demi, embedded subset extracted from the PDF, with URW
+  Gothic as a full‑charset fallback) for display; **Nunito Sans ExtraLight** for body.
+- **The portrait and calligraphy photos are the real images from the file.** The Back Ground,
+  Graphic Paint and Ressolve Steps panels are **grey placeholder boxes** — that's how they are in
+  the source artboard (`#B3B3B3` / `#D1D1D1`). Drop real images in later if you want.
+- No animation. This is the layout foundation.
 
 ## Run
-
-ES‑module‑free, but still needs a static server for relative paths:
 
 ```bash
 python3 -m http.server 8000      # then open http://localhost:8000
 ```
 
-## Replace the placeholder images
+## Editing
 
-Drop your files into `assets/img/` with these exact names (cropped with `object-fit:cover`):
+Every element carries its coordinates inline as `--x --y --w --h` (artboard points) and font size
+as `--fs`, e.g. `style="--x:239.5;--y:31.8;--fs:18"`. Change those numbers in `index.html` to nudge
+anything. Colours, bands and marks live in `css/style.css`.
 
-| File | Section |
-|------|---------|
-| `about-portrait.jpg` | About me (portrait of you at the brush) |
-| `background.jpg`     | Back Ground |
-| `work-graphic.jpg`   | Graphic Paint |
-| `work-resolve.jpg`   | Ressolve Steps |
-| `calligraphy.jpg`    | Calligraphy (the cursive scroll) |
-
-## Tuning the layout
-
-All coordinates are inline on each element as `--x --y --w --h` (artboard units) and font sizes
-as `--fs`. To nudge anything, edit those numbers in `index.html` — e.g.
-`style="--x:238.5;--y:40;--w:160;--fs:17"`. Background bands, marks and colours live in
-`css/style.css`.
+To replace the grey placeholder panels with images, add an `<img>` inside the relevant
+`figure.box` (the same pattern used by the portrait/calligraphy figures).
 
 ## Structure
 
 ```
-index.html      every element, positioned in artboard units
-css/style.css   @font-face, the --k coordinate system, type, bands, crop-marks
-assets/fonts/   URW Gothic (display) + Nunito Sans (body)
-assets/img/     placeholder images to replace
+index.html      every element, positioned in artboard points
+css/style.css   @font-face, the --k coordinate system, type, bands, marks
+assets/fonts/   Avant Garde (display) + Nunito Sans (body)
+assets/img/     about-portrait.jpg, calligraphy.jpg (real, from the file)
 ```
-
-> This is the static foundation only — animation was intentionally left out. Motion (smooth
-> scroll, reveals, etc.) can be layered on later once the layout is locked.

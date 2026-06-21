@@ -1,98 +1,90 @@
 /* ============================================================
-   KOKI TAKAMATSU — static 1:1 reproduction of the AI artboard
-   Artboard: 460.807 x 1037.167 pt.  Every element is placed in
-   artboard units and scaled with the container (1 unit = --k).
-   No animation — this is the layout foundation.
+   KOKI TAKAMATSU — exact 1:1 reproduction of Artboard_1
+   Source of truth: the rendered PDF. Every element is placed at
+   its exact PDF/artboard coordinate (top-left origin, points),
+   scaled by --k. Fonts, sizes and colours are taken from the PDF.
    ============================================================ */
 
+/* display = ITC Avant Garde Gothic (extracted from the PDF), URW Gothic fallback */
+@font-face{font-family:"AvantGarde";src:url("../assets/fonts/avantgarde-book.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"AvantGarde";src:url("../assets/fonts/avantgarde-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+/* body = Nunito Sans ExtraLight */
 @font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-200-normal.woff2") format("woff2");font-weight:200;font-style:normal;font-display:swap}
 @font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-200-italic.woff2") format("woff2");font-weight:200;font-style:italic;font-display:swap}
 @font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-300-normal.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
-@font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunito-sans-latin-400-normal.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 
 :root{
   --paper:#fffefc;
   --band:#f2f1ef;
-  --img:#d1d1d1;
-  --ink:#161616;          /* headings */
-  --body:#8b8884;         /* body copy */
-  --hair:#2a2a2a;         /* marks / rules */
-  --red:#f20000;
-  --display:"Gothic","Century Gothic","Avant Garde",system-ui,sans-serif;
+  --disp:"AvantGarde","Gothic","Century Gothic",sans-serif;
   --text:"Nunito Sans",system-ui,sans-serif;
 }
-
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:#d7d5d2}
-body{font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 img{display:block;width:100%;height:100%;object-fit:cover}
 
-/* ---- the artboard ---- */
+/* the artboard: 460.807 x 1036.66 pt */
 .stage{
-  position:relative;
-  width:100%;
-  max-width:1180px;
-  margin:0 auto;
-  aspect-ratio:460.807 / 1037.167;
-  background:var(--paper);
-  overflow:hidden;
-  container-type:inline-size;
-  --k:calc(100cqw / 460.807);          /* 1 artboard unit */
-  font-family:var(--text);
+  position:relative;width:100%;max-width:1180px;margin:0 auto;
+  aspect-ratio:460.807 / 1036.66;background:var(--paper);overflow:hidden;
+  container-type:inline-size;--k:calc(100cqw / 460.807);font-family:var(--text);
 }
 
-/* ---- placement primitive: --x --y (--w --h) in artboard units ---- */
+/* placement primitive: --x --y (--w --h) in artboard points */
 .a{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));width:calc(var(--w,0) * var(--k))}
 .wh{height:calc(var(--h) * var(--k))}
 
-/* ---- background bands (alternating) ---- */
+/* background bands */
 .band{position:absolute;left:0;width:100%;height:calc(259.2 * var(--k));background:var(--band)}
 
-/* ---- image placeholders ---- */
-.box{background:var(--img);overflow:hidden}
-.box>img{opacity:1}
-.box.empty{background:linear-gradient(135deg,#d6d4d1,#c9c7c4)}
+/* image placeholders / photos */
+.box{background:var(--c,#d1d1d1);overflow:hidden}
+.ph{overflow:hidden}
 
-/* ---- typography ---- */
-.h{font-family:var(--display);font-weight:700;color:var(--ink);text-transform:uppercase;
-   line-height:.96;letter-spacing:-.01em;font-size:calc(var(--fs) * var(--k))}
-.h.book{font-weight:400}
-.kicker{font-family:var(--display);font-weight:700;color:var(--ink);text-transform:uppercase;
-   letter-spacing:0;line-height:1;font-size:calc(var(--fs) * var(--k))}
-.copy{font-family:var(--text);font-weight:300;color:var(--body);
-   font-size:calc(var(--fs) * var(--k));line-height:1.5;letter-spacing:.005em}
-.copy.tiny{font-weight:200}
-.cap{font-family:var(--text);font-style:italic;font-weight:200;color:#9b9893;
-   font-size:calc(var(--fs) * var(--k));line-height:1.4}
+/* type ---------------------------------------------------- */
+.h{font-family:var(--disp);font-weight:700;color:#404040;text-transform:uppercase;
+   line-height:1;white-space:nowrap;font-size:calc(var(--fs) * var(--k));letter-spacing:0}
+.copy{font-family:var(--text);font-weight:200;color:#000;
+   font-size:calc(var(--fs,4) * var(--k));line-height:1.2;letter-spacing:0}
+.copy p{margin:0 0 calc(4.8 * var(--k))}
+.copy p:last-child{margin-bottom:0}
+.copy.j p{text-align:justify}
+.copy.j p:last-of-type{text-align:left}     /* keep a real last paragraph natural if flagged */
 
-/* nav / brand */
-.brand,.nav a{font-family:var(--display);font-weight:400;text-transform:uppercase;color:var(--ink);
-   letter-spacing:.14em;font-size:calc(var(--fs) * var(--k))}
-.nav{display:flex;gap:calc(14 * var(--k))}
+.brand,.nav span{font-family:var(--disp);font-weight:400;color:#434343;line-height:1;
+   font-size:calc(var(--fs) * var(--k));white-space:nowrap}
+.cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
+   font-size:calc(3 * var(--k));white-space:nowrap}
+.plus{font-family:var(--text);font-weight:200;color:#000;line-height:1;font-size:calc(9.3 * var(--k))}
 
-/* link tags  [ Details ] */
-.tags{display:flex;gap:calc(18 * var(--k))}
-.tag{font-family:var(--display);font-weight:400;text-transform:uppercase;color:var(--ink);
-   letter-spacing:.08em;font-size:calc(var(--fs,5.4) * var(--k));white-space:nowrap}
-.tag i{font-style:normal;color:#a8a5a0}
+/* link with corner-tick frame */
+.tag{font-family:var(--text);font-weight:200;color:#000;line-height:1;
+   font-size:calc(5 * var(--k));white-space:nowrap;padding:calc(1.2 * var(--k)) calc(2.4 * var(--k))}
+.tag>i{position:absolute;width:calc(3 * var(--k));height:calc(3 * var(--k));--b:max(.75px,calc(.5 * var(--k)))}
+.tag>i.tl{top:0;left:0;border-top:var(--b) solid #000;border-left:var(--b) solid #000}
+.tag>i.br{bottom:0;right:0;border-bottom:var(--b) solid #000;border-right:var(--b) solid #000}
 
-/* red accent square */
-.sq{background:var(--red)}
+/* squares */
+.sq{background:#f20000}
+.sqg{background:#b3b1b1}
 
-/* registration / corner crop-marks */
-.fr{--cm:calc(7 * var(--k));--cw:max(1px,calc(.5 * var(--k)))}
-.fr>i{position:absolute;width:var(--cm);height:var(--cm);z-index:3;pointer-events:none}
-.fr>i.tl{top:calc(-2.5 * var(--k));left:calc(-2.5 * var(--k));border-top:var(--cw) solid var(--hair);border-left:var(--cw) solid var(--hair)}
-.fr>i.tr{top:calc(-2.5 * var(--k));right:calc(-2.5 * var(--k));border-top:var(--cw) solid var(--hair);border-right:var(--cw) solid var(--hair)}
-.fr>i.bl{bottom:calc(-2.5 * var(--k));left:calc(-2.5 * var(--k));border-bottom:var(--cw) solid var(--hair);border-left:var(--cw) solid var(--hair)}
-.fr>i.br{bottom:calc(-2.5 * var(--k));right:calc(-2.5 * var(--k));border-bottom:var(--cw) solid var(--hair);border-right:var(--cw) solid var(--hair)}
+/* corner crop-ticks on the two photos */
+.fr>i{position:absolute;width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(.75px,calc(.5 * var(--k)));z-index:2}
+.fr>i.tl{top:calc(-3 * var(--k));left:calc(-3 * var(--k));border-top:var(--b) solid #000;border-left:var(--b) solid #000}
+.fr>i.tr{top:calc(-3 * var(--k));right:calc(-3 * var(--k));border-top:var(--b) solid #000;border-right:var(--b) solid #000}
+.fr>i.bl{bottom:calc(-3 * var(--k));left:calc(-3 * var(--k));border-bottom:var(--b) solid #000;border-left:var(--b) solid #000}
+.fr>i.br{bottom:calc(-3 * var(--k));right:calc(-3 * var(--k));border-bottom:var(--b) solid #000;border-right:var(--b) solid #000}
 
-/* standalone tick mark */
-.tick{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
-  width:calc(var(--w,9) * var(--k));height:calc(var(--h,9) * var(--k));
-  border-top:max(1px,calc(.5 * var(--k))) solid var(--hair);border-right:max(1px,calc(.5 * var(--k))) solid var(--hair)}
+/* link corner-tick frame marks (positioned independently in artboard space) */
+.ltick{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
+   width:calc(2.6 * var(--k));height:calc(2.6 * var(--k));--b:max(.75px,calc(.5 * var(--k)))}
+.ltick.tl{border-top:var(--b) solid #000;border-left:var(--b) solid #000}
+.ltick.br{border-bottom:var(--b) solid #000;border-right:var(--b) solid #000}
 
-/* thin rule (caption underline etc.) */
-.rule{height:calc(1*var(--k));background:#c4c1bd}
+/* small filled triangle accent (right angle at top-right, hypotenuse to lower-left) */
+.tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
+   width:calc(12 * var(--k));height:calc(12 * var(--k));
+   background:#b3b3b3;clip-path:polygon(100% 0,100% 100%,0 0)}
