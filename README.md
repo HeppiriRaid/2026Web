@@ -39,5 +39,5 @@ To replace the grey placeholder panels with images, add an `<img>` inside the re
 index.html      every element, positioned in artboard points
 css/style.css   @font-face, the --k coordinate system, type, bands, marks
 assets/fonts/   Avant Garde (display) + Nunito Sans (body)
-assets/img/     about-portrait.jpg, calligraphy.jpg (real, from the file)
+assets/img/     about-portrait.webp, calligraphy.webp (real, from the file)
 ```
