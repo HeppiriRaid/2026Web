@@ -23,8 +23,11 @@
   var REDUCE = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  var HAMBURGER_SCALE = 0.7; // the caught hamburger is 70% of the camouflage box
+
   var K = 4;                 // px per artboard pt (refreshed in place())
   var ty = 0;                // vertical offset currently applied to the button
+  var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var easeUntil = 0;         // performance.now() until which we ease the offset
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
@@ -51,11 +54,14 @@
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;
-    apply(ty);
+    apply();
   }
 
-  function apply(v) {
-    btn.style.transform = "translate(-50%, calc(-50% + " + v.toFixed(2) + "px))";
+  // translate keeps the button centred on its anchor; scale() shrinks it about
+  // that same centre, so the hamburger stays aligned with the camouflage box.
+  function apply() {
+    btn.style.transform =
+      "translate(-50%, calc(-50% + " + ty.toFixed(2) + "px)) scale(" + scl.toFixed(3) + ")";
   }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
@@ -64,24 +70,27 @@
     var cutoff = (markBottomDoc - sc) <= 0;        // lower square above top edge
     var nm = cutoff ? "catch" : "scrub";
     // scrub: keep the button centred on the (moving) marks. catch: corner (0).
-    var target = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
+    var tyTarget = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
+    var sclTarget = nm === "catch" ? HAMBURGER_SCALE : 1; // shrink once caught
 
     if (nm !== mode) {
       if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
       setOpen(false);                              // never leave the menu adrift
-    } else if (mode === "scrub" && Math.abs(target) > 2 &&
+    } else if (mode === "scrub" && Math.abs(tyTarget) > 2 &&
                nav.classList.contains("open")) {
       setOpen(false);                              // scrolled off the top → close
     }
 
     if (!REDUCE && performance.now() < easeUntil) {
-      ty += (target - ty) * 0.07;                  // gentle ease into the new regime
-      apply(ty);
-    } else if (ty !== target) {
-      ty = target;                                 // steady state: exact tracking
-      apply(ty);
+      ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime
+      scl += (sclTarget - scl) * 0.07;             // shrink/grow eases in with it
+      apply();
+    } else if (ty !== tyTarget || scl !== sclTarget) {
+      ty = tyTarget;                               // steady state: exact tracking
+      scl = sclTarget;
+      apply();
     }
   }
 
