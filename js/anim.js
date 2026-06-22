@@ -112,20 +112,29 @@
     }
     function boxIn(t, o) {      // grey panels — sideways wipe (L→R), slow→fast→slow
       o = o || {};
-      // panels marked data-fade (Selected Works) also get a fade-in that eases
-      // in gently to match the wipe's soft start
-      var fadeEls = gsap.utils.toArray(t).filter(function (e) { return e.hasAttribute("data-fade"); });
+      var els = gsap.utils.toArray(t);
+      var stag = o.stagger || 0;
+      // Selected Works panels also fade in (gentle, to match the soft start)
+      var fadeEls = els.filter(function (e) { return e.hasAttribute("data-fade"); });
       if (fadeEls.length) {
         gsap.fromTo(fadeEls, { opacity: 0 },
-          { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: o.stagger });
+          { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: stag });
       }
-      // worksEase = slow→fast→slow; the ease-in (~43%) is slightly shorter than
-      // the ease-out (~57%), so it starts gently, speeds up, then settles slowly.
-      return gsap.fromTo(t,
-        { clipPath: "inset(0px 100% 0px 0px)" },
-        Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 2.0, ease: worksEase,
-            onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
+      // Drive the wipe from a numeric proxy and write the clip-path each frame.
+      // GSAP's clip-path STRING interpolation does not honor a function ease
+      // (it snaps), so the custom slow→fast→slow worksEase — ease-in ~43% (a
+      // little shorter) then a longer ease-out — only applies via the proxy.
+      var first;
+      els.forEach(function (el, i) {
+        var s = { p: 0 };
+        var tw = gsap.to(s, {
+          p: 1, duration: 2.0, ease: worksEase, delay: stag * i,
+          onUpdate: function () { el.style.clipPath = "inset(0px " + ((1 - s.p) * 100) + "% 0px 0px)"; },
+          onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); },
+        });
+        if (i === 0) first = tw;
+      });
+      return first;
     }
 
     function typeOf(el) {
