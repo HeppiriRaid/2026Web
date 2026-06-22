@@ -67,6 +67,20 @@
        rasterises identically to the static page, no compositing layer.  */
     function strip(t) { gsap.set(t, { clearProps: "transform,willChange" }); }
 
+    // custom cubic-bezier ease (no plugin): solves y for a given x via bisection
+    function cubicBezier(x1, y1, x2, y2) {
+      function bz(p, a, b) { var m = 1 - p; return 3 * m * m * p * a + 3 * m * p * p * b + p * p * p; }
+      return function (x) {
+        if (x <= 0) return 0; if (x >= 1) return 1;
+        var lo = 0, hi = 1, p = x;
+        for (var i = 0; i < 18; i++) { p = (lo + hi) / 2; if (bz(p, x1, x2) < x) lo = p; else hi = p; }
+        return bz(p, y1, y2);
+      };
+    }
+    // Works panels: slow → fast → slow, with the opening ease-in slightly
+    // shorter than the closing ease-out (velocity peaks at ~43%).
+    var worksEase = cubicBezier(0.38, 0, 0.5, 1);
+
     function slideIn(t, o) {   // text, captions, brand, nav
       return gsap.fromTo(t, { opacity: 0, y: 42 }, Object.assign(
         { opacity: 1, y: 0, duration: 1.0, ease: "power3.out",
@@ -96,21 +110,21 @@
       if (!noScale) { from.scale = 1.12; to.scale = 1; }
       return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
-    function boxIn(t, o) {      // grey panels — sideways wipe (L→R), same ease-out as the photos
+    function boxIn(t, o) {      // grey panels — sideways wipe (L→R), slow→fast→slow
       o = o || {};
-      // panels marked data-fade (Selected Works) also get a short fade-in
+      // panels marked data-fade (Selected Works) also get a fade-in that eases
+      // in gently to match the wipe's soft start
       var fadeEls = gsap.utils.toArray(t).filter(function (e) { return e.hasAttribute("data-fade"); });
       if (fadeEls.length) {
         gsap.fromTo(fadeEls, { opacity: 0 },
-          { opacity: 1, duration: 0.7, ease: "power2.out", stagger: o.stagger });
+          { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: o.stagger });
       }
-      // power3.out — the SAME ease-out as the photo wipe. The longer 2.2s
-      // duration lowers the start speed (no fast lurch) and draws out the
-      // deceleration so the smooth ease-out is clearly visible as it settles.
+      // worksEase = slow→fast→slow; the ease-in (~43%) is slightly shorter than
+      // the ease-out (~57%), so it starts gently, speeds up, then settles slowly.
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 2.2, ease: "power3.out",
+          { clipPath: "inset(0px 0px 0px 0px)", duration: 2.0, ease: worksEase,
             onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
     }
 
