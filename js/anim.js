@@ -110,6 +110,26 @@
       if (!noScale) { from.scale = 1.12; to.scale = 1; }
       return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
+    // Proxy-driven clip wipe (slow→fast→slow worksEase). GSAP's clip-path
+    // STRING interpolation does not honor a function ease (it snaps), so we
+    // tween a numeric proxy and write the clip-path each frame. clipFor(p)
+    // maps progress 0→1 to the clip-path string (direction of the wipe).
+    function wipeProxy(t, stag, clipFor) {
+      var first;
+      gsap.utils.toArray(t).forEach(function (el, i) {
+        var s = { p: 0 };
+        var tw = gsap.to(s, {
+          p: 1, duration: 2.0, ease: worksEase, delay: (stag || 0) * i,
+          onUpdate: function () { el.style.clipPath = clipFor(s.p); },
+          onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); },
+        });
+        if (i === 0) first = tw;
+      });
+      return first;
+    }
+    function clipLR(p) { return "inset(0px " + ((1 - p) * 100) + "% 0px 0px)"; }  // wipe left→right
+    function clipTB(p) { return "inset(0px 0px " + ((1 - p) * 100) + "% 0px)"; }  // wipe top→bottom
+
     function boxIn(t, o) {      // grey panels — sideways wipe (L→R), slow→fast→slow
       o = o || {};
       var els = gsap.utils.toArray(t);
@@ -120,26 +140,16 @@
         gsap.fromTo(fadeEls, { opacity: 0 },
           { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: stag });
       }
-      // Drive the wipe from a numeric proxy and write the clip-path each frame.
-      // GSAP's clip-path STRING interpolation does not honor a function ease
-      // (it snaps), so the custom slow→fast→slow worksEase — ease-in ~43% (a
-      // little shorter) then a longer ease-out — only applies via the proxy.
-      var first;
-      els.forEach(function (el, i) {
-        var s = { p: 0 };
-        var tw = gsap.to(s, {
-          p: 1, duration: 2.0, ease: worksEase, delay: stag * i,
-          onUpdate: function () { el.style.clipPath = "inset(0px " + ((1 - s.p) * 100) + "% 0px 0px)"; },
-          onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); },
-        });
-        if (i === 0) first = tw;
-      });
-      return first;
+      return wipeProxy(els, stag, clipLR);
+    }
+    function vimageIn(t, o) {   // calligraphy photo — the SAME panel wipe, top→bottom
+      o = o || {};
+      return wipeProxy(t, o.stagger || 0, clipTB);
     }
 
     function typeOf(el) {
       if (el.matches(".plus")) return "plus";
-      if (el.matches(".ph img")) return "image";
+      if (el.matches(".ph img")) return el.hasAttribute("data-vwipe") ? "vimage" : "image";
       if (el.matches(".box")) return "box";
       if (el.matches(".ltick") || el.matches(".fr > i")) return "tick";
       if (el.matches(".tri") || el.matches(".sq") || el.matches(".sqg")) return "pop";
@@ -152,6 +162,7 @@
       switch (type) {
         case "plus":  return plusIn(els, o);
         case "image": return imageIn(els, o);
+        case "vimage": return vimageIn(els, o);
         case "box":   return boxIn(els, o);
         case "tick":  return tickIn(els, o);
         case "pop":   return popIn(els, o);
@@ -189,7 +200,7 @@
       if (ty !== "image") at += 0.075;
     });
 
-    var TYPES = ["slide", "pop", "tick", "plus", "image", "box"];
+    var TYPES = ["slide", "pop", "tick", "plus", "image", "vimage", "box"];
 
     // reveal whatever is still hidden, grouped by type (used as a safety net
     // for the final screen, where elements can't reach a "top x%" trigger line)
