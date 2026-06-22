@@ -145,10 +145,10 @@ html:not(.anim) .preloader{display:none}
   padding:calc(var(--mk,4) * 8px) calc(var(--mk,4) * 11px);
   background:var(--paper);
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,.10);
-  opacity:0;transform:translateY(calc(var(--mk,4) * -5px));pointer-events:none;
+  opacity:0;transform:translateX(calc(var(--mk,4) * 6px));pointer-events:none;
   transition:opacity .3s ease,transform .3s ease;
 }
-.menu-nav.open{opacity:1;transform:translateY(0);pointer-events:auto}
+.menu-nav.open{opacity:1;transform:translateX(0);pointer-events:auto}
 .menu-nav a{
   font-family:var(--disp);font-weight:400;color:#434343;
   font-size:calc(var(--mk,4) * 5px);letter-spacing:-.008em;

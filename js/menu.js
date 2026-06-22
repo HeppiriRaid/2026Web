@@ -49,8 +49,15 @@
     btn.style.left = (454.8 * K) + "px";
     btn.style.top = (18 * K) + "px";
     btn.style.right = "auto";
-    nav.style.top = (42 * K) + "px";
-    nav.style.right = Math.max(0, window.innerWidth - 460.8 * K) + "px";
+    // The extended menu sits to the LEFT of the caught hamburger, its box top
+    // aligned with the hamburger's top bar. Both are derived from the fixed
+    // catch geometry (button centre 454.8/18, top bar at 12.75 / left at 448.8,
+    // the whole thing scaled about its centre by HAMBURGER_SCALE).
+    var hbTop = (18 - (18 - 12.75) * HAMBURGER_SCALE) * K;        // top-bar top edge
+    var hbLeft = (454.8 - (454.8 - 448.8) * HAMBURGER_SCALE) * K; // bars' left edge
+    nav.style.top = hbTop + "px";
+    nav.style.left = "auto";
+    nav.style.right = Math.max(0, window.innerWidth - hbLeft + 4 * K) + "px";
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;
