@@ -31,6 +31,21 @@
   window.addEventListener("resize", place);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
 
+  // Scroll-reactive: while the real grey marks are on screen the button stays
+  // camouflaged over them; once they scroll off, it splits into the hamburger.
+  var marks = document.querySelectorAll(".sqg");
+  var lastMark = marks.length ? marks[marks.length - 1] : null;
+  var ticking = false;
+  function updateScrolled() {
+    ticking = false;
+    var gone = lastMark ? lastMark.getBoundingClientRect().bottom <= 0 : (window.scrollY > 0);
+    btn.classList.toggle("scrolled", gone);
+    if (!gone) setOpen(false); // back at the top → collapse the menu
+  }
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(updateScrolled); } }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  updateScrolled();
+
   function setOpen(open) {
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");

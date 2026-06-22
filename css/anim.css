@@ -93,30 +93,38 @@ html:not(.anim) .preloader{display:none}
 }
 
 /* ---- fixed top-right menu -------------------------------------- */
-/* --mk = px per artboard point, set by menu.js so the button scales
-   with the design and lines up over the grey corner marks. */
-/* two grey bars that sit exactly over the two 12x12 corner marks (artboard
-   y0-12 and y24-36) — identical colour, so they vanish over them at the top. */
+/* --mk = px per artboard point, set by menu.js so the button scales with the
+   design and lines up over the grey corner marks. Three states that morph:
+   (1) camouflage at the top — two 12x12 squares over the marks, middle bar
+   hidden, so it vanishes; (2) .scrolled (marks gone) — the squares split into
+   a 3-bar hamburger that rises into the corner; (3) open — hamburger -> X. */
 .menu-btn{
   position:fixed;z-index:90;left:0;top:0;right:auto;
   width:calc(var(--mk,4) * 12px);height:calc(var(--mk,4) * 36px);
   transform:translate(-50%,-50%);
   padding:0;box-sizing:border-box;background:transparent;border:0;cursor:pointer;
+  transition:transform .5s cubic-bezier(.4,0,.2,1);
 }
 .menu-btn span{
-  position:absolute;left:0;width:100%;
-  height:calc(var(--mk,4) * 12px);background:#b3b1b1;
-  transition:top .3s ease,height .3s ease,margin-top .3s ease,transform .3s ease,background-color .3s ease;
+  position:absolute;left:0;width:100%;background:#b3b1b1;
+  transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
+             opacity .3s ease,transform .35s ease,background-color .3s ease;
 }
-.menu-btn span:nth-child(1){top:0}
-.menu-btn span:nth-child(2){top:calc(100% - var(--mk,4) * 12px)}
-/* open → centred thin X */
-.menu-btn[aria-expanded="true"] span{
-  top:50%;height:max(2px,calc(var(--mk,4) * 2.4px));
-  margin-top:max(-1px,calc(var(--mk,4) * -1.2px));background:#434343;
-}
-.menu-btn[aria-expanded="true"] span:nth-child(1){transform:rotate(45deg)}
-.menu-btn[aria-expanded="true"] span:nth-child(2){transform:rotate(-45deg)}
+/* (1) camouflage: two squares over the marks, middle hidden */
+.menu-btn span:nth-child(1){top:0;height:calc(var(--mk,4) * 12px)}
+.menu-btn span:nth-child(2){top:calc(var(--mk,4) * 16.75px);height:calc(var(--mk,4) * 2.5px);opacity:0}
+.menu-btn span:nth-child(3){top:calc(var(--mk,4) * 24px);height:calc(var(--mk,4) * 12px)}
+/* (2) scrolled: split into a 3-bar hamburger, risen into the corner */
+.menu-btn.scrolled{transform:translate(-50%,calc(-50% - var(--mk,4) * 6px))}
+.menu-btn.scrolled span{height:max(2px,calc(var(--mk,4) * 2.4px))}
+.menu-btn.scrolled span:nth-child(1){top:calc(var(--mk,4) * 12.75px)}
+.menu-btn.scrolled span:nth-child(2){top:calc(var(--mk,4) * 16.75px);opacity:1}
+.menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
+/* (3) open: hamburger -> X (from either state) */
+.menu-btn[aria-expanded="true"] span{height:max(2px,calc(var(--mk,4) * 2.4px));background:#434343}
+.menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
+.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
+.menu-btn[aria-expanded="true"] span:nth-child(3){top:calc(var(--mk,4) * 16.75px);transform:rotate(-45deg)}
 
 .menu-nav{
   position:fixed;z-index:89;left:auto;right:0;top:0;
