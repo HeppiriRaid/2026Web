@@ -90,7 +90,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .ltick.tl{border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
 .ltick.br{border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 
-/* small filled triangle accent (right angle at top-right, hypotenuse to lower-left) */
+/* triangle accent (right angle at top-right, hypotenuse to lower-left) */
 .tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
    width:calc(12 * var(--k));height:calc(12 * var(--k));
    background:#ccc9c9;clip-path:polygon(100% 0,100% 100%,0 0)}
