@@ -146,6 +146,10 @@
       return "slide";
     }
     function revealBy(type, els, o) {
+      // mark every element handled, so neither the per-type batch nor the
+      // catch-all can reveal the same element twice (a double-reveal showed up
+      // as a fast "replay" stutter on elements still mid-animation)
+      gsap.utils.toArray(els).forEach(function (e) { e.__shown = 1; });
       switch (type) {
         case "plus":  return plusIn(els, o);
         case "image": return imageIn(els, o);
@@ -191,9 +195,9 @@
     // reveal whatever is still hidden, grouped by type (used as a safety net
     // for the final screen, where elements can't reach a "top x%" trigger line)
     function revealRemaining() {
-      var left = all.filter(function (el) {
-        return parseFloat(getComputedStyle(el).opacity) < 0.99;
-      });
+      // only elements that were never revealed (NOT ones still mid-animation,
+      // which the opacity test used to catch and re-trigger → the stutter)
+      var left = all.filter(function (el) { return !el.__shown; });
       if (!left.length) return;
       TYPES.forEach(function (ty) {
         var els = left.filter(function (e) { return typeOf(e) === ty; });
@@ -216,7 +220,10 @@
         ST.batch(els, {
           start: "top 88%",
           once: true,
-          onEnter: function (b) { revealBy(ty, b, { stagger: 0.06, overwrite: "auto" }); },
+          onEnter: function (b) {
+          var fresh = b.filter(function (e) { return !e.__shown; });
+          if (fresh.length) revealBy(ty, fresh, { stagger: 0.06, overwrite: "auto" });
+        },
         });
       });
       // final-screen catch-all: the calligraphy group sits in the last viewport
