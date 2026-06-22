@@ -147,8 +147,7 @@
     }
     function revealBy(type, els, o) {
       // mark every element handled, so neither the per-type batch nor the
-      // catch-all can reveal the same element twice (a double-reveal showed up
-      // as a fast "replay" stutter on elements still mid-animation)
+      // catch-all can reveal the same element twice
       gsap.utils.toArray(els).forEach(function (e) { e.__shown = 1; });
       switch (type) {
         case "plus":  return plusIn(els, o);
@@ -226,12 +225,16 @@
         },
         });
       });
-      // final-screen catch-all: the calligraphy group sits in the last viewport
-      // and can't reach a "top 88%" line, so reveal any stragglers once the last
-      // section heading scrolls into view (a comfortably reachable trigger).
-      var last = document.getElementById("contact");
-      if (last) {
-        ST.create({ trigger: last, start: "top 72%", once: true, onEnter: revealRemaining });
+      // Catch-all ONLY for the true stragglers: the few elements at the very
+      // bottom that sit too low to ever reach their own "top 88%" line. Anchor
+      // it to the lowest element and fire as it enters (top bottom), i.e. LATE —
+      // so every element above reveals separately via its own batch as it
+      // scrolls in, instead of the catch-all bunching them all at once.
+      var lastEl = scroll.length
+        ? scroll.reduce(function (a, b) { return b.__top > a.__top ? b : a; }, scroll[0])
+        : null;
+      if (lastEl) {
+        ST.create({ trigger: lastEl, start: "top bottom", once: true, onEnter: revealRemaining });
       }
       ST.refresh();
     }
