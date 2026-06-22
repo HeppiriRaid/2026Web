@@ -104,13 +104,13 @@
         gsap.fromTo(fadeEls, { opacity: 0 },
           { opacity: 1, duration: 0.7, ease: "power2.out", stagger: o.stagger });
       }
-      // power3.out — the SAME ease as the photo wipe — so it decelerates into
-      // place (a real ease-out) instead of looking linear. The longer duration
-      // matches the wider panel's edge speed to the photo, so it isn't too fast.
+      // power3.out — the SAME ease-out as the photo wipe. The longer 2.2s
+      // duration lowers the start speed (no fast lurch) and draws out the
+      // deceleration so the smooth ease-out is clearly visible as it settles.
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.6, ease: "power3.out",
+          { clipPath: "inset(0px 0px 0px 0px)", duration: 2.2, ease: "power3.out",
             onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
     }
 
