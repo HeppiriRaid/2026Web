@@ -91,3 +91,48 @@ html:not(.anim) .preloader{display:none}
   .cursor-dot,.cursor-ring{display:none !important}
   html.cursor-ready,html.cursor-ready body,html.cursor-ready a{cursor:auto !important}
 }
+
+/* ---- fixed top-right menu -------------------------------------- */
+/* --mk = px per artboard point, set by menu.js so the button scales
+   with the design and lines up over the grey corner marks. */
+/* two grey bars that sit exactly over the two 12x12 corner marks (artboard
+   y0-12 and y24-36) — identical colour, so they vanish over them at the top. */
+.menu-btn{
+  position:fixed;z-index:90;left:0;top:0;right:auto;
+  width:calc(var(--mk,4) * 12px);height:calc(var(--mk,4) * 36px);
+  transform:translate(-50%,-50%);
+  padding:0;box-sizing:border-box;background:transparent;border:0;cursor:pointer;
+}
+.menu-btn span{
+  position:absolute;left:0;width:100%;
+  height:calc(var(--mk,4) * 12px);background:#b3b1b1;
+  transition:top .3s ease,height .3s ease,margin-top .3s ease,transform .3s ease,background-color .3s ease;
+}
+.menu-btn span:nth-child(1){top:0}
+.menu-btn span:nth-child(2){top:calc(100% - var(--mk,4) * 12px)}
+/* open → centred thin X */
+.menu-btn[aria-expanded="true"] span{
+  top:50%;height:max(2px,calc(var(--mk,4) * 2.4px));
+  margin-top:max(-1px,calc(var(--mk,4) * -1.2px));background:#434343;
+}
+.menu-btn[aria-expanded="true"] span:nth-child(1){transform:rotate(45deg)}
+.menu-btn[aria-expanded="true"] span:nth-child(2){transform:rotate(-45deg)}
+
+.menu-nav{
+  position:fixed;z-index:89;left:auto;right:0;top:0;
+  display:flex;flex-direction:column;align-items:flex-end;
+  gap:calc(var(--mk,4) * 5px);
+  padding:calc(var(--mk,4) * 8px) calc(var(--mk,4) * 11px);
+  background:var(--paper);
+  box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,.10);
+  opacity:0;transform:translateY(calc(var(--mk,4) * -5px));pointer-events:none;
+  transition:opacity .3s ease,transform .3s ease;
+}
+.menu-nav.open{opacity:1;transform:translateY(0);pointer-events:auto}
+.menu-nav a{
+  font-family:var(--disp);font-weight:400;color:#434343;
+  font-size:calc(var(--mk,4) * 5px);letter-spacing:-.008em;
+  text-decoration:none;line-height:1;white-space:nowrap;
+  transition:color .2s ease;
+}
+.menu-nav a:hover{color:#000}
