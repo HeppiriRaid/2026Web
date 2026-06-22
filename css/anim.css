@@ -150,8 +150,10 @@ html:not(.anim) .preloader{display:none}
 }
 .menu-nav.open{opacity:1;transform:translateX(0);pointer-events:auto}
 .menu-nav a{
+  /* same setting as the original top-right .nav text: --disp 400, #434343,
+     4pt (font-size 4 * --mk), -.008em — so the menu reads identically. */
   font-family:var(--disp);font-weight:400;color:#434343;
-  font-size:calc(var(--mk,4) * 5px);letter-spacing:-.008em;
+  font-size:calc(var(--mk,4) * 4px);letter-spacing:-.008em;
   text-decoration:none;line-height:1;white-space:nowrap;
   transition:color .2s ease;
 }
