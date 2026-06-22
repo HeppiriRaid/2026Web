@@ -96,21 +96,21 @@
       if (!noScale) { from.scale = 1.12; to.scale = 1; }
       return gsap.fromTo(t, from, Object.assign(to, o || {}));
     }
-    function boxIn(t, o) {      // grey panels — sideways wipe (L→R)
+    function boxIn(t, o) {      // grey panels — sideways wipe (L→R), same ease-out as the photos
       o = o || {};
-      // panels marked data-fade (Selected Works) also get a short, smooth
-      // fade-in layered on the wipe — gentle ease so it eases in (no fast start)
+      // panels marked data-fade (Selected Works) also get a short fade-in
       var fadeEls = gsap.utils.toArray(t).filter(function (e) { return e.hasAttribute("data-fade"); });
       if (fadeEls.length) {
         gsap.fromTo(fadeEls, { opacity: 0 },
-          { opacity: 1, duration: 0.7, ease: "power2.inOut", stagger: o.stagger });
+          { opacity: 1, duration: 0.7, ease: "power2.out", stagger: o.stagger });
       }
-      // power2.inOut starts at zero velocity (eases in) so the wipe never lurches
-      // on the first frames — that fast start was reading as a stutter.
+      // power3.out — the SAME ease as the photo wipe — so it decelerates into
+      // place (a real ease-out) instead of looking linear. The longer duration
+      // matches the wider panel's edge speed to the photo, so it isn't too fast.
       return gsap.fromTo(t,
         { clipPath: "inset(0px 100% 0px 0px)" },
         Object.assign(
-          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.4, ease: "power2.inOut",
+          { clipPath: "inset(0px 0px 0px 0px)", duration: 1.6, ease: "power3.out",
             onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } }, o));
     }
 
