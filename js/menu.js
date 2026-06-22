@@ -28,6 +28,8 @@
   var K = 4;                 // px per artboard pt (refreshed in place())
   var ty = 0;                // vertical offset currently applied to the button
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
+  var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
+  var GUTTER = 0;            // px the caught hamburger insets so it clears the scrollbar
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var easeUntil = 0;         // performance.now() until which we ease the offset
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
@@ -55,9 +57,15 @@
     // the whole thing scaled about its centre by HAMBURGER_SCALE).
     var hbTop = (18 - (18 - 12.75) * HAMBURGER_SCALE) * K;        // top-bar top edge
     var hbLeft = (454.8 - (454.8 - 448.8) * HAMBURGER_SCALE) * K; // bars' left edge
+    // Yield to the scrollbar: a classic scrollbar takes layout space
+    // (innerWidth - clientWidth); an overlay scrollbar reports 0 but still floats
+    // over the right edge, so fall back to a fixed allowance. Only the catch state
+    // uses GUTTER (see update); the camouflage stays flush over the corner marks.
+    var sbw = window.innerWidth - document.documentElement.clientWidth;
+    GUTTER = Math.max(sbw, 18);
     nav.style.top = hbTop + "px";
     nav.style.left = "auto";
-    nav.style.right = Math.max(0, window.innerWidth - hbLeft + 4 * K) + "px";
+    nav.style.right = Math.max(0, window.innerWidth - hbLeft + 4 * K + GUTTER) + "px";
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;
@@ -68,7 +76,8 @@
   // that same centre, so the hamburger stays aligned with the camouflage box.
   function apply() {
     btn.style.transform =
-      "translate(-50%, calc(-50% + " + ty.toFixed(2) + "px)) scale(" + scl.toFixed(3) + ")";
+      "translate(calc(-50% + " + tx.toFixed(2) + "px), calc(-50% + " + ty.toFixed(2) +
+      "px)) scale(" + scl.toFixed(3) + ")";
   }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
@@ -79,6 +88,7 @@
     // scrub: keep the button centred on the (moving) marks. catch: corner (0).
     var tyTarget = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
     var sclTarget = nm === "catch" ? HAMBURGER_SCALE : 1; // shrink once caught
+    var txTarget = nm === "catch" ? -GUTTER : 0;          // catch yields left of scrollbar
 
     if (nm !== mode) {
       if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
@@ -93,10 +103,12 @@
     if (!REDUCE && performance.now() < easeUntil) {
       ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime
       scl += (sclTarget - scl) * 0.07;             // shrink/grow eases in with it
+      tx += (txTarget - tx) * 0.07;                // slide aside from the scrollbar
       apply();
-    } else if (ty !== tyTarget || scl !== sclTarget) {
+    } else if (ty !== tyTarget || scl !== sclTarget || tx !== txTarget) {
       ty = tyTarget;                               // steady state: exact tracking
       scl = sclTarget;
+      tx = txTarget;
       apply();
     }
   }
