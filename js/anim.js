@@ -281,7 +281,6 @@
 
     if (pre && !REDUCE) {
       var name = pre.querySelector(".pl-name");
-      var bar = pre.querySelector(".pl-bar");
       if (lenis) lenis.stop();
 
       // The hero photo must be painted before the curtain lifts. Otherwise the
@@ -289,11 +288,10 @@
       var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
       var heroReady = withTimeout(whenReady(hero), 6000);
 
-      // entrance (wordmark + bar) runs regardless; the curtain only lifts once
-      // BOTH the entrance has played and the hero image is ready to paint.
+      // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
+      // the entrance has played and the hero image is ready to paint.
       var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" })
-           .to(bar, { width: "100%", duration: 1.0, ease: "power2.inOut" }, "-=0.75");
+      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
       var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
 
       Promise.all([entered, heroReady]).then(function () {

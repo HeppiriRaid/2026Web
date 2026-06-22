@@ -45,10 +45,6 @@
   white-space:nowrap;
   transform:translate3d(0,110%,0);
 }
-.pl-bar{
-  position:absolute;left:0;bottom:0;height:2px;width:0%;
-  background:#434343;opacity:.5;
-}
 html:not(.anim) .preloader{display:none}
 
 /* ---- custom cursor (fine pointers only) ------------------------ */
