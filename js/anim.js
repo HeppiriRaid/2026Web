@@ -120,7 +120,7 @@
         var s = { p: 0 };
         var tw = gsap.to(s, {
           p: 1, duration: 2.0, ease: worksEase, delay: (stag || 0) * i,
-          onUpdate: function () { el.style.clipPath = clipFor(s.p); },
+          onUpdate: function () { el.style.clipPath = clipFor(s.p, el); },
           onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); },
         });
         if (i === 0) first = tw;
@@ -128,9 +128,10 @@
       return first;
     }
     function clipLR(p) { return "inset(0px " + ((1 - p) * 100) + "% 0px 0px)"; }  // wipe left→right
+    function clipRL(p) { return "inset(0px 0px 0px " + ((1 - p) * 100) + "%)"; }   // wipe right→left
     function clipTB(p) { return "inset(0px 0px " + ((1 - p) * 100) + "% 0px)"; }  // wipe top→bottom
 
-    function boxIn(t, o) {      // grey panels — sideways wipe (L→R), slow→fast→slow
+    function boxIn(t, o) {      // grey panels — sideways wipe, slow→fast→slow
       o = o || {};
       var els = gsap.utils.toArray(t);
       var stag = o.stagger || 0;
@@ -140,7 +141,10 @@
         gsap.fromTo(fadeEls, { opacity: 0 },
           { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: stag });
       }
-      return wipeProxy(els, stag, clipLR);
+      // most panels wipe left→right; data-rtl panels (Ressolve) wipe right→left
+      return wipeProxy(els, stag, function (p, el) {
+        return el.hasAttribute("data-rtl") ? clipRL(p) : clipLR(p);
+      });
     }
     function vimageIn(t, o) {   // calligraphy photo — the SAME panel wipe, top→bottom
       o = o || {};
