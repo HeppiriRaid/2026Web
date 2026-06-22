@@ -116,13 +116,24 @@ html:not(.anim) .preloader{display:none}
 .menu-btn span:nth-child(2){top:calc(var(--mk,4) * 16.75px);height:calc(var(--mk,4) * 2.5px);opacity:0}
 .menu-btn span:nth-child(3){top:calc(var(--mk,4) * 24px);height:calc(var(--mk,4) * 12px)}
 /* (2) scrolled: split into a 3-bar hamburger (its position is driven by menu.js
-   — it rides up with the page, then catches back up into the corner) */
-.menu-btn.scrolled span{height:max(2px,calc(var(--mk,4) * 2.4px))}
+   — it rides up with the page, then catches back up into the corner). The
+   squares->bars morph is slowed to read as a deliberate "catch up", matching
+   the JS position ease; the X toggle below restores the snappy timing. */
+.menu-btn.scrolled span{
+  height:max(2px,calc(var(--mk,4) * 2.4px));
+  transition:top .8s cubic-bezier(.4,0,.2,1),height .8s cubic-bezier(.4,0,.2,1),
+             opacity .55s ease,transform .35s ease,background-color .3s ease;
+}
 .menu-btn.scrolled span:nth-child(1){top:calc(var(--mk,4) * 12.75px)}
 .menu-btn.scrolled span:nth-child(2){top:calc(var(--mk,4) * 16.75px);opacity:1}
 .menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
-/* (3) open: hamburger -> X (from either state) */
-.menu-btn[aria-expanded="true"] span{height:max(2px,calc(var(--mk,4) * 2.4px));background:#434343}
+/* (3) open: hamburger -> X (from either state) — keep the click toggle snappy
+   (this transition wins over .scrolled for the open state, same specificity). */
+.menu-btn[aria-expanded="true"] span{
+  height:max(2px,calc(var(--mk,4) * 2.4px));background:#434343;
+  transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
+             opacity .3s ease,transform .35s ease,background-color .3s ease;
+}
 .menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
 .menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
 .menu-btn[aria-expanded="true"] span:nth-child(3){top:calc(var(--mk,4) * 16.75px);transform:rotate(-45deg)}

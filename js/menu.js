@@ -67,7 +67,7 @@
     var target = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
 
     if (nm !== mode) {
-      if (mode !== null && !REDUCE) easeUntil = performance.now() + 520;
+      if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
       setOpen(false);                              // never leave the menu adrift
@@ -77,7 +77,7 @@
     }
 
     if (!REDUCE && performance.now() < easeUntil) {
-      ty += (target - ty) * 0.22;                  // ease toward the new regime
+      ty += (target - ty) * 0.07;                  // gentle ease into the new regime
       apply(ty);
     } else if (ty !== target) {
       ty = target;                                 // steady state: exact tracking
