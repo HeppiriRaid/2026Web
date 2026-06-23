@@ -33,6 +33,9 @@
   var barVisible = false;    // is the (overlay) scrollbar currently up?
   var barTimer = 0;
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
+  var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
+  var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
+  var _ax, _ay, _as;         // last-applied tx / ty / scl (skip redundant writes)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var easeUntil = 0;         // performance.now() until which we ease the offset
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
@@ -66,14 +69,24 @@
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;
-    pageVH = document.documentElement.clientHeight;
-    pageSH = document.documentElement.scrollHeight;
+    // Cache the page/scrollbar metrics here (layout reads) so the per-frame
+    // update() never touches the DOM geometry — that was thrashing layout.
+    var de = document.documentElement;
+    pageVH = de.clientHeight;
+    pageSH = de.scrollHeight;
+    var cw = de.clientWidth;
+    sbSpace = window.innerWidth - cw > 0;          // classic (space-taking) scrollbar?
+    var ov = 460.8 * K - cw;                        // hamburger's overlap of it (≈0)
+    classicGutter = ov > 0.5 ? ov + 2 : 0;
     apply();
   }
 
   // translate keeps the button centred on its anchor; scale() shrinks it about
   // that same centre, so the hamburger stays aligned with the camouflage box.
+  // Skips the write when nothing changed (no per-frame style churn when idle).
   function apply() {
+    if (tx === _ax && ty === _ay && scl === _as) return;
+    _ax = tx; _ay = ty; _as = scl;
     btn.style.transform =
       "translate(calc(-50% + " + tx.toFixed(2) + "px), calc(-50% + " + ty.toFixed(2) +
       "px)) scale(" + scl.toFixed(3) + ")";
@@ -98,11 +111,7 @@
   //  • overlay bar: the rail is transparent and only the THUMB shows (on scroll),
   //    so dodge only while that visible thumb's band reaches the hamburger.
   function gutterNow() {
-    var de = document.documentElement;
-    if (window.innerWidth - de.clientWidth > 0) {
-      var overlap = 460.8 * K - de.clientWidth;
-      return overlap > 0.5 ? overlap + 2 : 0;
-    }
+    if (sbSpace) return classicGutter;             // cached — no per-frame layout read
     return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
