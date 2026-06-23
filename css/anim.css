@@ -129,7 +129,7 @@ html:not(.anim) .preloader{display:none}
 /* (3) open: hamburger -> X (from either state) — keep the click toggle snappy
    (this transition wins over .scrolled for the open state, same specificity). */
 .menu-btn[aria-expanded="true"] span{
-  height:max(2px,calc(var(--mk,4) * 2.4px));background:#fff;
+  height:max(2px,calc(var(--mk,4) * 2.4px));background:#b3b1b1;
   transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
              opacity .3s ease,transform .35s ease,background-color .3s ease;
 }
