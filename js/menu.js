@@ -30,7 +30,9 @@
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
   var OVERLAY = 18;          // px to clear an overlay scrollbar while it is showing
-  var RAIL_ZONE = 20;        // right-edge strip where hovering reveals the rail
+  var RAIL_IN = 16;          // cursor within this of the right edge => over the scrollbar
+  var RAIL_OUT = 32;         // must move out past this before the rail is "gone" (hysteresis)
+  var RAIL_HOLD = 750;       // ms to keep dodging after leaving (outlasts the rail's fade)
   var barVisible = false;    // is the (overlay) scrollbar's thumb currently up?
   var barTimer = 0;
   var railVisible = false;   // is the full rail up because the mouse is over it?
@@ -128,21 +130,29 @@
     barTimer = setTimeout(function () { barVisible = false; }, 900);
   }
 
-  // Hovering the right-edge scrollbar reveals the full rail (a short fade out on
-  // leave mirrors the OS behaviour). innerWidth is cheap (no layout read).
+  // Hovering the right-edge scrollbar reveals the full rail. There's no API for
+  // the rail's actual visibility, so we approximate it from the cursor — but with
+  // hysteresis and a hold so the dodge tracks the RAIL (which lingers after the
+  // cursor leaves and ignores small jitters) rather than the bare cursor X:
+  //   • engage the moment the cursor is over the scrollbar (within RAIL_IN);
+  //   • stay engaged through the RAIL_IN..RAIL_OUT band (covers the dodged button);
+  //   • only once the cursor is clearly away (> RAIL_OUT) start a RAIL_HOLD timer
+  //     that outlasts the rail's fade. innerWidth is cheap (no layout read).
+  function railHold() {
+    if (railVisible && !railTimer) {
+      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, RAIL_HOLD);
+    }
+  }
   function onMove(e) {
-    if (e.clientX >= window.innerWidth - RAIL_ZONE) {
+    var fromRight = window.innerWidth - e.clientX;
+    if (fromRight <= RAIL_IN) {
       railVisible = true;
       if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
-    } else if (railVisible && !railTimer) {
-      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, 350);
+    } else if (fromRight > RAIL_OUT) {
+      railHold();
     }
   }
-  function railOut() {
-    if (railVisible && !railTimer) {
-      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, 350);
-    }
-  }
+  function railOut() { railHold(); }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
