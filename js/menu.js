@@ -227,10 +227,10 @@
       if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
-      setOpen(false);                              // never leave the menu adrift
+      setOpen(false, true);                        // never leave the menu adrift
     } else if (mode === "scrub" && Math.abs(tyTarget) > 2 &&
                nav.classList.contains("open")) {
-      setOpen(false);                              // scrolled off the top → close
+      setOpen(false, true);                        // scrolled off the top → close
     }
 
     if (!REDUCE && performance.now() < easeUntil) {
@@ -266,7 +266,7 @@
     };
   }
 
-  function setOpen(open) {
+  function setOpen(open, viaScroll) {
     if (open === (btn.getAttribute("aria-expanded") === "true")) return; // already there
     if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = 0; }
     // In the two-grey-box (camouflage) state there is NO middle bar — the morph
@@ -278,6 +278,25 @@
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
+
+    // A scroll-driven close fires while the button is flying up / catching the
+    // corner (or a link-jump is scrolling the page). Morphing the panel back onto
+    // that moving bar chases a stale position and glitches, so just fade the whole
+    // panel out where it is and let the button revert on its own.
+    if (!open && viaScroll) {
+      midSpan.style.transition = ""; midSpan.style.opacity = "";   // button reverts naturally
+      nav.style.transition = "opacity .2s ease";
+      nav.style.opacity = "0";
+      nav.classList.remove("open");
+      phaseTimer = setTimeout(function () {
+        phaseTimer = 0;
+        bg.style.transition = "none";
+        bg.style.transform = "none"; bg.style.opacity = ""; bg.style.visibility = "hidden";
+        nav.style.transition = ""; nav.style.opacity = "";
+      }, 220);
+      return;
+    }
+
     var f = flipParts();
     if (open) {
       midSpan.style.transition = ""; midSpan.style.opacity = ""; // CSS hides it (X)
@@ -315,6 +334,7 @@
             phaseTimer = setTimeout(function () {
               phaseTimer = 0;
               midSpan.style.opacity = "";           // CSS (two-box keeps it hidden)
+              bg.style.transition = "none";         // don't let opacity drift back up while hidden
               bg.style.visibility = "hidden";
               bg.style.opacity = "";
               requestAnimationFrame(function () { midSpan.style.transition = ""; });
@@ -355,7 +375,7 @@
         if (window.__lenis) window.__lenis.scrollTo(t, { offset: -48, duration: 1.3 });
         else t.scrollIntoView({ behavior: "smooth" });
       }
-      setOpen(false);
+      setOpen(false, true);                          // a jump scroll follows — fade, don't morph
     });
   });
 
