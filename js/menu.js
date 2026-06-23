@@ -269,6 +269,12 @@
   function setOpen(open) {
     if (open === (btn.getAttribute("aria-expanded") === "true")) return; // already there
     if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = 0; }
+    // In the two-grey-box (camouflage) state there is NO middle bar — the morph
+    // slides a bar out into the panel, which only reads right for the 3-bar
+    // hamburger. From the two-box state the panel would otherwise emerge from /
+    // collapse into an empty gap and pop out of nothing, so here the "bar" the
+    // panel grows from is FADED in on open and FADED out on close instead.
+    var twoBox = !btn.classList.contains("scrolled");
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
@@ -278,8 +284,10 @@
       bg.style.visibility = "visible";
       bg.style.transition = "none";                 // seed exactly over the bar,
       bg.style.transform = f.seed;
+      bg.style.opacity = twoBox ? "0" : "";         // two-box: fade the bar into being
       void bg.offsetWidth;                          // commit
-      bg.style.transition = tr(".34s");             // phase 1: SLIDE left (+ widen), stay thin
+      bg.style.transition = tr(".34s") + (twoBox ? ", opacity .3s ease" : ""); // phase 1: SLIDE
+      if (twoBox) bg.style.opacity = "1";
       nav.classList.add("open");
       bg.style.transform = f.thin;
       phaseTimer = setTimeout(function () {         // phase 2: EXPAND down into the panel
@@ -298,11 +306,26 @@
         phaseTimer = 0;
         bg.style.transition = tr(".34s");
         bg.style.transform = f.seed;
-        phaseTimer = setTimeout(function () {       // hand off in one frame: real bar in,
-          phaseTimer = 0;                           // panel out -> no double, no gap
-          midSpan.style.opacity = "";               // -> CSS (hamburger middle), still instant
-          bg.style.visibility = "hidden";
-          requestAnimationFrame(function () { midSpan.style.transition = ""; });
+        phaseTimer = setTimeout(function () {       // bar is back at the centre; resolve it
+          phaseTimer = 0;
+          if (twoBox) {
+            // no real middle bar to hand to — fade the bar out, then hide
+            bg.style.transition = "opacity .28s ease";
+            bg.style.opacity = "0";
+            phaseTimer = setTimeout(function () {
+              phaseTimer = 0;
+              midSpan.style.opacity = "";           // CSS (two-box keeps it hidden)
+              bg.style.visibility = "hidden";
+              bg.style.opacity = "";
+              requestAnimationFrame(function () { midSpan.style.transition = ""; });
+            }, 290);
+          } else {
+            // hand off in one frame: real bar in, panel out -> no double, no gap
+            midSpan.style.opacity = "";             // -> CSS (hamburger middle), still instant
+            bg.style.visibility = "hidden";
+            bg.style.opacity = "";
+            requestAnimationFrame(function () { midSpan.style.transition = ""; });
+          }
         }, 340);
       }, 270);
     }
