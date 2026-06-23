@@ -381,11 +381,21 @@
 
   nav.querySelectorAll("a").forEach(function (a) {
     a.addEventListener("click", function (e) {
-      var t = document.querySelector(a.getAttribute("href"));
+      var href = a.getAttribute("href");
+      var t = document.querySelector(href);
       if (t) {
         e.preventDefault();
-        if (window.__lenis) window.__lenis.scrollTo(t, { offset: -48, duration: 1.3 });
-        else t.scrollIntoView({ behavior: "smooth" });
+        // ABOUT ME is the first section, so scroll ALL the way to the top — that
+        // covers the top-right corner buttons (nav + marks) too, instead of
+        // landing just below them. Other sections keep the -48 clearance.
+        if (href === "#about") {
+          if (window.__lenis) window.__lenis.scrollTo(0, { duration: 1.3 });
+          else window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (window.__lenis) {
+          window.__lenis.scrollTo(t, { offset: -48, duration: 1.3 });
+        } else {
+          t.scrollIntoView({ behavior: "smooth" });
+        }
       }
       setOpen(false, true);                          // a jump scroll follows — fade, don't morph
     });

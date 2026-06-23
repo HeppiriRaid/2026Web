@@ -346,11 +346,20 @@
         a.style.cursor = "pointer";
         a.addEventListener("click", function (e) {
           e.preventDefault();
-          var sel = map[(a.textContent || "").trim()];
+          var label = (a.textContent || "").trim();
+          var sel = map[label];
           var target = sel && document.querySelector(sel);
           if (!target) return;
-          if (lenis) lenis.scrollTo(target, { offset: -48, duration: 1.3 });
-          else target.scrollIntoView({ behavior: "smooth" });
+          // ABOUT ME is the first section — scroll all the way to the top so the
+          // top-right corner buttons (nav + marks) are covered too, not cut off.
+          if (label === "ABOUT") {
+            if (lenis) lenis.scrollTo(0, { duration: 1.3 });
+            else window.scrollTo({ top: 0, behavior: "smooth" });
+          } else if (lenis) {
+            lenis.scrollTo(target, { offset: -48, duration: 1.3 });
+          } else {
+            target.scrollIntoView({ behavior: "smooth" });
+          }
         });
       });
     })();
