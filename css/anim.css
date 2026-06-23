@@ -181,3 +181,27 @@ html:not(.anim) .preloader{display:none}
 .menu-nav.open a:nth-of-type(2){transition-delay:0s,.55s,.55s}
 .menu-nav.open a:nth-of-type(3){transition-delay:0s,.64s,.64s}
 .menu-nav a:hover{color:#000}
+
+/* ---- custom scrollbar -------------------------------------------------- */
+/* The native scrollbar is hidden; menu.js draws this one, so the hamburger's
+   yield stays in EXACT sync with what is actually on screen (no overlay-rail
+   guesswork). The rail (track) shows on hover; the thumb shows on scroll/hover. */
+html{scrollbar-width:none}
+html::-webkit-scrollbar{width:0;height:0}
+.cscroll-rail{
+  position:fixed;top:0;right:0;bottom:0;width:11px;z-index:86;
+  background:rgba(67,67,67,.05);opacity:0;pointer-events:none;
+  transition:opacity .25s ease;
+}
+.cscroll-rail.show{opacity:1}
+.cscroll-thumb{
+  position:fixed;right:3px;width:5px;z-index:87;
+  border-radius:3px;background:rgba(67,67,67,.42);
+  opacity:0;pointer-events:none;
+  transition:opacity .35s ease,width .16s ease,right .16s ease,background-color .2s ease;
+}
+.cscroll-thumb.show{opacity:1;pointer-events:auto}
+.cscroll-thumb.rail{width:8px;right:1.5px;background:rgba(67,67,67,.62)}
+@media (prefers-reduced-motion:reduce){
+  .cscroll-rail,.cscroll-thumb{transition:opacity .15s ease}
+}

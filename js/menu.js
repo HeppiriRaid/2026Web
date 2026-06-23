@@ -27,6 +27,14 @@
   nav.insertBefore(bg, nav.firstChild);
   var midSpan = btn.children[1];   // the hamburger's middle bar
 
+  // Custom scrollbar (the native one is hidden in CSS). We draw it ourselves so
+  // the hamburger's yield (gutterNow) can read its EXACT on-screen state instead
+  // of guessing at the native overlay rail.
+  var scRail = document.body.appendChild(document.createElement("div"));
+  scRail.className = "cscroll-rail";
+  var scThumb = document.body.appendChild(document.createElement("div"));
+  scThumb.className = "cscroll-thumb";
+
   var REDUCE = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -36,18 +44,12 @@
   var ty = 0;                // vertical offset currently applied to the button
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
-  var OVERLAY = 18;          // px to clear an overlay scrollbar while it is showing
-  var RAIL_IN = 12;          // cursor within this of the right edge => actually over the bar
-  var RAIL_OUT = 32;         // must move out past this before the rail is "gone" (hysteresis)
-  var RAIL_HOLD = 750;       // ms to keep dodging after leaving (outlasts the rail's fade)
-  var RAIL_DWELL = 130;      // ms the cursor must rest on the bar before the rail counts
-  var barVisible = false;    // is the (overlay) scrollbar's thumb currently up?
-  var barTimer = 0;
-  var railVisible = false;   // is the full rail up because the mouse is over it?
-  var railTimer = 0;
-  var dwellTimer = 0;
-  var cursorOnBar = false;   // cursor currently within RAIL_IN of the right edge
-  var dwelled = false;       // ...and has rested there long enough to count
+  var OVERLAY = 18;          // px to clear the scrollbar while it is showing
+  var RAIL_ZONE = 14;        // cursor within this of the right edge => over the bar
+  var thumbShown = false;    // is the custom thumb currently up (recent scroll)?
+  var railShown = false;     // is the custom rail currently up (hovering the bar)?
+  var thumbFadeT = 0, railFadeT = 0, railDwellT = 0;
+  var thumbTop = 0, thumbH = 0; // the drawn thumb's current band (px, viewport space)
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
@@ -94,6 +96,7 @@
     sbSpace = window.innerWidth - cw > 0;          // classic (space-taking) scrollbar?
     var ov = 460.8 * K - cw;                        // hamburger's overlap of it (≈0)
     classicGutter = ov > 0.5 ? ov + 2 : 0;
+    layoutThumb();                                  // size/position the custom thumb
     apply();
   }
 
@@ -108,81 +111,89 @@
       "px)) scale(" + scl.toFixed(3) + ")";
   }
 
-  // Where the overlay scrollbar's draggable thumb sits vertically right now, and
-  // whether it reaches the hamburger's band. The track ~ viewport height; the
-  // thumb height/position follow the usual scrollbar maths.
-  function thumbOverlapsHamburger() {
+  // ---- custom scrollbar: geometry, visibility, and the overlap test ----------
+  // We DRAW the bar, so these are facts, not guesses: the thumb band is exactly
+  // what we positioned, and railShown/thumbShown are exactly when the rail/thumb
+  // are on screen — so gutterNow() dodges in perfect sync.
+  function layoutThumb() {
     var maxScroll = pageSH - pageVH;
-    if (maxScroll <= 0) return false;
-    var thumbH = Math.max(pageVH * pageVH / pageSH, 24);
-    var thumbTop = (pageVH - thumbH) * scrollY() / maxScroll;
-    var hbTop = 14.325 * K, hbBot = 21.605 * K, M = 12; // bars' band + "about to" margin
+    thumbH = Math.max(pageVH * pageVH / pageSH, 36);
+    thumbTop = maxScroll > 0 ? (pageVH - thumbH) * scrollY() / maxScroll : 0;
+    scThumb.style.height = thumbH.toFixed(1) + "px";
+    scThumb.style.top = thumbTop.toFixed(1) + "px";
+  }
+  function syncThumb() { scThumb.classList.toggle("show", thumbShown || railShown); }
+  function thumbOverlapsMenu() {
+    var hbTop = 14.325 * K, hbBot = 21.605 * K, M = 10; // hamburger band + small margin
     return thumbTop < hbBot + M && (thumbTop + thumbH) > hbTop - M;
   }
-
-  // How far the caught hamburger slides LEFT to clear the scrollbar — only when it
-  // would actually be overlapped, otherwise 0 (original placement).
-  //  • classic (space-taking) bar: the hamburger sits in the content area, so this
-  //    is just any real overlap (≈ 0).
-  //  • overlay bar: the rail is transparent, so on scroll only the THUMB shows —
-  //    dodge while its band reaches the hamburger; but hovering the right edge
-  //    reveals the FULL-height rail, which always overlaps, so dodge then too.
   function gutterNow() {
-    if (sbSpace) return classicGutter;             // cached — no per-frame layout read
-    if (railVisible) return OVERLAY;               // full rail up (hover) -> always overlaps
-    return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
+    if (sbSpace) return classicGutter;             // classic bar: hamburger sits clear
+    if (railShown) return OVERLAY;                 // full-height rail (hover) overlaps
+    return (thumbShown && thumbOverlapsMenu()) ? OVERLAY : 0; // thumb reaches the menu
   }
 
-  // The overlay scrollbar is "up" for a short while after scrolling. Scrolling is
-  // also a moment the rail can appear/stay under a resting cursor, so re-check
-  // engage here AND hold the rail up: a rail shown by hover stays visible while
-  // you keep scrolling, so cancel any pending fade and only re-arm it once the
-  // bar finally goes down.
-  function pingBar() {
-    barVisible = true;
-    if (barTimer) clearTimeout(barTimer);
-    barTimer = setTimeout(function () { barVisible = false; barTimer = 0; maybeFade(); }, 1200);
-    if (railTimer) { clearTimeout(railTimer); railTimer = 0; }   // scrolling holds the rail up
-    maybeEngage();
+  // scroll -> show the thumb, hold it briefly, then fade (drives thumbShown)
+  function onScroll() {
+    layoutThumb();
+    if (!thumbShown) { thumbShown = true; syncThumb(); }
+    if (thumbFadeT) clearTimeout(thumbFadeT);
+    thumbFadeT = setTimeout(function () { thumbFadeT = 0; thumbShown = false; syncThumb(); }, 1100);
   }
 
-  // No API exposes the overlay rail, so treat it as showing once the cursor is
-  // genuinely ON the bar (within RAIL_IN), has RESTED there (RAIL_DWELL — passing
-  // through doesn't count) AND the bar is UP (barVisible — a cold bar shows
-  // nothing). It can appear by moving onto an up bar OR by scrolling while the
-  // cursor rests on it (maybeEngage, from onMove + pingBar). Crucially the rail
-  // also STAYS up while you keep scrolling even after the cursor leaves it, so it
-  // only fades once you are NEITHER on it NOR scrolling (maybeFade). Engaged it
-  // holds through the RAIL_IN..RAIL_OUT band; the fade waits out RAIL_HOLD.
-  function maybeEngage() {
-    if (cursorOnBar && dwelled && barVisible) {
-      railVisible = true;
-      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
-    }
-  }
-  function maybeFade() {
-    if (railVisible && !cursorOnBar && !barVisible && !railTimer) {
-      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, RAIL_HOLD);
-    }
-  }
-  function leaveBar() {
-    cursorOnBar = false; dwelled = false;
-    if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = 0; }
+  // hover near the right edge -> bring up the rail (+ a fatter thumb); leaving lets
+  // it fade. railShown is our own flag, so the dodge tracks the rail exactly.
+  function showRail(on) {
+    if (on === railShown) return;
+    railShown = on;
+    scRail.classList.toggle("show", on);
+    scThumb.classList.toggle("rail", on);
+    if (on) layoutThumb();
+    syncThumb();
   }
   function onMove(e) {
-    var fromRight = window.innerWidth - e.clientX;
-    if (fromRight <= RAIL_IN) {                 // on the scrollbar
-      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }     // staying -> cancel fade
-      if (!cursorOnBar) {                       // just arrived -> start the dwell clock
-        cursorOnBar = true;
-        dwellTimer = setTimeout(function () { dwellTimer = 0; dwelled = true; maybeEngage(); }, RAIL_DWELL);
+    if (dragY !== null) return;                    // a thumb-drag drives scroll itself
+    var onBar = (window.innerWidth - e.clientX) <= RAIL_ZONE;
+    if (onBar) {
+      if (railFadeT) { clearTimeout(railFadeT); railFadeT = 0; }
+      if (!railShown && !railDwellT) {             // tiny dwell so a pass-through is ignored
+        railDwellT = setTimeout(function () { railDwellT = 0; showRail(true); }, 110);
       }
-    } else {                                    // off the scrollbar
-      leaveBar();
-      if (fromRight > RAIL_OUT) maybeFade();     // fade only if not still scrolling
+    } else {
+      if (railDwellT) { clearTimeout(railDwellT); railDwellT = 0; }
+      if (railShown && !railFadeT) {
+        railFadeT = setTimeout(function () { railFadeT = 0; showRail(false); }, 220);
+      }
     }
   }
-  function railOut() { leaveBar(); maybeFade(); }
+  function railOut() {
+    if (railDwellT) { clearTimeout(railDwellT); railDwellT = 0; }
+    if (railShown && !railFadeT) {
+      railFadeT = setTimeout(function () { railFadeT = 0; showRail(false); }, 220);
+    }
+  }
+
+  // drag the thumb to scroll
+  var dragY = null, dragScroll = 0;
+  scThumb.addEventListener("mousedown", function (e) {
+    e.preventDefault();
+    dragY = e.clientY; dragScroll = scrollY();
+    showRail(true);
+    document.addEventListener("mousemove", onDrag);
+    document.addEventListener("mouseup", endDrag);
+  });
+  function onDrag(e) {
+    var maxScroll = pageSH - pageVH, range = pageVH - thumbH;
+    if (range <= 0) return;
+    var t = Math.max(0, Math.min(maxScroll, dragScroll + (e.clientY - dragY) * (maxScroll / range)));
+    if (window.__lenis) window.__lenis.scrollTo(t, { immediate: true });
+    else window.scrollTo(0, t);
+  }
+  function endDrag() {
+    dragY = null;
+    document.removeEventListener("mousemove", onDrag);
+    document.removeEventListener("mouseup", endDrag);
+  }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
@@ -285,7 +296,7 @@
   if (window.gsap && window.gsap.ticker) window.gsap.ticker.add(update);
   else (function loop() { update(); requestAnimationFrame(loop); })();
   window.addEventListener("resize", place);
-  window.addEventListener("scroll", pingBar, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("mousemove", onMove, { passive: true });
   document.addEventListener("mouseleave", railOut);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
