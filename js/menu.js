@@ -56,6 +56,8 @@
   var _ax, _ay, _as;         // last-applied tx / ty / scl (skip redundant writes)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var easeUntil = 0;         // performance.now() until which we ease the offset
+  var yieldHoldUntil = 0;    // …and until which the scrollbar yield stays disabled
+                             // (a beat past easeUntil, so the morph fully settles first)
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
   var markBottomDoc = 36 * K; // marks' lower edge in document space (cached)
 
@@ -223,7 +225,10 @@
     var sclTarget = nm === "catch" ? HAMBURGER_SCALE : 1; // shrink once caught
 
     if (nm !== mode) {
-      if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
+      if (mode !== null && !REDUCE) {
+        easeUntil = performance.now() + 1200;
+        yieldHoldUntil = easeUntil + 350;          // hold the yield a beat past the settle
+      }
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
       setOpen(false, true);                        // never leave the menu adrift
@@ -232,11 +237,13 @@
       setOpen(false, true);                        // scrolled off the top → close
     }
 
-    // While the menu is morphing between box and hamburger (the mode-change ease)
-    // it must NOT yield to the scrollbar/rail at all — only once it has settled
-    // into the caught corner. Computed here so easeUntil is already (re)armed.
+    // The menu must NOT yield to the scrollbar/rail until the box<->hamburger
+    // transition is COMPLETELY finished — held until yieldHoldUntil (a beat past
+    // the position settle) so the morph never overlaps the yield. The position
+    // ease itself still uses easeUntil so the catch feel is unchanged.
     var morphing = !REDUCE && performance.now() < easeUntil;
-    var txTarget = (nm === "catch" && !morphing) ? -gutterNow() : 0;
+    var yieldHeld = !REDUCE && performance.now() < yieldHoldUntil;
+    var txTarget = (nm === "catch" && !yieldHeld) ? -gutterNow() : 0;
 
     if (morphing) {
       ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime
