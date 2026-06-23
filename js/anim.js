@@ -319,17 +319,22 @@
       root.classList.add("cursor-ready");
 
       var mx = window.innerWidth / 2, my = window.innerHeight / 2, rx = mx, ry = my;
-      var dx = gsap.quickSetter(dot, "left", "px"),
-          dy = gsap.quickSetter(dot, "top", "px"),
-          rxS = gsap.quickSetter(ring, "left", "px"),
-          ryS = gsap.quickSetter(ring, "top", "px");
-      dx(mx); dy(my); rxS(rx); ryS(ry);
+      // Move the cursor via transform (compositor) instead of left/top, which force
+      // a layout every frame. The trailing translate(-50%,-50%) keeps it centred
+      // and auto-adjusts when the ring grows on hover — so the visual is identical.
+      function setDot() { dot.style.transform = "translate3d(" + mx + "px," + my + "px,0) translate(-50%,-50%)"; }
+      function setRing() { ring.style.transform = "translate3d(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px,0) translate(-50%,-50%)"; }
+      setDot(); setRing();
 
       window.addEventListener("mousemove", function (e) {
-        mx = e.clientX; my = e.clientY; dx(mx); dy(my);
+        mx = e.clientX; my = e.clientY; setDot();
       }, { passive: true });
       gsap.ticker.add(function () {
-        rx += (mx - rx) * 0.18; ry += (my - ry) * 0.18; rxS(rx); ryS(ry);
+        var nrx = rx + (mx - rx) * 0.18, nry = ry + (my - ry) * 0.18;
+        if (Math.abs(mx - nrx) < 0.05) nrx = mx;          // snap when essentially there
+        if (Math.abs(my - nry) < 0.05) nry = my;
+        if (nrx === rx && nry === ry) return;             // settled → no write at all
+        rx = nrx; ry = nry; setRing();
       });
       document.addEventListener("mouseover", function (e) {
         if (e.target.closest("a, .plus")) ring.classList.add("is-hover");

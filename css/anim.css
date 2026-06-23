@@ -199,9 +199,11 @@ html::-webkit-scrollbar{width:0;height:0}
 }
 .cscroll-rail.show{opacity:1}
 .cscroll-thumb{
-  position:fixed;right:3px;width:5px;z-index:92;
+  position:fixed;top:0;right:3px;width:5px;z-index:92;
   border-radius:3px;background:rgba(67,67,67,.42);
   opacity:0;pointer-events:none;
+  /* vertical position is driven by transform:translateY (set in menu.js) so it
+     tracks scroll on the compositor without forcing a layout each frame. */
   transition:opacity .35s ease,width .16s ease,right .16s ease,background-color .2s ease;
 }
 .cscroll-thumb.show{opacity:1;pointer-events:auto}
