@@ -46,6 +46,8 @@
   var railVisible = false;   // is the full rail up because the mouse is over it?
   var railTimer = 0;
   var dwellTimer = 0;
+  var cursorOnBar = false;   // cursor currently within RAIL_IN of the right edge
+  var dwelled = false;       // ...and has rested there long enough to count
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
@@ -131,42 +133,52 @@
     return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
-  // The overlay scrollbar is only "up" (and so can reveal its rail on hover) for a
-  // short while after scrolling; track that window so a hover over a cold/hidden
-  // scrollbar never yields.
+  // The overlay scrollbar is only "up" (so its rail can show) for a short while
+  // after scrolling; track that window. Scrolling is also one of the two moments
+  // the rail can appear under a resting cursor, so re-check the dodge here.
   function pingBar() {
     barVisible = true;
     if (barTimer) clearTimeout(barTimer);
     barTimer = setTimeout(function () { barVisible = false; barTimer = 0; }, 1200);
+    maybeEngage();
   }
 
-  // Hovering the right-edge scrollbar reveals the full rail. There's no API for the
-  // rail's actual visibility, so we approximate "the cursor is intentionally on the
-  // visible scrollbar" with three guards (anything weaker yielded for nothing):
-  //   • UP: only while barVisible (just scrolled) — a cold/hidden bar can't show;
-  //   • ON: within RAIL_IN of the edge — actually over the bar, not merely near it;
-  //   • DWELL: rested there RAIL_DWELL ms — passing the cursor through doesn't count.
-  // Once engaged it holds through the RAIL_IN..RAIL_OUT band (covers the dodged
-  // button) and while hovering, fading on RAIL_HOLD once clearly away (> RAIL_OUT).
+  // No API exposes the overlay rail, so treat it as showing when the cursor is
+  // genuinely ON the bar (within RAIL_IN), has RESTED there (RAIL_DWELL — passing
+  // through doesn't count) AND the bar is UP (barVisible — a cold bar shows
+  // nothing). The rail appears at two moments — moving onto an up bar, OR
+  // scrolling while the cursor already rests on it — so maybeEngage() is checked
+  // from both onMove and pingBar. Once engaged it holds through the
+  // RAIL_IN..RAIL_OUT band and while hovering, fading on RAIL_HOLD once away.
+  function maybeEngage() {
+    if (cursorOnBar && dwelled && barVisible) {
+      railVisible = true;
+      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
+    }
+  }
   function railHold() {
     if (railVisible && !railTimer) {
       railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, RAIL_HOLD);
     }
   }
-  function clearDwell() { if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = 0; } }
+  function leaveBar() {
+    cursorOnBar = false; dwelled = false;
+    if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = 0; }
+  }
   function onMove(e) {
     var fromRight = window.innerWidth - e.clientX;
     if (fromRight <= RAIL_IN) {                 // on the scrollbar
       if (railTimer) { clearTimeout(railTimer); railTimer = 0; }     // staying -> cancel fade
-      if (!railVisible && barVisible && !dwellTimer) {               // warm + just arrived:
-        dwellTimer = setTimeout(function () { dwellTimer = 0; railVisible = true; }, RAIL_DWELL);
+      if (!cursorOnBar) {                       // just arrived -> start the dwell clock
+        cursorOnBar = true;
+        dwellTimer = setTimeout(function () { dwellTimer = 0; dwelled = true; maybeEngage(); }, RAIL_DWELL);
       }
     } else {                                    // off the scrollbar
-      clearDwell();                             // didn't rest on it -> never engages
+      leaveBar();
       if (fromRight > RAIL_OUT) railHold();     // (RAIL_IN..RAIL_OUT band just holds)
     }
   }
-  function railOut() { clearDwell(); railHold(); }
+  function railOut() { leaveBar(); railHold(); }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
