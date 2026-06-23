@@ -133,31 +133,35 @@
     return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
-  // The overlay scrollbar is only "up" (so its rail can show) for a short while
-  // after scrolling; track that window. Scrolling is also one of the two moments
-  // the rail can appear under a resting cursor, so re-check the dodge here.
+  // The overlay scrollbar is "up" for a short while after scrolling. Scrolling is
+  // also a moment the rail can appear/stay under a resting cursor, so re-check
+  // engage here AND hold the rail up: a rail shown by hover stays visible while
+  // you keep scrolling, so cancel any pending fade and only re-arm it once the
+  // bar finally goes down.
   function pingBar() {
     barVisible = true;
     if (barTimer) clearTimeout(barTimer);
-    barTimer = setTimeout(function () { barVisible = false; barTimer = 0; }, 1200);
+    barTimer = setTimeout(function () { barVisible = false; barTimer = 0; maybeFade(); }, 1200);
+    if (railTimer) { clearTimeout(railTimer); railTimer = 0; }   // scrolling holds the rail up
     maybeEngage();
   }
 
-  // No API exposes the overlay rail, so treat it as showing when the cursor is
+  // No API exposes the overlay rail, so treat it as showing once the cursor is
   // genuinely ON the bar (within RAIL_IN), has RESTED there (RAIL_DWELL — passing
   // through doesn't count) AND the bar is UP (barVisible — a cold bar shows
-  // nothing). The rail appears at two moments — moving onto an up bar, OR
-  // scrolling while the cursor already rests on it — so maybeEngage() is checked
-  // from both onMove and pingBar. Once engaged it holds through the
-  // RAIL_IN..RAIL_OUT band and while hovering, fading on RAIL_HOLD once away.
+  // nothing). It can appear by moving onto an up bar OR by scrolling while the
+  // cursor rests on it (maybeEngage, from onMove + pingBar). Crucially the rail
+  // also STAYS up while you keep scrolling even after the cursor leaves it, so it
+  // only fades once you are NEITHER on it NOR scrolling (maybeFade). Engaged it
+  // holds through the RAIL_IN..RAIL_OUT band; the fade waits out RAIL_HOLD.
   function maybeEngage() {
     if (cursorOnBar && dwelled && barVisible) {
       railVisible = true;
       if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
     }
   }
-  function railHold() {
-    if (railVisible && !railTimer) {
+  function maybeFade() {
+    if (railVisible && !cursorOnBar && !barVisible && !railTimer) {
       railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, RAIL_HOLD);
     }
   }
@@ -175,10 +179,10 @@
       }
     } else {                                    // off the scrollbar
       leaveBar();
-      if (fromRight > RAIL_OUT) railHold();     // (RAIL_IN..RAIL_OUT band just holds)
+      if (fromRight > RAIL_OUT) maybeFade();     // fade only if not still scrolling
     }
   }
-  function railOut() { leaveBar(); railHold(); }
+  function railOut() { leaveBar(); maybeFade(); }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
