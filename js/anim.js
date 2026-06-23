@@ -156,7 +156,7 @@
       if (el.matches(".ph img")) return el.hasAttribute("data-vwipe") ? "vimage" : "image";
       if (el.matches(".box")) return "box";
       if (el.matches(".ltick") || el.matches(".fr > i")) return "tick";
-      if (el.matches(".tri") || el.matches(".sq") || el.matches(".sqg")) return "pop";
+      if (el.matches(".tri") || el.matches(".sq")) return "pop";
       return "slide";
     }
     function revealBy(type, els, o) {
@@ -175,8 +175,10 @@
     }
 
     /* ---------- collect every animated element ------------------------- */
+    // NB: .sqg (the two top-right corner squares) are intentionally excluded —
+    // they render statically with no appear motion.
     var all = gsap.utils.toArray(
-      ".brand, .nav, .h, .copy, .cap, .tri, .sq, .sqg, .ltick, .fr > i, .plus, .ph img, .box"
+      ".brand, .nav, .h, .copy, .cap, .tri, .sq, .ltick, .fr > i, .plus, .ph img, .box"
     );
 
     // split into first-screen (intro) vs below-fold (scroll)

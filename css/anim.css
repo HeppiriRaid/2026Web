@@ -18,7 +18,6 @@
 .anim .cap,
 .anim .tri,
 .anim .sq,
-.anim .sqg,
 .anim .ltick,
 .anim .fr > i,
 .anim .plus{
@@ -82,7 +81,7 @@ html:not(.anim) .preloader{display:none}
 /* ---- reduced motion: everything static, instantly ------------- */
 @media (prefers-reduced-motion:reduce){
   .anim .brand,.anim .nav,.anim .h,.anim .copy,.anim .cap,
-  .anim .tri,.anim .sq,.anim .sqg,.anim .ltick,.anim .fr > i,
+  .anim .tri,.anim .sq,.anim .ltick,.anim .fr > i,
   .anim .plus,.anim .ph img,.anim .box{
     opacity:1 !important;
     clip-path:none !important;
