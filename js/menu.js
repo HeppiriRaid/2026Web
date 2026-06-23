@@ -193,35 +193,56 @@
     apply();
   }
 
-  // The transform that maps the panel's own box exactly onto the hamburger's
-  // middle bar (transform-origin is the panel's top-left). Seeding the bg with
-  // this and then releasing it to identity is a FLIP: one element distorting
-  // from the bar into the full panel.
-  function flipToBar() {
+  // The morph is a FLIP split into two phases: SLIDE (bar -> thin full-width line
+  // at the panel top) then EXPAND (that line -> full panel). flipParts() gives the
+  // transforms mapping the panel's box onto the bar (seed) and onto that thin line.
+  var WE = "cubic-bezier(.38,0,.5,1)";
+  var phaseTimer = 0;
+  function tr(dur) {
+    return "transform " + dur + " " + WE + ", background-color .55s ease, box-shadow .55s ease";
+  }
+  function flipParts() {
     var b = btn.children[1].getBoundingClientRect();   // the middle bar
     var p = nav.getBoundingClientRect();               // the panel's natural box
-    if (!p.width || !p.height) return "none";
-    return "translate(" + (b.left - p.left).toFixed(2) + "px," +
-           (b.top - p.top).toFixed(2) + "px) scale(" +
-           (b.width / p.width).toFixed(4) + "," + (b.height / p.height).toFixed(4) + ")";
+    if (!p.width || !p.height) return { seed: "none", thin: "none" };
+    var tx = (b.left - p.left).toFixed(2), ty = (b.top - p.top).toFixed(2);
+    var sx = (b.width / p.width).toFixed(4), sy = (b.height / p.height).toFixed(4);
+    return {
+      seed: "translate(" + tx + "px," + ty + "px) scale(" + sx + "," + sy + ")",
+      thin: "translate(0px,0px) scale(1," + sy + ")"
+    };
   }
 
   function setOpen(open) {
     if (open === (btn.getAttribute("aria-expanded") === "true")) return; // already there
+    if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = 0; }
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
+    var f = flipParts();
     if (open) {
-      bg.style.transition = "none";        // seed the bg exactly over the bar,
-      bg.style.transform = flipToBar();    // with no tween...
-      void bg.offsetWidth;                 // (commit it)
-      bg.style.transition = "";            // ...then hand back to the CSS ease and
+      bg.style.visibility = "visible";
+      bg.style.transition = "none";                 // seed exactly over the bar,
+      bg.style.transform = f.seed;
+      void bg.offsetWidth;                          // commit
+      bg.style.transition = tr(".34s");             // phase 1: SLIDE left (+ widen), stay thin
       nav.classList.add("open");
-      bg.style.transform = "none";         // distort the bar out into the panel
+      bg.style.transform = f.thin;
+      phaseTimer = setTimeout(function () {         // phase 2: EXPAND down into the panel
+        phaseTimer = 0;
+        bg.style.transition = tr(".46s");
+        bg.style.transform = "translate(0px,0px) scale(1,1)";
+      }, 300);
     } else {
-      bg.style.transition = "";
-      bg.style.transform = flipToBar();    // distort the panel back into the bar
+      bg.style.transition = tr(".3s");              // close: collapse back to the thin line
+      bg.style.transform = f.thin;
       nav.classList.remove("open");
+      phaseTimer = setTimeout(function () {         // ...then slide it back onto the bar
+        phaseTimer = 0;
+        bg.style.transition = tr(".34s");
+        bg.style.transform = f.seed;
+        phaseTimer = setTimeout(function () { phaseTimer = 0; bg.style.visibility = "hidden"; }, 360);
+      }, 270);
     }
   }
 

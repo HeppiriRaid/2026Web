@@ -157,17 +157,12 @@ html:not(.anim) .preloader{display:none}
   background:#b3b1b1;visibility:hidden;
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,0);
   transform-origin:0 0;
-  transition:transform .62s cubic-bezier(.38,0,.5,1),
-             background-color .5s ease,box-shadow .5s ease,
-             visibility 0s linear .62s;
+  /* the morph runs in two phases driven inline by menu.js — slide-left, then
+     expand — plus the grey->paper recolour; visibility is toggled there too. */
 }
 .menu-nav.open .menu-bg{
-  visibility:visible;
   background:var(--paper);
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,.10);
-  transition:transform .62s cubic-bezier(.38,0,.5,1),
-             background-color .5s ease,box-shadow .5s ease,
-             visibility 0s linear 0s;
 }
 .menu-nav a{
   /* same setting as the original top-right .nav text: --disp 400, #434343,
@@ -182,7 +177,7 @@ html:not(.anim) .preloader{display:none}
 /* items appear once the panel has mostly grown, lightly staggered.
    nth-of-type (not nth-child) so the .menu-bg first child doesn't shift them. */
 .menu-nav.open a{opacity:1;transform:translateX(0)}
-.menu-nav.open a:nth-of-type(1){transition-delay:0s,.22s,.22s}
-.menu-nav.open a:nth-of-type(2){transition-delay:0s,.3s,.3s}
-.menu-nav.open a:nth-of-type(3){transition-delay:0s,.38s,.38s}
+.menu-nav.open a:nth-of-type(1){transition-delay:0s,.46s,.46s}
+.menu-nav.open a:nth-of-type(2){transition-delay:0s,.55s,.55s}
+.menu-nav.open a:nth-of-type(3){transition-delay:0s,.64s,.64s}
 .menu-nav a:hover{color:#000}
