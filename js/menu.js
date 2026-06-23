@@ -105,6 +105,11 @@
   // Skips the write when nothing changed (no per-frame style churn when idle).
   function apply() {
     if (tx === _ax && ty === _ay && scl === _as) return;
+    // The extended panel yields WITH the button: the same horizontal dodge (tx)
+    // is applied to the nav so the gap between panel and hamburger never changes
+    // (perfect sync). Only rewrite it when tx actually moves — not on the
+    // per-frame scrub ride, which changes ty only — to keep the writes minimal.
+    if (tx !== _ax) nav.style.transform = tx ? "translateX(" + tx.toFixed(2) + "px)" : "";
     _ax = tx; _ay = ty; _as = scl;
     btn.style.transform =
       "translate(calc(-50% + " + tx.toFixed(2) + "px), calc(-50% + " + ty.toFixed(2) +
