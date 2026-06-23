@@ -32,6 +32,7 @@
   var OVERLAY = 18;          // px to clear an overlay scrollbar while it is showing
   var barVisible = false;    // is the (overlay) scrollbar currently up?
   var barTimer = 0;
+  var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var easeUntil = 0;         // performance.now() until which we ease the offset
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
@@ -65,6 +66,8 @@
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;
+    pageVH = document.documentElement.clientHeight;
+    pageSH = document.documentElement.scrollHeight;
     apply();
   }
 
@@ -76,19 +79,31 @@
       "px)) scale(" + scl.toFixed(3) + ")";
   }
 
-  // How far the caught hamburger must slide LEFT to clear the scrollbar — and
-  // ONLY when the bar would actually overlap it; otherwise 0 (original placement).
-  //  • classic (space-taking) bar: the hamburger already sits in the content
-  //    area, so this is just any real overlap (≈ 0).
-  //  • overlay bar: floats over the right edge, but only while it is showing,
-  //    which we mirror with recent scroll activity (idle => 0 => original).
+  // Where the overlay scrollbar's draggable thumb sits vertically right now, and
+  // whether it reaches the hamburger's band. The track ~ viewport height; the
+  // thumb height/position follow the usual scrollbar maths.
+  function thumbOverlapsHamburger() {
+    var maxScroll = pageSH - pageVH;
+    if (maxScroll <= 0) return false;
+    var thumbH = Math.max(pageVH * pageVH / pageSH, 24);
+    var thumbTop = (pageVH - thumbH) * scrollY() / maxScroll;
+    var hbTop = 14.325 * K, hbBot = 21.605 * K, M = 12; // bars' band + "about to" margin
+    return thumbTop < hbBot + M && (thumbTop + thumbH) > hbTop - M;
+  }
+
+  // How far the caught hamburger slides LEFT to clear the scrollbar — only when it
+  // would actually be overlapped, otherwise 0 (original placement).
+  //  • classic (space-taking) bar: the hamburger sits in the content area, so this
+  //    is just any real overlap (≈ 0).
+  //  • overlay bar: the rail is transparent and only the THUMB shows (on scroll),
+  //    so dodge only while that visible thumb's band reaches the hamburger.
   function gutterNow() {
     var de = document.documentElement;
     if (window.innerWidth - de.clientWidth > 0) {
       var overlap = 460.8 * K - de.clientWidth;
       return overlap > 0.5 ? overlap + 2 : 0;
     }
-    return barVisible ? OVERLAY : 0;
+    return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
   // The overlay scrollbar appears on scroll and fades when idle; track that so
