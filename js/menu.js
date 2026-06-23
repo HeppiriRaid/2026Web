@@ -25,6 +25,7 @@
   var bg = document.createElement("div");
   bg.className = "menu-bg";
   nav.insertBefore(bg, nav.firstChild);
+  var midSpan = btn.children[1];   // the hamburger's middle bar
 
   var REDUCE = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -221,6 +222,7 @@
     nav.setAttribute("aria-hidden", open ? "false" : "true");
     var f = flipParts();
     if (open) {
+      midSpan.style.transition = ""; midSpan.style.opacity = ""; // CSS hides it (X)
       bg.style.visibility = "visible";
       bg.style.transition = "none";                 // seed exactly over the bar,
       bg.style.transform = f.seed;
@@ -234,14 +236,22 @@
         bg.style.transform = "translate(0px,0px) scale(1,1)";
       }, 300);
     } else {
+      // hold the real middle bar hidden so it doesn't double with the returning
+      // panel — the panel itself is what travels back to the cross centre.
+      midSpan.style.transition = "none"; midSpan.style.opacity = "0";
       bg.style.transition = tr(".3s");              // close: collapse back to the thin line
       bg.style.transform = f.thin;
-      nav.classList.remove("open");
+      nav.classList.remove("open");                 // un-cross the X into the hamburger
       phaseTimer = setTimeout(function () {         // ...then slide it back onto the bar
         phaseTimer = 0;
         bg.style.transition = tr(".34s");
         bg.style.transform = f.seed;
-        phaseTimer = setTimeout(function () { phaseTimer = 0; bg.style.visibility = "hidden"; }, 360);
+        phaseTimer = setTimeout(function () {       // hand off in one frame: real bar in,
+          phaseTimer = 0;                           // panel out -> no double, no gap
+          midSpan.style.opacity = "";               // -> CSS (hamburger middle), still instant
+          bg.style.visibility = "hidden";
+          requestAnimationFrame(function () { midSpan.style.transition = ""; });
+        }, 340);
       }, 270);
     }
   }
