@@ -30,8 +30,11 @@
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
   var OVERLAY = 18;          // px to clear an overlay scrollbar while it is showing
-  var barVisible = false;    // is the (overlay) scrollbar currently up?
+  var RAIL_ZONE = 20;        // right-edge strip where hovering reveals the rail
+  var barVisible = false;    // is the (overlay) scrollbar's thumb currently up?
   var barTimer = 0;
+  var railVisible = false;   // is the full rail up because the mouse is over it?
+  var railTimer = 0;
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
@@ -108,19 +111,37 @@
   // would actually be overlapped, otherwise 0 (original placement).
   //  • classic (space-taking) bar: the hamburger sits in the content area, so this
   //    is just any real overlap (≈ 0).
-  //  • overlay bar: the rail is transparent and only the THUMB shows (on scroll),
-  //    so dodge only while that visible thumb's band reaches the hamburger.
+  //  • overlay bar: the rail is transparent, so on scroll only the THUMB shows —
+  //    dodge while its band reaches the hamburger; but hovering the right edge
+  //    reveals the FULL-height rail, which always overlaps, so dodge then too.
   function gutterNow() {
     if (sbSpace) return classicGutter;             // cached — no per-frame layout read
+    if (railVisible) return OVERLAY;               // full rail up (hover) -> always overlaps
     return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
-  // The overlay scrollbar appears on scroll and fades when idle; track that so
-  // the hamburger only yields while the bar is actually up.
+  // The overlay scrollbar's thumb appears on scroll and fades when idle; track
+  // that so the hamburger only yields while the thumb is actually up.
   function pingBar() {
     barVisible = true;
     if (barTimer) clearTimeout(barTimer);
     barTimer = setTimeout(function () { barVisible = false; }, 900);
+  }
+
+  // Hovering the right-edge scrollbar reveals the full rail (a short fade out on
+  // leave mirrors the OS behaviour). innerWidth is cheap (no layout read).
+  function onMove(e) {
+    if (e.clientX >= window.innerWidth - RAIL_ZONE) {
+      railVisible = true;
+      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
+    } else if (railVisible && !railTimer) {
+      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, 350);
+    }
+  }
+  function railOut() {
+    if (railVisible && !railTimer) {
+      railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, 350);
+    }
   }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
@@ -170,6 +191,8 @@
   else (function loop() { update(); requestAnimationFrame(loop); })();
   window.addEventListener("resize", place);
   window.addEventListener("scroll", pingBar, { passive: true });
+  window.addEventListener("mousemove", onMove, { passive: true });
+  document.addEventListener("mouseleave", railOut);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
 
   btn.addEventListener("click", function (e) {
