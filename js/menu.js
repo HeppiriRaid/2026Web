@@ -37,13 +37,15 @@
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
   var OVERLAY = 18;          // px to clear an overlay scrollbar while it is showing
-  var RAIL_IN = 16;          // cursor within this of the right edge => over the scrollbar
+  var RAIL_IN = 12;          // cursor within this of the right edge => actually over the bar
   var RAIL_OUT = 32;         // must move out past this before the rail is "gone" (hysteresis)
   var RAIL_HOLD = 750;       // ms to keep dodging after leaving (outlasts the rail's fade)
+  var RAIL_DWELL = 130;      // ms the cursor must rest on the bar before the rail counts
   var barVisible = false;    // is the (overlay) scrollbar's thumb currently up?
   var barTimer = 0;
   var railVisible = false;   // is the full rail up because the mouse is over it?
   var railTimer = 0;
+  var dwellTimer = 0;
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
@@ -139,29 +141,32 @@
   }
 
   // Hovering the right-edge scrollbar reveals the full rail. There's no API for the
-  // rail's actual visibility, so we approximate it — but the rail only appears when
-  // the scrollbar is UP, so the hover only engages while barVisible (i.e. just
-  // scrolled). Hovering the bare edge when nothing is showing does NOT yield. Then:
-  //   • engage when the cursor is over the scrollbar (within RAIL_IN) AND it's up;
-  //   • stay engaged through the RAIL_IN..RAIL_OUT band (covers the dodged button)
-  //     and while the cursor keeps hovering, even after the warm window lapses;
-  //   • only once the cursor is clearly away (> RAIL_OUT) start a RAIL_HOLD timer
-  //     that outlasts the rail's fade. innerWidth is cheap (no layout read).
+  // rail's actual visibility, so we approximate "the cursor is intentionally on the
+  // visible scrollbar" with three guards (anything weaker yielded for nothing):
+  //   • UP: only while barVisible (just scrolled) — a cold/hidden bar can't show;
+  //   • ON: within RAIL_IN of the edge — actually over the bar, not merely near it;
+  //   • DWELL: rested there RAIL_DWELL ms — passing the cursor through doesn't count.
+  // Once engaged it holds through the RAIL_IN..RAIL_OUT band (covers the dodged
+  // button) and while hovering, fading on RAIL_HOLD once clearly away (> RAIL_OUT).
   function railHold() {
     if (railVisible && !railTimer) {
       railTimer = setTimeout(function () { railVisible = false; railTimer = 0; }, RAIL_HOLD);
     }
   }
+  function clearDwell() { if (dwellTimer) { clearTimeout(dwellTimer); dwellTimer = 0; } }
   function onMove(e) {
     var fromRight = window.innerWidth - e.clientX;
-    if (fromRight <= RAIL_IN) {
-      if (barVisible) railVisible = true;       // rail shows only if the bar is up
-      if (railTimer) { clearTimeout(railTimer); railTimer = 0; } // in zone -> hold
-    } else if (fromRight > RAIL_OUT) {
-      railHold();
+    if (fromRight <= RAIL_IN) {                 // on the scrollbar
+      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }     // staying -> cancel fade
+      if (!railVisible && barVisible && !dwellTimer) {               // warm + just arrived:
+        dwellTimer = setTimeout(function () { dwellTimer = 0; railVisible = true; }, RAIL_DWELL);
+      }
+    } else {                                    // off the scrollbar
+      clearDwell();                             // didn't rest on it -> never engages
+      if (fromRight > RAIL_OUT) railHold();     // (RAIL_IN..RAIL_OUT band just holds)
     }
   }
-  function railOut() { railHold(); }
+  function railOut() { clearDwell(); railHold(); }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
