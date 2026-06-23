@@ -221,7 +221,6 @@
     // scrub: keep the button centred on the (moving) marks. catch: corner (0).
     var tyTarget = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
     var sclTarget = nm === "catch" ? HAMBURGER_SCALE : 1; // shrink once caught
-    var txTarget = nm === "catch" ? -gutterNow() : 0;     // yield only when the bar overlaps
 
     if (nm !== mode) {
       if (mode !== null && !REDUCE) easeUntil = performance.now() + 1200;
@@ -233,7 +232,13 @@
       setOpen(false, true);                        // scrolled off the top → close
     }
 
-    if (!REDUCE && performance.now() < easeUntil) {
+    // While the menu is morphing between box and hamburger (the mode-change ease)
+    // it must NOT yield to the scrollbar/rail at all — only once it has settled
+    // into the caught corner. Computed here so easeUntil is already (re)armed.
+    var morphing = !REDUCE && performance.now() < easeUntil;
+    var txTarget = (nm === "catch" && !morphing) ? -gutterNow() : 0;
+
+    if (morphing) {
       ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime
       scl += (sclTarget - scl) * 0.07;             // shrink/grow eases in with it
     } else {
