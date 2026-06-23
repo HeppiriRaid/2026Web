@@ -134,12 +134,9 @@ html:not(.anim) .preloader{display:none}
              opacity .3s ease,transform .35s ease,background-color .3s ease;
 }
 .menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
-/* middle bar doesn't vanish — it slides off to the left and hands over to the
-   panel background (.menu-nav::before), which grows out of that same spot */
-.menu-btn[aria-expanded="true"] span:nth-child(2){
-  opacity:0;transform:translateX(-280%);
-  transition:transform .55s cubic-bezier(.38,0,.5,1),opacity .35s ease;
-}
+/* middle bar hides instantly — the panel background (.menu-bg) is seeded exactly
+   over it and distorts out into the panel in one continuous shape (see menu.js) */
+.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0;transition:opacity 0s}
 .menu-btn[aria-expanded="true"] span:nth-child(3){top:calc(var(--mk,4) * 16.75px);transform:rotate(-45deg)}
 
 .menu-nav{
@@ -150,24 +147,27 @@ html:not(.anim) .preloader{display:none}
   pointer-events:none;
 }
 .menu-nav.open{pointer-events:auto}
-/* The background panel is the middle bar made large: it starts as a small grey
-   bar-sliver pinned to the hamburger (right edge, at the middle-bar height) and
-   distorts open to the left into the paper panel, on the same slow->fast->slow
-   ease as the reveal wipes. The text rides on top separately so it never warps. */
-.menu-nav::before{
-  content:"";position:absolute;inset:0;z-index:-1;
-  background:#b3b1b1;
+/* The background panel IS the middle bar made large. menu.js seeds it (a FLIP)
+   exactly over the hamburger's middle bar, then this single element distorts —
+   translate+scale on the worksEase curve — out into the paper panel, recolouring
+   grey->paper as it goes. No cross-fade: one continuous, warping shape. The text
+   rides on top separately so it never warps. */
+.menu-bg{
+  position:absolute;inset:0;z-index:-1;
+  background:#b3b1b1;visibility:hidden;
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,0);
-  transform-origin:100% calc(var(--mk,4) * 4px);
-  transform:scaleX(.16) scaleY(.06);
-  opacity:0;
-  transition:transform .6s cubic-bezier(.38,0,.5,1),
-             background-color .5s ease,box-shadow .5s ease,opacity .2s ease;
+  transform-origin:0 0;
+  transition:transform .62s cubic-bezier(.38,0,.5,1),
+             background-color .5s ease,box-shadow .5s ease,
+             visibility 0s linear .62s;
 }
-.menu-nav.open::before{
-  transform:scaleX(1) scaleY(1);opacity:1;
+.menu-nav.open .menu-bg{
+  visibility:visible;
   background:var(--paper);
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,.10);
+  transition:transform .62s cubic-bezier(.38,0,.5,1),
+             background-color .5s ease,box-shadow .5s ease,
+             visibility 0s linear 0s;
 }
 .menu-nav a{
   /* same setting as the original top-right .nav text: --disp 400, #434343,
@@ -179,9 +179,10 @@ html:not(.anim) .preloader{display:none}
   transition:color .2s ease,opacity .3s ease,
              transform .45s cubic-bezier(.38,0,.5,1);
 }
-/* items appear once the panel has mostly grown, lightly staggered */
+/* items appear once the panel has mostly grown, lightly staggered.
+   nth-of-type (not nth-child) so the .menu-bg first child doesn't shift them. */
 .menu-nav.open a{opacity:1;transform:translateX(0)}
-.menu-nav.open a:nth-child(1){transition-delay:0s,.18s,.18s}
-.menu-nav.open a:nth-child(2){transition-delay:0s,.26s,.26s}
-.menu-nav.open a:nth-child(3){transition-delay:0s,.34s,.34s}
+.menu-nav.open a:nth-of-type(1){transition-delay:0s,.22s,.22s}
+.menu-nav.open a:nth-of-type(2){transition-delay:0s,.3s,.3s}
+.menu-nav.open a:nth-of-type(3){transition-delay:0s,.38s,.38s}
 .menu-nav a:hover{color:#000}

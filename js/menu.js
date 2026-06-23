@@ -20,6 +20,12 @@
   var stage = document.querySelector(".stage");
   if (!btn || !nav || !stage) return;
 
+  // The panel background is its own element so it can morph (FLIP) out of the
+  // hamburger's middle bar — see setOpen(). It sits behind the menu text.
+  var bg = document.createElement("div");
+  bg.className = "menu-bg";
+  nav.insertBefore(bg, nav.firstChild);
+
   var REDUCE = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -187,11 +193,36 @@
     apply();
   }
 
+  // The transform that maps the panel's own box exactly onto the hamburger's
+  // middle bar (transform-origin is the panel's top-left). Seeding the bg with
+  // this and then releasing it to identity is a FLIP: one element distorting
+  // from the bar into the full panel.
+  function flipToBar() {
+    var b = btn.children[1].getBoundingClientRect();   // the middle bar
+    var p = nav.getBoundingClientRect();               // the panel's natural box
+    if (!p.width || !p.height) return "none";
+    return "translate(" + (b.left - p.left).toFixed(2) + "px," +
+           (b.top - p.top).toFixed(2) + "px) scale(" +
+           (b.width / p.width).toFixed(4) + "," + (b.height / p.height).toFixed(4) + ")";
+  }
+
   function setOpen(open) {
+    if (open === (btn.getAttribute("aria-expanded") === "true")) return; // already there
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
-    nav.classList.toggle("open", open);
+    if (open) {
+      bg.style.transition = "none";        // seed the bg exactly over the bar,
+      bg.style.transform = flipToBar();    // with no tween...
+      void bg.offsetWidth;                 // (commit it)
+      bg.style.transition = "";            // ...then hand back to the CSS ease and
+      nav.classList.add("open");
+      bg.style.transform = "none";         // distort the bar out into the panel
+    } else {
+      bg.style.transition = "";
+      bg.style.transform = flipToBar();    // distort the panel back into the bar
+      nav.classList.remove("open");
+    }
   }
 
   place();
