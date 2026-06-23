@@ -129,20 +129,22 @@
     return (barVisible && thumbOverlapsHamburger()) ? OVERLAY : 0;
   }
 
-  // The overlay scrollbar's thumb appears on scroll and fades when idle; track
-  // that so the hamburger only yields while the thumb is actually up.
+  // The overlay scrollbar is only "up" (and so can reveal its rail on hover) for a
+  // short while after scrolling; track that window so a hover over a cold/hidden
+  // scrollbar never yields.
   function pingBar() {
     barVisible = true;
     if (barTimer) clearTimeout(barTimer);
-    barTimer = setTimeout(function () { barVisible = false; }, 900);
+    barTimer = setTimeout(function () { barVisible = false; barTimer = 0; }, 1200);
   }
 
-  // Hovering the right-edge scrollbar reveals the full rail. There's no API for
-  // the rail's actual visibility, so we approximate it from the cursor — but with
-  // hysteresis and a hold so the dodge tracks the RAIL (which lingers after the
-  // cursor leaves and ignores small jitters) rather than the bare cursor X:
-  //   • engage the moment the cursor is over the scrollbar (within RAIL_IN);
-  //   • stay engaged through the RAIL_IN..RAIL_OUT band (covers the dodged button);
+  // Hovering the right-edge scrollbar reveals the full rail. There's no API for the
+  // rail's actual visibility, so we approximate it — but the rail only appears when
+  // the scrollbar is UP, so the hover only engages while barVisible (i.e. just
+  // scrolled). Hovering the bare edge when nothing is showing does NOT yield. Then:
+  //   • engage when the cursor is over the scrollbar (within RAIL_IN) AND it's up;
+  //   • stay engaged through the RAIL_IN..RAIL_OUT band (covers the dodged button)
+  //     and while the cursor keeps hovering, even after the warm window lapses;
   //   • only once the cursor is clearly away (> RAIL_OUT) start a RAIL_HOLD timer
   //     that outlasts the rail's fade. innerWidth is cheap (no layout read).
   function railHold() {
@@ -153,8 +155,8 @@
   function onMove(e) {
     var fromRight = window.innerWidth - e.clientX;
     if (fromRight <= RAIL_IN) {
-      railVisible = true;
-      if (railTimer) { clearTimeout(railTimer); railTimer = 0; }
+      if (barVisible) railVisible = true;       // rail shows only if the bar is up
+      if (railTimer) { clearTimeout(railTimer); railTimer = 0; } // in zone -> hold
     } else if (fromRight > RAIL_OUT) {
       railHold();
     }
