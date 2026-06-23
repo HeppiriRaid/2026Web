@@ -141,8 +141,21 @@
     thumbFadeT = setTimeout(function () { thumbFadeT = 0; thumbShown = false; syncThumb(); }, 1100);
   }
 
-  // hover near the right edge -> bring up the rail (+ a fatter thumb); leaving lets
-  // it fade. railShown is our own flag, so the dodge tracks the rail exactly.
+  // hover near the right edge -> bring up the rail (+ a fatter thumb). The rail is
+  // ACTIVITY-driven, not a hover latch: it auto-fades after RAIL_HOLD of no edge
+  // movement even while the cursor is parked in the zone. A parked cursor fires no
+  // mousemove, so a latch would never release ("yields once, never goes back") —
+  // the auto-fade guarantees it always returns. Movement over the bar keeps
+  // refreshing it; moving off hides it quickly. railShown is our own flag, so the
+  // dodge tracks the rail exactly.
+  var RAIL_HOLD = 1200;
+  function armRailFade(ms) {
+    if (railFadeT) clearTimeout(railFadeT);
+    railFadeT = setTimeout(function () {
+      railFadeT = 0;
+      if (dragY === null) showRail(false);         // never hide mid-drag
+    }, ms);
+  }
   function showRail(on) {
     if (on === railShown) return;
     railShown = on;
@@ -152,25 +165,24 @@
     syncThumb();
   }
   function onMove(e) {
-    if (dragY !== null) return;                    // a thumb-drag drives scroll itself
+    if (dragY !== null) return;                    // a thumb-drag drives the rail itself
     var onBar = (window.innerWidth - e.clientX) <= RAIL_ZONE;
     if (onBar) {
-      if (railFadeT) { clearTimeout(railFadeT); railFadeT = 0; }
-      if (!railShown && !railDwellT) {             // tiny dwell so a pass-through is ignored
-        railDwellT = setTimeout(function () { railDwellT = 0; showRail(true); }, 110);
+      if (railShown) {
+        armRailFade(RAIL_HOLD);                     // keep alive while actively hovering
+      } else if (!railDwellT) {                     // tiny dwell so a fly-through is ignored
+        railDwellT = setTimeout(function () {
+          railDwellT = 0; showRail(true); armRailFade(RAIL_HOLD);
+        }, 110);
       }
     } else {
       if (railDwellT) { clearTimeout(railDwellT); railDwellT = 0; }
-      if (railShown && !railFadeT) {
-        railFadeT = setTimeout(function () { railFadeT = 0; showRail(false); }, 220);
-      }
+      if (railShown) armRailFade(220);             // moved off -> hide soon
     }
   }
-  function railOut() {
+  function railOut() {                              // cursor left the window
     if (railDwellT) { clearTimeout(railDwellT); railDwellT = 0; }
-    if (railShown && !railFadeT) {
-      railFadeT = setTimeout(function () { railFadeT = 0; showRail(false); }, 220);
-    }
+    if (railShown) armRailFade(220);
   }
 
   // drag the thumb to scroll
@@ -193,6 +205,7 @@
     dragY = null;
     document.removeEventListener("mousemove", onDrag);
     document.removeEventListener("mouseup", endDrag);
+    if (railShown) armRailFade(RAIL_HOLD);         // re-arm so a post-drag park can't latch
   }
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
