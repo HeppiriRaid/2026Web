@@ -44,8 +44,8 @@
   var ty = 0;                // vertical offset currently applied to the button
   var scl = 1;               // current scale (1 over the marks, 0.7 once caught)
   var tx = 0;                // horizontal offset (catch yields left of the scrollbar)
-  var OVERLAY = 18;          // px to clear the scrollbar while it is showing
-  var RAIL_ZONE = 14;        // cursor within this of the right edge => over the bar
+  var OVERLAY = 18;          // px to clear the scrollbar (≈4.32pt*K, refreshed in place())
+  var RAIL_ZONE = 14;        // cursor within this of the right edge => over the bar (≈3.36pt*K)
   var thumbShown = false;    // is the custom thumb currently up (recent scroll)?
   var railShown = false;     // is the custom rail currently up (hovering the bar)?
   var thumbFadeT = 0, railFadeT = 0, railDwellT = 0;
@@ -72,7 +72,12 @@
   // are mid-flight while the intro plays), so the cache is always correct.
   function place() {
     var sRect = stage.getBoundingClientRect();
-    K = sRect.width / 460.807;
+    // The menu reads the VIEWPORT (innerWidth), not the now-zoomable stage width,
+    // so it keeps its original size and corner position while the content zooms.
+    // At default zoom innerWidth === stage width, so nothing changes there.
+    K = window.innerWidth / 460.807;
+    OVERLAY = 4.32 * K;        // dodge + hover-zone track the viewport scale, so they
+    RAIL_ZONE = 3.36 * K;      // stay matched to the (constant) scrollbar under zoom
     document.documentElement.style.setProperty("--mk", K);
     btn.style.left = (454.8 * K) + "px";
     btn.style.top = (18 * K) + "px";

@@ -192,22 +192,26 @@ html:not(.anim) .preloader{display:none}
    stay topmost, like the native one it replaces. */
 html{scrollbar-width:none}
 html::-webkit-scrollbar{width:0;height:0}
+/* Dimensions use --mk (the menu's innerWidth-derived scale), so the bar keeps the
+   same on-screen size under browser zoom — like the menu, not the zooming content.
+   At default zoom --mk*px == the original px (11/5/3...). The thumb's LENGTH is set
+   in JS from the viewport/content ratio and re-derives on the resize zoom fires. */
 .cscroll-rail{
-  position:fixed;top:0;right:0;bottom:0;width:11px;z-index:91;
+  position:fixed;top:0;right:0;bottom:0;width:calc(var(--mk,4) * 2.64px);z-index:91;
   background:rgba(67,67,67,.05);opacity:0;pointer-events:none;
   transition:opacity .25s ease;
 }
 .cscroll-rail.show{opacity:1}
 .cscroll-thumb{
-  position:fixed;top:0;right:3px;width:5px;z-index:92;
-  border-radius:3px;background:rgba(67,67,67,.42);
+  position:fixed;top:0;right:calc(var(--mk,4) * 0.72px);width:calc(var(--mk,4) * 1.2px);z-index:92;
+  border-radius:calc(var(--mk,4) * 0.72px);background:rgba(67,67,67,.42);
   opacity:0;pointer-events:none;
   /* vertical position is driven by transform:translateY (set in menu.js) so it
      tracks scroll on the compositor without forcing a layout each frame. */
   transition:opacity .35s ease,width .16s ease,right .16s ease,background-color .2s ease;
 }
 .cscroll-thumb.show{opacity:1;pointer-events:auto}
-.cscroll-thumb.rail{width:8px;right:1.5px;background:rgba(67,67,67,.62)}
+.cscroll-thumb.rail{width:calc(var(--mk,4) * 1.92px);right:calc(var(--mk,4) * 0.36px);background:rgba(67,67,67,.62)}
 @media (prefers-reduced-motion:reduce){
   .cscroll-rail,.cscroll-thumb{transition:opacity .15s ease}
 }

@@ -8,14 +8,32 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
 <!-- start the hero photo downloading immediately so the preloader rarely has to wait on it -->
 <link rel="preload" as="image" href="assets/img/about-portrait.webp" fetchpriority="high" />
-<link rel="stylesheet" href="css/style.css?v=11" />
-<link rel="stylesheet" href="css/anim.css?v=11" />
+<link rel="stylesheet" href="css/style.css?v=12" />
+<link rel="stylesheet" href="css/anim.css?v=12" />
 <script>
   /* Arm the animation layer before paint (no FOUC). If the user prefers
      reduced motion we never hide anything. A failsafe reveals the static
      page should the animation JS fail to load. */
   (function () {
     var d = document.documentElement;
+
+    /* ---- browser-zoom support ----------------------------------------
+       The design scale --k is driven as a fixed px length that Chrome's
+       zoom can enlarge/shrink. On a genuine window resize we re-fit it to
+       the viewport; across a ZOOM (detected via devicePixelRatio) we HOLD
+       it, so the content actually scales instead of re-fitting and
+       cancelling the zoom. The menu + scrollbar read innerWidth directly,
+       so they stay put at their original size while the content zooms.
+       A CSS fallback (:root{--k:calc(100vw/460.807)}) covers pre-JS.    */
+    var DW = 460.807, lastDPR = window.devicePixelRatio || 1;
+    function fitK() { d.style.setProperty("--k", (window.innerWidth / DW) + "px"); }
+    fitK();
+    window.addEventListener("resize", function () {
+      var z = window.devicePixelRatio || 1;
+      if (z !== lastDPR) { lastDPR = z; return; } // zoom -> keep --k (content scales)
+      fitK();                                      // real resize -> re-fit to viewport
+    });
+
     if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       d.classList.add("anim");
       window.__revealFailsafe = setTimeout(function () {
@@ -195,7 +213,7 @@
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
-<script src="js/anim.js?v=11"></script>
-<script src="js/menu.js?v=11"></script>
+<script src="js/anim.js?v=12"></script>
+<script src="js/menu.js?v=12"></script>
 </body>
 </html>
