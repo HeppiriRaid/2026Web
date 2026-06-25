@@ -64,7 +64,6 @@
 }
 .frame-box{
   position:relative;height:100%;background:#e7e6e3;overflow:hidden;
-  box-shadow:0 calc(2 * var(--k)) calc(14 * var(--k)) rgba(0,0,0,.07);
 }
 .frame-box img{display:block;width:100%;height:100%;object-fit:cover}
 /* aspect variants for rhythm (portrait / landscape / square / tall) */
@@ -73,15 +72,6 @@
 .frame.ar-s .frame-box{aspect-ratio:1/1}
 .frame.ar-t .frame-box{aspect-ratio:2/3}
 .frame.ar-w .frame-box{aspect-ratio:16/10}
-/* corner ticks, same language as the portrait frame */
-.frame-box > i{
-  position:absolute;width:calc(4 * var(--k));height:calc(4 * var(--k));
-  --b:max(.75px,calc(.5 * var(--k)));z-index:2;
-}
-.frame-box > i.tl{top:0;left:0;border-top:var(--b) solid #403838;border-left:var(--b) solid #403838}
-.frame-box > i.tr{top:0;right:0;border-top:var(--b) solid #403838;border-right:var(--b) solid #403838}
-.frame-box > i.bl{bottom:0;left:0;border-bottom:var(--b) solid #403838;border-left:var(--b) solid #403838}
-.frame-box > i.br{bottom:0;right:0;border-bottom:var(--b) solid #403838;border-right:var(--b) solid #403838}
 /* placeholder index, centred in the empty box (hidden once an <img> is added) */
 .frame-box .ph-num{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
