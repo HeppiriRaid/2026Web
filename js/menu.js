@@ -72,14 +72,22 @@
   // are mid-flight while the intro plays), so the cache is always correct.
   function place() {
     var sRect = stage.getBoundingClientRect();
-    // The menu reads the VIEWPORT (innerWidth), not the now-zoomable stage width,
-    // so it keeps its original size and corner position while the content zooms.
-    // At default zoom innerWidth === stage width, so nothing changes there.
-    K = window.innerWidth / 460.807;
+    // The menu reads the VIEWPORT, not the now-zoomable stage box, so it keeps its
+    // original size + corner position while the content zooms. It uses the SAME fit
+    // as the artboard (width, clamped by the first screen's height — see the head
+    // script's window.__fit) so that when a wide/short window makes the stage
+    // narrower and centred, the camouflage hamburger follows it INWARD instead of
+    // drifting to the bare viewport corner. On a tall window at default zoom this
+    // is exactly innerWidth/460.807 with stageLeft 0 — unchanged.
+    var FIT = window.__fit || { dw: 460.807, clampPt: 0 };
+    K = FIT.clampPt
+      ? Math.min(window.innerWidth / FIT.dw, window.innerHeight / FIT.clampPt)
+      : window.innerWidth / FIT.dw;
+    var stageLeft = Math.max(0, (window.innerWidth - FIT.dw * K) / 2); // centred-stage inset
     OVERLAY = 4.32 * K;        // dodge + hover-zone track the viewport scale, so they
     RAIL_ZONE = 3.36 * K;      // stay matched to the (constant) scrollbar under zoom
     document.documentElement.style.setProperty("--mk", K);
-    btn.style.left = (454.8 * K) + "px";
+    btn.style.left = (stageLeft + 454.8 * K) + "px";
     btn.style.top = (18 * K) + "px";
     btn.style.right = "auto";
     // The extended menu sits to the LEFT of the caught hamburger, its box top
@@ -90,7 +98,7 @@
     var hbLeft = (454.8 - (454.8 - 448.8) * HAMBURGER_SCALE) * K; // bars' left edge
     nav.style.top = hbTop + "px";
     nav.style.left = "auto";
-    nav.style.right = Math.max(0, window.innerWidth - hbLeft + 4 * K) + "px";
+    nav.style.right = Math.max(0, window.innerWidth - (stageLeft + hbLeft) + 4 * K) + "px";
     var stageTopDoc = sRect.top + scrollY();
     markCenterDoc = stageTopDoc + 18 * K;
     markBottomDoc = stageTopDoc + 36 * K;

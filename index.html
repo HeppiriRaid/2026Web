@@ -25,8 +25,19 @@
        cancelling the zoom. The menu + scrollbar read innerWidth directly,
        so they stay put at their original size while the content zooms.
        A CSS fallback (:root{--k:calc(100vw/460.807)}) covers pre-JS.    */
-    var DW = 460.807, lastDPR = window.devicePixelRatio || 1;
-    function fitK() { d.style.setProperty("--k", (window.innerWidth / DW) + "px"); }
+    var DW = 460.807, FIRST = 259.2, lastDPR = window.devicePixelRatio || 1;
+    // Expose the fit basis so the shared menu + scrollbar derive the SAME scale.
+    window.__fit = { dw: DW, clampPt: FIRST };
+    // Fit the artboard to viewport WIDTH, but never let the first 16:9 screen
+    // (460.807 x 259.2pt) grow TALLER than the viewport. A wide/short window — e.g.
+    // a maximised 16:9 monitor, whose usable height after the browser chrome is
+    // less than 9/16 of its width — would otherwise clip the bottom of the first
+    // section. Clamp by height too; .stage{margin:0 auto} then centres the
+    // (slightly narrower) artboard. On a taller window the width wins, unchanged.
+    function fitK() {
+      var k = Math.min(window.innerWidth / DW, window.innerHeight / FIRST);
+      d.style.setProperty("--k", k + "px");
+    }
     fitK();
     window.addEventListener("resize", function () {
       var z = window.devicePixelRatio || 1;
@@ -214,6 +225,6 @@
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
 <script src="js/anim.js?v=12"></script>
-<script src="js/menu.js?v=12"></script>
+<script src="js/menu.js?v=13"></script>
 </body>
 </html>
