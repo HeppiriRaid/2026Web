@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Koki Takamatsu — Illustration</title>
+<meta name="description" content="Illustration works by Koki Takamatsu — a horizontal gallery." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/style.css?v=12" />
+<link rel="stylesheet" href="css/anim.css?v=12" />
+<link rel="stylesheet" href="css/illustration.css?v=12" />
+<script>
+  /* same scale + zoom driver + anim gate as the main page (kept in sync) */
+  (function () {
+    var d = document.documentElement;
+    var DW = 460.807, lastDPR = window.devicePixelRatio || 1;
+    function fitK() { d.style.setProperty("--k", (window.innerWidth / DW) + "px"); }
+    fitK();
+    window.addEventListener("resize", function () {
+      var z = window.devicePixelRatio || 1;
+      if (z !== lastDPR) { lastDPR = z; return; }
+      fitK();
+    });
+    if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      d.classList.add("anim");
+      window.__revealFailsafe = setTimeout(function () {
+        d.classList.remove("anim");
+        var p = document.getElementById("preloader");
+        if (p) p.style.display = "none";
+      }, 5000);
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- preloader -->
+<div class="preloader" id="preloader" aria-hidden="true">
+  <span class="pl-inner"><span class="pl-name">KOKI TAKAMATSU</span></span>
+</div>
+
+<!-- custom cursor (fine pointers only) -->
+<div class="cursor-ring" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+
+<!-- fixed top-right camouflage menu (shared) -->
+<button class="menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menuNav">
+  <span></span><span></span><span></span>
+</button>
+<nav class="menu-nav" id="menuNav" aria-hidden="true">
+  <a href="index.html#about">ABOUT</a>
+  <a href="index.html#works">WORK</a>
+  <a href="index.html#contact">CONTACT</a>
+</nav>
+
+<!-- hero: same header + marks as the main page; menu camouflages here and
+     catches as it scrolls away into the gallery -->
+<main class="stage istage">
+  <div class="a wh sqg" style="--x:448.8;--y:0;--w:12;--h:12"></div>
+  <div class="a wh sqg" style="--x:448.8;--y:24;--w:12;--h:12"></div>
+
+  <div class="a brand" style="--x:8.6;--y:6.2;--fs:6">KOKI TAKAMATSU</div>
+  <a class="a nav" href="index.html#about"   style="--x:374.64;--y:8.1;--fs:4">ABOUT</a>
+  <a class="a nav" href="index.html#works"   style="--x:397.66;--y:8.1;--fs:4">WORK</a>
+  <a class="a nav" href="index.html#contact" style="--x:419.69;--y:8.1;--fs:4">CONTACT</a>
+
+  <h1 class="ititle">ILLUSTRATION<span class="sub">Selected works — 2020 to 2025</span></h1>
+  <div class="ihint"><span>scroll</span><span class="bar"></span></div>
+</main>
+
+<!-- horizontal gallery -->
+<section class="hgal" aria-label="Illustration gallery">
+  <div class="hgal-track">
+
+    <article class="frame ar-p">
+      <div class="frame-box"><span class="ph-num">01</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">01 / 07</div><div class="ti">NIGHTWALK</div><div class="me">Graphic Paint — 2025</div></div>
+    </article>
+
+    <article class="frame ar-l">
+      <div class="frame-box"><span class="ph-num">02</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">02 / 07</div><div class="ti">LOW TIDE</div><div class="me">Ink and digital — 2024</div></div>
+    </article>
+
+    <article class="frame ar-t">
+      <div class="frame-box"><span class="ph-num">03</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">03 / 07</div><div class="ti">STILL ROOM</div><div class="me">Oil study — 2024</div></div>
+    </article>
+
+    <article class="frame ar-s">
+      <div class="frame-box"><span class="ph-num">04</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">04 / 07</div><div class="ti">OVERGROWN</div><div class="me">Mixed media — 2023</div></div>
+    </article>
+
+    <article class="frame ar-w">
+      <div class="frame-box"><span class="ph-num">05</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">05 / 07</div><div class="ti">PROCESSION</div><div class="me">Concept art — 2023</div></div>
+    </article>
+
+    <article class="frame ar-p">
+      <div class="frame-box"><span class="ph-num">06</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">06 / 07</div><div class="ti">REVERIE</div><div class="me">Graphic Paint — 2022</div></div>
+    </article>
+
+    <article class="frame ar-l">
+      <div class="frame-box"><span class="ph-num">07</span><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
+      <div class="frame-meta"><div class="no">07 / 07</div><div class="ti">AT DUSK</div><div class="me">Ink and digital — 2021</div></div>
+    </article>
+
+    <article class="frame endcard">
+      <div class="end">
+        <span class="big">More<br>to come.</span>
+        <a href="index.html#contact">Get in touch</a>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/menu.js?v=12"></script>
+<script src="js/gallery.js?v=12"></script>
+</body>
+</html>

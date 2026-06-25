@@ -1,0 +1,141 @@
+/* ============================================================
+   KOKI TAKAMATSU — illustration page (horizontal gallery)
+   Reuses the site's scale (--k), fonts, paper, header + camouflage
+   menu. The hero is a .stage (so menu.js camouflages over the marks
+   and catches as it scrolls away); below it a pinned section pans a
+   row of illustration frames sideways as you scroll. gallery.js drives
+   the pin/translate (smooth via Lenis) and the per-frame settle.
+   ============================================================ */
+
+/* The brand font is a minimal PDF subset (only the glyphs the main page uses —
+   no 7/8/9, limited capitals), so VARIABLE gallery text would drop letters.
+   Render that text in a geometric system stack instead (full coverage, close to
+   Avant Garde Gothic); the header + the fixed "ILLUSTRATION" word keep the
+   brand face since those exact glyphs exist in the subset. */
+:root{ --gf:"Century Gothic","Avant Garde","ITC Avant Garde Gothic","URW Gothic","Futura","Trebuchet MS",system-ui,sans-serif; }
+
+/* ---- hero: the .stage top, but a single viewport tall (not the full
+   artboard aspect) so the header/marks sit at the top and scroll away --- */
+.istage{
+  aspect-ratio:auto;
+  height:100svh;min-height:520px;
+  overflow:visible;            /* let the big title breathe; gallery clips itself */
+}
+/* the big page title, in the display face, aligned under the brand */
+.ititle{
+  position:absolute;left:calc(8.6 * var(--k));top:46svh;
+  font-family:var(--disp);font-weight:700;color:#403838;
+  font-size:calc(46 * var(--k));line-height:.92;letter-spacing:-.03em;
+  text-transform:uppercase;margin:0;white-space:nowrap;
+}
+.ititle .sub{
+  display:block;font-family:var(--gf);font-weight:400;text-transform:none;
+  color:#8a8786;font-size:calc(5.4 * var(--k));letter-spacing:.02em;margin-top:calc(4.5 * var(--k));
+}
+/* scroll hint at the foot of the hero */
+.ihint{
+  position:absolute;left:calc(8.6 * var(--k));bottom:calc(10 * var(--k));
+  display:flex;align-items:center;gap:calc(2.5 * var(--k));
+  font-family:var(--gf);font-weight:500;color:#8a8786;
+  font-size:calc(3.6 * var(--k));letter-spacing:.16em;text-transform:uppercase;
+}
+.ihint .bar{
+  width:calc(22 * var(--k));height:max(1px,calc(.4 * var(--k)));
+  background:#bdbab8;position:relative;overflow:hidden;
+}
+.ihint .bar::after{
+  content:"";position:absolute;inset:0;width:40%;background:#f20000;
+  animation:ihintslide 2.2s cubic-bezier(.6,0,.4,1) infinite;
+}
+@keyframes ihintslide{0%{transform:translateX(-110%)}60%,100%{transform:translateX(330%)}}
+
+/* ---- horizontal gallery -------------------------------------------- */
+.hgal{
+  position:relative;height:100svh;overflow:hidden;background:var(--paper);
+}
+.hgal-track{
+  display:flex;align-items:center;height:100%;width:max-content;
+  padding:0 12vw;gap:7vw;will-change:transform;
+}
+/* one illustration slot: framed placeholder + caption block beside it */
+.frame{
+  flex:0 0 auto;display:flex;align-items:flex-end;gap:calc(6 * var(--k));
+  height:72svh;
+}
+.frame-box{
+  position:relative;height:100%;background:#e7e6e3;overflow:hidden;
+  box-shadow:0 calc(2 * var(--k)) calc(14 * var(--k)) rgba(0,0,0,.07);
+}
+.frame-box img{display:block;width:100%;height:100%;object-fit:cover}
+/* aspect variants for rhythm (portrait / landscape / square / tall) */
+.frame.ar-p .frame-box{aspect-ratio:3/4}
+.frame.ar-l .frame-box{aspect-ratio:4/3}
+.frame.ar-s .frame-box{aspect-ratio:1/1}
+.frame.ar-t .frame-box{aspect-ratio:2/3}
+.frame.ar-w .frame-box{aspect-ratio:16/10}
+/* corner ticks, same language as the portrait frame */
+.frame-box > i{
+  position:absolute;width:calc(4 * var(--k));height:calc(4 * var(--k));
+  --b:max(.75px,calc(.5 * var(--k)));z-index:2;
+}
+.frame-box > i.tl{top:0;left:0;border-top:var(--b) solid #403838;border-left:var(--b) solid #403838}
+.frame-box > i.tr{top:0;right:0;border-top:var(--b) solid #403838;border-right:var(--b) solid #403838}
+.frame-box > i.bl{bottom:0;left:0;border-bottom:var(--b) solid #403838;border-left:var(--b) solid #403838}
+.frame-box > i.br{bottom:0;right:0;border-bottom:var(--b) solid #403838;border-right:var(--b) solid #403838}
+/* placeholder index, centred in the empty box (hidden once an <img> is added) */
+.frame-box .ph-num{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--gf);font-weight:400;color:#d2d0cd;
+  font-size:calc(40 * var(--k));letter-spacing:-.02em;user-select:none;
+}
+.frame-box:has(img) .ph-num{display:none}
+/* caption block sitting at the baseline beside the frame */
+.frame-meta{padding-bottom:calc(2 * var(--k));white-space:nowrap}
+.frame-meta .no{
+  font-family:var(--gf);font-weight:500;color:#f20000;
+  font-size:calc(3.4 * var(--k));letter-spacing:.1em;
+}
+.frame-meta .ti{
+  font-family:var(--gf);font-weight:700;color:#403838;
+  font-size:calc(7 * var(--k));line-height:1;letter-spacing:-.01em;
+  margin:calc(1.5 * var(--k)) 0 calc(1.2 * var(--k));
+}
+.frame-meta .me{
+  font-family:var(--gf);font-weight:400;color:#6b6967;
+  font-size:calc(3.4 * var(--k));line-height:1.25;
+}
+/* end card */
+.frame.endcard{align-items:center}
+.frame.endcard .end{
+  font-family:var(--gf);color:#403838;text-align:left;
+}
+.frame.endcard .end .big{display:block;font-weight:600;font-size:calc(18 * var(--k));line-height:1.02;letter-spacing:-.01em}
+.frame.endcard .end a{
+  display:inline-flex;align-items:center;gap:calc(2 * var(--k));margin-top:calc(7 * var(--k));
+  font-weight:400;font-size:calc(4 * var(--k));color:#403838;text-decoration:none;
+  border-bottom:max(1px,calc(.4 * var(--k))) solid #f20000;padding-bottom:calc(.8 * var(--k));
+}
+.frame.endcard .end a::after{                       /* CSS arrow (no glyph dependency) */
+  content:"";width:calc(3 * var(--k));height:calc(3 * var(--k));
+  border-top:max(1px,calc(.4 * var(--k))) solid currentColor;
+  border-right:max(1px,calc(.4 * var(--k))) solid currentColor;
+  transform:rotate(45deg);transition:transform .25s ease;
+}
+.frame.endcard .end a:hover{color:#f20000}
+.frame.endcard .end a:hover::after{transform:rotate(45deg) translate(calc(.6 * var(--k)),calc(-.6 * var(--k)))}
+
+/* pre-hide the gallery frames while gallery.js arms them (no FOUC, no
+   leftover state if JS never runs — the failsafe clears .anim). */
+.anim .frame-box,.anim .frame-meta,.anim .ititle,.anim .ihint{opacity:0}
+
+@media (prefers-reduced-motion:reduce){
+  .anim .frame-box,.anim .frame-meta,.anim .ititle,.anim .ihint{opacity:1}
+  .ihint .bar::after{animation:none;transform:translateX(60%)}
+  /* fall back to a normal horizontal scroll */
+  .hgal{overflow-x:auto;overflow-y:hidden}
+}
+
+/* coarse pointers / narrow screens: let the gallery scroll natively sideways */
+@media (hover:none),(pointer:coarse){
+  .hgal{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+}
