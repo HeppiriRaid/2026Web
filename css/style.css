@@ -21,24 +21,22 @@
   --k:calc(100vw / 460.807);
   --paper:#fffefc;
   --band:#f2f1ef;
-  /* side gutter (px) when a wide/short viewport centres a narrower stage; set by
-     menu.js from the real stage rect. 0 on a full-width stage. Lets the grey
-     section bands bleed out to the screen edges (see .band). */
-  --gutter:0px;
   --disp:"AvantGarde","Gothic","Century Gothic",sans-serif;
   --text:"Nunito Sans",system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:var(--paper)}
-body{font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+/* position:relative so the full-width background bands (direct children of body)
+   are positioned in document space, scrolling with the page. */
+body{position:relative;font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* the artboard: 460.807 x 1036.66 pt. Width is the design size (460.807pt * --k)
    so it fills the viewport at default zoom and grows/shrinks with browser zoom;
    margin auto centres it when zoomed out (narrower than the viewport). */
 .stage{
-  position:relative;width:calc(460.807 * var(--k));margin:0 auto;
-  aspect-ratio:460.807 / 1036.66;background:var(--paper);overflow:hidden;
+  position:relative;z-index:1;width:calc(460.807 * var(--k));margin:0 auto;
+  aspect-ratio:460.807 / 1036.66;background:transparent;overflow:hidden;
   container-type:inline-size;font-family:var(--text);
 }
 
@@ -47,12 +45,11 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .wh{height:calc(var(--h) * var(--k))}
 
 /* background bands (the grey section backgrounds — BACK GROUND, CALLIGRAPHY).
-   When a wide/short window makes the stage narrower than the viewport, the band
-   bleeds out over the side gutters (--gutter) so the grey reaches the screen
-   edges instead of stopping at the centred stage. --gutter is 0 on a full-width
-   stage (no-op) and clamps to 0 under zoom-in, so the band never under-covers. */
-.band{position:absolute;left:calc(-1 * var(--gutter, 0px));
-   width:calc(100% + 2 * var(--gutter, 0px));
+   Direct children of <body>, so width:100% spans the whole viewport and they sit
+   BEHIND the transparent stage (z-index:0 < stage's 1). The stage's overflow:hidden
+   no longer clips them, so the grey fills the window edge-to-edge even when a
+   wide/short viewport centres the stage; the content rides on top in the stage. */
+.band{position:absolute;left:0;width:100%;z-index:0;
    height:calc(259.2 * var(--k));background:var(--band)}
 
 /* image placeholders / photos */

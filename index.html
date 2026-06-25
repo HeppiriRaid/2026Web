@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
 <!-- start the hero photo downloading immediately so the preloader rarely has to wait on it -->
 <link rel="preload" as="image" href="assets/img/about-portrait.webp" fetchpriority="high" />
-<link rel="stylesheet" href="css/style.css?v=15" />
+<link rel="stylesheet" href="css/style.css?v=16" />
 <link rel="stylesheet" href="css/anim.css?v=12" />
 <script>
   /* Arm the animation layer before paint (no FOUC). If the user prefers
@@ -78,11 +78,15 @@
   <a href="#contact">CONTACT</a>
 </nav>
 
-<main class="stage">
+<!-- background bands (the grey section backgrounds: BACK GROUND, CALLIGRAPHY).
+     Kept OUTSIDE the stage, as full-viewport-width layers behind it, so the
+     stage's overflow:hidden can't clip them — they bleed to the window edges
+     when a wide/short viewport centres the (narrower) stage. The stage is
+     transparent so the grey shows through behind the content. -->
+<div class="band" style="top:calc(259.2 * var(--k))"></div>
+<div class="band" style="top:calc(777.9 * var(--k))"></div>
 
-  <!-- background bands (white / grey / white / grey) -->
-  <div class="band" style="top:calc(259.2 * var(--k))"></div>
-  <div class="band" style="top:calc(777.9 * var(--k))"></div>
+<main class="stage">
 
   <!-- top-right grey marks -->
   <div class="a wh sqg" style="--x:448.8;--y:0;--w:12;--h:12"></div>
@@ -225,6 +229,6 @@
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
 <script src="js/anim.js?v=12"></script>
-<script src="js/menu.js?v=15"></script>
+<script src="js/menu.js?v=16"></script>
 </body>
 </html>

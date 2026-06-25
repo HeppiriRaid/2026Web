@@ -87,11 +87,6 @@
     OVERLAY = 4.32 * K;        // dodge + hover-zone track the viewport scale, so they
     RAIL_ZONE = 3.36 * K;      // stay matched to the (constant) scrollbar under zoom
     document.documentElement.style.setProperty("--mk", K);
-    // Publish the REAL side gutter (the stage's on-screen left, never negative) so
-    // the grey section bands can bleed out to the screen edges when the stage is
-    // centred. Read off the actual rect, so it's right under zoom too (where it
-    // clamps to 0 once the stage overflows the viewport).
-    document.documentElement.style.setProperty("--gutter", Math.max(0, sRect.left).toFixed(2) + "px");
     btn.style.left = (stageLeft + 454.8 * K) + "px";
     btn.style.top = (18 * K) + "px";
     btn.style.right = "auto";
