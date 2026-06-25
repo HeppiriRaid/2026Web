@@ -1,10 +1,9 @@
 /* ============================================================
-   KOKI TAKAMATSU — illustration page (horizontal gallery)
-   Reuses the site's scale (--k), fonts, paper, header + camouflage
-   menu. The hero is a .stage (so menu.js camouflages over the marks
-   and catches as it scrolls away); below it a pinned section pans a
-   row of illustration frames sideways as you scroll. gallery.js drives
-   the pin/translate (smooth via Lenis) and the per-frame settle.
+   KOKI TAKAMATSU — illustration page (full-screen horizontal gallery)
+   Reuses the site's scale (--k), fonts, paper, header + camouflage menu.
+   No vertical scroll: gallery.js pans the frame row sideways from the
+   wheel / trackpad / drag (lerped transform) and settles each frame as
+   it enters. The header (name / nav / squares) is a fixed overlay.
    ============================================================ */
 
 /* The brand font is a minimal PDF subset (only the glyphs the main page uses —
@@ -14,40 +13,20 @@
    brand face since those exact glyphs exist in the subset. */
 :root{ --gf:"Century Gothic","Avant Garde","ITC Avant Garde Gothic","URW Gothic","Futura","Trebuchet MS",system-ui,sans-serif; }
 
-/* ---- hero: the .stage top, but a single viewport tall (not the full
-   artboard aspect) so the header/marks sit at the top and scroll away --- */
+/* ---- no vertical scroll: the whole page IS the gallery; the wheel / trackpad
+   pans it sideways (gallery.js). With no vertical scroll the camouflage menu
+   stays as the corner squares (click to open) and the custom scrollbar never
+   applies, so we hide it. ---- */
+html,body{height:100%;overflow:hidden}
+.cscroll-rail,.cscroll-thumb{display:none !important}
+
+/* header: name + nav + corner squares, a fixed overlay at the top */
 .istage{
-  aspect-ratio:auto;
-  height:100svh;min-height:520px;
-  overflow:visible;            /* let the big title breathe; gallery clips itself */
+  position:fixed;top:0;left:0;margin:0;z-index:40;pointer-events:none;
+  width:calc(460.807 * var(--k));height:calc(46 * var(--k));
+  aspect-ratio:auto;overflow:visible;background:none;
 }
-/* the big page title, in the display face, aligned under the brand */
-.ititle{
-  position:absolute;left:calc(8.6 * var(--k));top:46svh;
-  font-family:var(--disp);font-weight:700;color:#403838;
-  font-size:calc(46 * var(--k));line-height:.92;letter-spacing:-.03em;
-  text-transform:uppercase;margin:0;white-space:nowrap;
-}
-.ititle .sub{
-  display:block;font-family:var(--gf);font-weight:400;text-transform:none;
-  color:#8a8786;font-size:calc(5.4 * var(--k));letter-spacing:.02em;margin-top:calc(4.5 * var(--k));
-}
-/* scroll hint at the foot of the hero */
-.ihint{
-  position:absolute;left:calc(8.6 * var(--k));bottom:calc(10 * var(--k));
-  display:flex;align-items:center;gap:calc(2.5 * var(--k));
-  font-family:var(--gf);font-weight:500;color:#8a8786;
-  font-size:calc(3.6 * var(--k));letter-spacing:.16em;text-transform:uppercase;
-}
-.ihint .bar{
-  width:calc(22 * var(--k));height:max(1px,calc(.4 * var(--k)));
-  background:#bdbab8;position:relative;overflow:hidden;
-}
-.ihint .bar::after{
-  content:"";position:absolute;inset:0;width:40%;background:#f20000;
-  animation:ihintslide 2.2s cubic-bezier(.6,0,.4,1) infinite;
-}
-@keyframes ihintslide{0%{transform:translateX(-110%)}60%,100%{transform:translateX(330%)}}
+.istage .nav{pointer-events:auto}
 
 /* ---- horizontal gallery -------------------------------------------- */
 .hgal{
@@ -116,16 +95,14 @@
 
 /* pre-hide the gallery frames while gallery.js arms them (no FOUC, no
    leftover state if JS never runs — the failsafe clears .anim). */
-.anim .frame-box,.anim .frame-meta,.anim .ititle,.anim .ihint{opacity:0}
+.anim .frame-box,.anim .frame-meta{opacity:0}
 
+/* reduced-motion / coarse pointers: skip the JS pan and let the gallery scroll
+   natively sideways (gallery.js no-ops in these modes). */
 @media (prefers-reduced-motion:reduce){
-  .anim .frame-box,.anim .frame-meta,.anim .ititle,.anim .ihint{opacity:1}
-  .ihint .bar::after{animation:none;transform:translateX(60%)}
-  /* fall back to a normal horizontal scroll */
+  .anim .frame-box,.anim .frame-meta{opacity:1}
   .hgal{overflow-x:auto;overflow-y:hidden}
 }
-
-/* coarse pointers / narrow screens: let the gallery scroll natively sideways */
 @media (hover:none),(pointer:coarse){
   .hgal{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 }
