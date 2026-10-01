@@ -32,10 +32,23 @@ How the site avoids it:
   device pixels (`crispPlus()` in `js/illustration.js`); the zoom picture is placed on device pixels (`fit()`).
 - **Moving edges too**: every wipe's moving edge is snapped to a device pixel (`wipeClip()` in `js/anim.js` and
   `js/illustration.js`; never a percentage `inset()`), and pictures sliding sideways use the `slideX()` modifiers.
+- Focus rings too: the browser's own ring has a white halo, so the menu button has its own plain ink ring
+  (`.menu-btn:focus-visible`, `css/anim.css`) — it shows after Esc closes the menu.
 - Not fixable, and accepted: detail *inside* photos and artworks (the same happens on Maison Auge's site),
   highlighted (selected) text — the browser paints a selection in one go; only other highlight colours would
-  avoid it — and the zoom picture's edges during its 0.9 s flight in and out (it is scaling; its edges are
-  rarely under the cursor).
+  avoid it — the zoom picture's edges during its 0.9 s flight in and out (it is scaling; its edges are
+  rarely under the cursor), and the hamburger's soft bar edges right next to bright parts of a real picture
+  beneath it (deep bars on a bright patch straddle #DCCBC3; the old grey bars did too).
+
+## The hamburger over the BACK GROUND picture
+
+`js/menu-shade.js` (front page only): while the hamburger is over the picture marked `data-menu-shade` (today
+a grey placeholder box; when "My House" goes in, put the `<img>` inside that figure and it is picked up),
+the bars take colours from the picture beneath them through Chinese colour harmony: seven variations
+(`VARIATIONS`: 阴阳, 相生 the default, 相克, 间色, 墨分五色, 紫气, 青花). Only inline `background-image`s on the
+bars, the panel's `background-color` and two `--nav-hover` variables are set, and cleared off the picture.
+Bar colours are capped at #DCCBC3 per channel (the rule above). `index.html?shader` opens a test panel
+(keys 0–7, P tries a real painting in the picture's place); a choice there is saved in that browser only.
 
 ## Check it
 

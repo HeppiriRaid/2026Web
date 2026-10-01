@@ -84,7 +84,7 @@ html.cursor-live .stage{will-change:transform}
   color:#b99787;transition:color .2s ease;
   clip-path:var(--cursor-copy,inset(0 0 100% 0));
 }
-.menu-nav a:hover::after{color:#000}
+.menu-nav a:hover::after{color:var(--nav-hover-m,#000)}   /* (js/menu-shade.js: the hover colour's mirror) */
 /* The point itself: a rhombus (a square turned 45 degrees) whose tips sit on the
    old 6px dot's circle, inverting live with the same #DCCBC3 difference. Over the
    square it inverts the inverse, so it opens a small window back onto the page. */
@@ -128,6 +128,9 @@ html.cursor-live .stage{will-change:transform}
   /* vertical position is driven frame-by-frame by menu.js (ride-up + catch-up),
      so transform is NOT CSS-transitioned here — only the span morph is. */
 }
+/* keyboard focus (also after Esc closes the menu): a plain ink ring. The browser's own ring
+   has a white halo, which the cursor's square would fold into a dark line (CLAUDE.md). */
+.menu-btn:focus-visible{outline:max(1px,calc(var(--mk,4) * .5px)) solid #434343;outline-offset:calc(var(--mk,4) * 1px)}
 .menu-btn span{
   position:absolute;left:0;width:100%;background:#b3b1b1;
   transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
@@ -204,7 +207,7 @@ html.cursor-live .stage{will-change:transform}
 .menu-nav.open a:nth-of-type(2){transition-delay:0s,.55s,.55s}
 .menu-nav.open a:nth-of-type(3){transition-delay:0s,.64s,.64s}
 .menu-nav.open a:nth-of-type(4){transition-delay:0s,.73s,.73s}
-.menu-nav a:hover{color:#000}
+.menu-nav a:hover{color:var(--nav-hover,#000)}   /* (a light tint on a coloured panel: js/menu-shade.js) */
 
 /* ---- custom scrollbar -------------------------------------------------- */
 /* The native scrollbar is hidden; menu.js draws this one, so the hamburger's

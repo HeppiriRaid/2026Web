@@ -130,7 +130,11 @@ async function check(p, state, dpr) {
       // itself); anything else — a picture's blurred border, or anything over or beside it —
       // is ours, unless the page marks it a known limit (data-fold-known)
       let kind = own >= 0.97 ? "picture" : "ui";
-      const known = el && el.closest && el.closest("[data-fold-known]");
+      // (by what is under the pixel, or by place: something see-through can lie on top of it)
+      const known = (el && el.closest && el.closest("[data-fold-known]")) || [...document.querySelectorAll("[data-fold-known]")].find((k) => {
+        const r = k.getBoundingClientRect();
+        return cx >= r.left - 2 && cx <= r.right + 2 && cy >= r.top - 2 && cy <= r.bottom + 2;
+      });
       if (kind === "ui" && known) kind = "known";
       kinds.push(kind === "ui" ? 1 : kind === "picture" ? 2 : 3);
       const e = el;
@@ -256,6 +260,50 @@ for (const dpr of [1, 2]) {
   await expect(p, () => String(getSelection()).length > 40, null, "some text selected");
   await check(p, "front page: text selected", dpr);
   await p.evaluate(() => { getSelection().removeAllRanges(); document.querySelector("[data-fold-known]").removeAttribute("data-fold-known"); });
+
+  // -- the hamburger over the BACK GROUND picture, in each of its colour variations
+  // (js/menu-shade.js): the bars alone, then the menu open over it with a label under the pointer
+  const shades = await p.evaluate(() => (window.__menuShade ? window.__menuShade.names : []));
+  if (shades.length) {
+    const was = await p.evaluate(() => window.__menuShade.get());
+    const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
+    const coloured = () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage);
+    for (let m = 1; m < shades.length; m++) {
+      await p.evaluate((m) => { window.__menuShade.set(m); }, m);
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
+      await p.waitForTimeout(m === 1 ? 2200 : 700);   // (the first time, the hamburger catches the corner)
+      await expect(p, coloured, null, `the hamburger coloured over the picture (${shades[m]})`);
+      await check(p, `front page: hamburger over the picture, ${shades[m]}`, dpr);
+      await click(p, "#menuBtn");
+      await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+      await p.waitForTimeout(1600);
+      const lw = await menuLink(p, "WORK");
+      await p.mouse.move(lw.x, lw.y, { steps: 4 });
+      await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+      await p.waitForTimeout(900);
+      await check(p, `front page: menu open over the picture, pointer on WORK, ${shades[m]}`, dpr);
+      await p.keyboard.press("Escape");
+      await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
+      await p.mouse.move(700, 500);
+      await p.waitForTimeout(1300);
+    }
+    await p.evaluate((was) => { window.__menuShade.set(was); }, was);
+    // A KNOWN LIMIT, reported but not failed: over a real painting, a deep bar's soft edge
+    // next to a bright part of the painting straddles #DCCBC3 (as today's grey bars would).
+    // (A real work stands in for the picture here, as the test panel's preview does.)
+    const src = await p.evaluate(async () => { const d = await (await fetch("data/illustration.json")).json(); const w = (d.works || []).find((w) => w.image); return w ? w.image : null; });
+    if (src) {
+      await p.evaluate((src) => new Promise((res) => {
+        const im = new Image(); im.alt = ""; im.id = "fold-check-picture"; im.onload = res; im.onerror = res; im.src = src;
+        document.querySelector("[data-menu-shade]").appendChild(im);
+        document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
+      }), src);
+      await p.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
+      await p.waitForTimeout(1500);                        // (and the scrollbar's thumb fades)
+      await check(p, "front page: hamburger over a painting in the picture's place", dpr);
+      await p.evaluate(() => { document.getElementById("fold-check-picture").remove(); document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
+    }
+  }
 
   // -- the menu, open, and a label under the pointer
   await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
