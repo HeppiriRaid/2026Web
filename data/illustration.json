@@ -1,12 +1,95 @@
 {
-  "saveId": "seed",
+  "saveId": "mup9zot80282",
   "works": [
-    { "id": "w0", "title": "title0", "date": "2025", "medium": "Graphic Paint", "width": 1, "height": 1 },
-    { "id": "w1", "title": "title1", "date": "2024", "medium": "Ink and digital", "width": 4, "height": 5 },
-    { "id": "w2", "title": "title2", "date": "2024", "medium": "Oil study", "width": 3, "height": 2 },
-    { "id": "w3", "title": "title3", "date": "2023", "medium": "Mixed media", "width": 2, "height": 3 },
-    { "id": "w4", "title": "title4", "date": "2023", "medium": "Concept art", "width": 1, "height": 1 },
-    { "id": "w5", "title": "title5", "date": "2022", "medium": "Graphic Paint", "width": 16, "height": 9 },
-    { "id": "w6", "title": "title6", "date": "2021", "medium": "Ink and digital", "width": 3, "height": 4 }
+    {
+      "id": "w0",
+      "title": "title0",
+      "date": "2025",
+      "medium": "Graphic Paint",
+      "width": 2133,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zf8v2a3s.webp",
+      "full": "assets/img/illustration/wmup9zf8v2a3s-full.webp"
+    },
+    {
+      "id": "w1",
+      "title": "title1",
+      "date": "2024",
+      "medium": "Ink and digital",
+      "width": 675,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zgpi8wet.webp",
+      "full": "assets/img/illustration/wmup9zgpi8wet-full.webp"
+    },
+    {
+      "id": "wmup9z9k8mnqs",
+      "title": "IMG_5411",
+      "date": "2026",
+      "medium": "",
+      "width": 675,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zhmdi0cm.webp",
+      "full": "assets/img/illustration/wmup9zhmdi0cm-full.webp"
+    },
+    {
+      "id": "w2",
+      "title": "title2",
+      "date": "2024",
+      "medium": "Oil study",
+      "width": 1600,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zii8ugcl.webp",
+      "full": "assets/img/illustration/wmup9zii8ugcl-full.webp"
+    },
+    {
+      "id": "w3",
+      "title": "title3",
+      "date": "2023",
+      "medium": "Mixed media",
+      "width": 2133,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zjk1v9pz.webp",
+      "full": "assets/img/illustration/wmup9zjk1v9pz-full.webp"
+    },
+    {
+      "id": "w4",
+      "title": "title4",
+      "date": "2023",
+      "medium": "Concept art",
+      "width": 675,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zkxow73m.webp",
+      "full": "assets/img/illustration/wmup9zkxow73m-full.webp"
+    },
+    {
+      "id": "w5",
+      "title": "title5",
+      "date": "2022",
+      "medium": "Graphic Paint",
+      "width": 2133,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zlqay78e.webp",
+      "full": "assets/img/illustration/wmup9zlqay78e-full.webp"
+    },
+    {
+      "id": "w6",
+      "title": "title6",
+      "date": "2021",
+      "medium": "Ink and digital",
+      "width": 675,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9zmxgy8nh.webp",
+      "full": "assets/img/illustration/wmup9zmxgy8nh-full.webp"
+    },
+    {
+      "id": "wmup9ytwr8fxz",
+      "title": "IMG_5303",
+      "date": "2026",
+      "medium": "",
+      "width": 675,
+      "height": 1200,
+      "image": "assets/img/illustration/wmup9znt2qr1r.webp",
+      "full": "assets/img/illustration/wmup9znt2qr1r-full.webp"
+    }
   ]
 }
