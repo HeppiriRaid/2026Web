@@ -260,6 +260,20 @@
     var pre = document.getElementById("preloader");
     function runIntro() { introTL.play(); }
 
+    // Arriving at a section from another page (index.html#about …): the browser lines
+    // the section's heading up with the top of the window. Land where the nav links
+    // here land instead — ABOUT ME at the very top of the page (name and corner marks
+    // showing), the others 48px above their heading. Done behind the curtain.
+    function landOnSection() {
+      var h = location.hash, t = /^#(about|works|contact)$/.test(h) && document.querySelector(h);
+      if (!t) return;
+      // its place in the layout (its reveal may already be sliding it in from 42px below)
+      for (var top = 0, el = t; el; el = el.offsetParent) top += el.offsetTop;
+      var y = h === "#about" ? 0 : Math.max(0, top - 48);
+      if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
+      window.scrollTo(0, y);
+    }
+
     // Build + measure the ScrollTriggers NOW, up front, behind the still
     // preloader. ScrollTrigger.refresh() forces a synchronous layout of every
     // trigger; doing it at the preloader→intro handoff dropped an ~80ms frame
@@ -294,6 +308,7 @@
         // From another page of the site (js/wipe.js): no name — the white sheet that
         // covered the last page just lifts off this one, and the intro follows.
         heroReady.then(function () {
+          landOnSection();
           gsap.timeline()
               .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, 0.05)
               .add(function () {
@@ -310,6 +325,7 @@
         var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
 
         Promise.all([entered, heroReady]).then(function () {
+          landOnSection();
           var exit = gsap.timeline();
           exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
               .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
@@ -321,6 +337,7 @@
         });
       }
     } else {
+      landOnSection();
       if (pre) pre.style.display = "none";
       runIntro();
     }
