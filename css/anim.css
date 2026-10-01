@@ -47,7 +47,7 @@
 html:not(.anim) .preloader{display:none}
 
 /* ---- custom cursor (fine pointers only; driven by js/cursor.js) -- */
-/* The red dot marks the exact point. Around it, Maison Auge's inverse square:
+/* A small rhombus marks the exact point. Around it, Maison Auge's inverse square:
    filled with their #DCCBC3 and blended with "difference", so whatever passes
    under it shows |colour - #DCCBC3|, live (paper -> deep ink-blue, grey -> dark
    brown, red -> teal). 12pt, the site's square, sized and placed by the script.
@@ -67,8 +67,12 @@ html:not(.anim) .preloader{display:none}
    layer of its own whenever they show. Keep it lifted for as long as the cursor
    is live, or its text rendering would flip each time the mouse enters or leaves. */
 html.cursor-live .stage{will-change:transform}
+/* The point itself: a rhombus (a square turned 45 degrees) whose tips sit on the
+   old 6px dot's circle, inverting live with the same #DCCBC3 difference. Over the
+   square it inverts the inverse, so it opens a small window back onto the page. */
 .cursor-dot{
-  width:6px;height:6px;border-radius:50%;background:#f20000;
+  width:6px;height:6px;background:#dccbc3;mix-blend-mode:difference;
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
   transform:translate3d(-50%,-50%,0);
   opacity:0;transition:opacity .3s ease;
 }

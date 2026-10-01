@@ -9,7 +9,7 @@
    The motion is theirs too, solved exactly every frame: the square trails the
    pointer on their follow spring (stiffness 200, damping 25, mass 0.2), and it
    springs in, out, and up to 18pt over links and works on their box spring
-   (350 / 25 / 0.5). The red dot marks the exact point.
+   (350 / 25 / 0.5). A small rhombus marks the exact point, inverting live too.
    Two under-squares follow it beneath the page content and mirror the paper
    about #DCCBC3 first (see css/anim.css), so letters inside the square come out
    clean instead of outlined in black. All three share one rectangle, snapped to
