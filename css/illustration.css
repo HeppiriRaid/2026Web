@@ -1,0 +1,118 @@
+/* ============================================================
+   KOKI TAKAMATSU — illustration page
+   Source of truth: the second column of the Illustrator file. One 16:9 screen
+   (460.807 x 259.2 pt) that never scrolls down — only sideways:
+     · header exactly as the front page; the brand moves to x 17.35 beside a
+       12pt grey square in the top-left corner
+     · one row of works: top y 54, 162pt tall, each keeping its own shape;
+       6pt between works, 12pt outer margin, bleeding off the right edge
+     · "+" at each work's top-right corner; caption baseline 6pt under the work
+     · zoom (the file's second row): the band grey, the work centred with the
+       same 12pt margin on opposite sides
+   Everything is artboard points x --k, so it scales exactly like the front page.
+   ============================================================ */
+
+/* Caption face: URW Gothic Book (a complete Avant Garde Gothic — the shipped
+   Avant Garde file is a subset cut from the PDF, so letters the front page never
+   uses would come out blank). Its metrics are pinned so the baseline lands on the
+   artboard guide in every browser. */
+@font-face{
+  font-family:"GothicCap";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+  ascent-override:73.9%;descent-override:26.1%;line-gap-override:0%;
+}
+
+:root{
+  --ink:#434343;
+  --ph:#b3b1b1;                                                   /* placeholder grey (the file's) */
+  --red:#f20000;
+  --g:max(0px,calc((100vw - 460.807 * var(--k)) / 2));           /* side gutter when a wide window centres the screen */
+  --e:max(0px,calc((100svh - 259.2 * var(--k)) / 2));            /* half the extra height when the window is taller than 16:9 */
+}
+
+/* the page never scrolls down; the row scrolls sideways */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+.cscroll-rail,.cscroll-thumb{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px}
+::selection{background:var(--red);color:#fff}
+
+/* ---- header (fixed; same placement primitive as the front page) ------------ */
+.istage{
+  position:fixed;top:0;left:var(--g);margin:0;z-index:40;pointer-events:none;
+  width:calc(460.807 * var(--k));height:calc(36 * var(--k));
+  aspect-ratio:auto;overflow:visible;background:none;
+}
+.istage a{pointer-events:auto;text-decoration:none;transition:color .25s ease}
+.istage a:hover{color:#000}
+
+/* ---- the row ------------------------------------------------------------------ */
+.strip{
+  position:fixed;inset:0;z-index:10;margin:0;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  scrollbar-width:none;-webkit-user-select:none;user-select:none;
+}
+.strip::-webkit-scrollbar{display:none}
+.strip-track{
+  display:flex;align-items:flex-start;gap:calc(6 * var(--k));
+  width:max-content;margin:0;list-style:none;
+  /* top: y 54 (+ half of any extra height, so a taller window keeps the row centred
+     in the screen); sides: the 12pt outer margin inside the centred screen */
+  padding:calc(54 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 calc(12 * var(--k) + var(--g));
+}
+.work{position:relative;flex:0 0 auto;margin:0}
+.work-btn{
+  position:relative;display:block;height:calc(162 * var(--k));
+  margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;
+  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;
+}
+.work-media{display:block;height:100%;aspect-ratio:var(--ar,1);background:var(--ph)}
+/* real artwork: same height, its own width (from the <img> width/height) */
+.work-btn img{display:block;height:100%;width:auto;max-width:none;object-fit:fill;background:var(--ph);-webkit-user-drag:none;pointer-events:none}
+.work-btn:focus{outline:none}
+.work-btn:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(1.5 * var(--k))}
+
+/* "+" — the front page's 4.5pt cross, centred 4.75pt in from the right edge, 4.05pt down */
+.work .plus{
+  position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));
+  transform:none;transition:transform .6s cubic-bezier(.38,0,.5,1);
+}
+.work-btn:hover .plus,.work-btn:focus-visible .plus{transform:rotate(90deg)}
+
+/* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 222).
+   Line-height 1.3 puts the baseline .889em below the box top, hence 6 - 2.667 = 3.333pt.
+   It wraps only between fields, and never wider than its work. */
+.work-cap{
+  position:absolute;left:0;top:calc(100% + 3.333 * var(--k));width:100%;margin:0;overflow:hidden;
+  font-family:"GothicCap","Gothic",sans-serif;font-weight:400;font-size:calc(3 * var(--k));line-height:1.3;
+  color:var(--ink);letter-spacing:0;white-space:normal;
+}
+.work-cap .f{white-space:nowrap}
+.cap-in{display:block}
+
+/* ---- zoom ---------------------------------------------------------------------- */
+.zoom{position:fixed;inset:0;z-index:95;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
+.zoom.is-open{visibility:visible;pointer-events:auto;cursor:pointer}
+.zoom-bg{position:absolute;inset:0;background:var(--band);opacity:0}
+.zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
+.zoom-fig.has-img{background:none}
+.zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}
+/* keyboard / screen-reader controls: invisible until focused */
+.zoom-ui{position:absolute;right:calc(12 * var(--k));top:calc(12 * var(--k));display:flex;gap:calc(4 * var(--k))}
+.zoom-ui button{
+  position:relative;opacity:0;pointer-events:none;
+  font-family:"GothicCap","Gothic",sans-serif;font-size:calc(4 * var(--k));line-height:1;color:var(--ink);
+  background:none;border:0;padding:calc(1.2 * var(--k)) calc(2.4 * var(--k));cursor:pointer;
+}
+.zoom-ui button:focus-visible{opacity:1;pointer-events:auto;outline:max(1px,calc(.4 * var(--k))) solid var(--red)}
+.work.is-zoomed .work-btn{visibility:hidden}
+
+/* ---- intro pre-hide (released by illustration.js; the head failsafe clears .anim) ---- */
+.anim .work-btn{clip-path:inset(0 100% 0 0)}
+.anim .work-cap{opacity:0}
+
+/* ---- cursor: inherit the front page's ring; hide the native cursor on buttons too ---- */
+html.cursor-ready button,html.cursor-ready .zoom.is-open{cursor:none}
+
+@media (prefers-reduced-motion:reduce){
+  .work .plus{transition:none}
+}

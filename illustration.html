@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Koki Takamatsu — Illustration</title>
+<meta name="description" content="Illustration works by Koki Takamatsu." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/urwgothic-book.woff2" crossorigin />
+<link rel="stylesheet" href="css/style.css?v=16" />
+<link rel="stylesheet" href="css/anim.css?v=12" />
+<link rel="stylesheet" href="css/illustration.css?v=31" />
+<script>
+  /* Same scale + zoom driver as the front page (kept in sync): --k is px per artboard
+     point, fitted to the window's width but never letting the 16:9 screen
+     (460.807 x 259.2 pt) grow taller than the window. A browser ZOOM (seen as a
+     devicePixelRatio change) holds --k so the content scales instead of re-fitting. */
+  (function () {
+    var d = document.documentElement;
+    var DW = 460.807, FIRST = 259.2, lastDPR = window.devicePixelRatio || 1;
+    window.__fit = { dw: DW, clampPt: FIRST };
+    function fitK() {
+      d.style.setProperty("--k", Math.min(window.innerWidth / DW, window.innerHeight / FIRST) + "px");
+    }
+    fitK();
+    window.addEventListener("resize", function () {
+      var z = window.devicePixelRatio || 1;
+      if (z !== lastDPR) { lastDPR = z; return; }
+      fitK();
+    });
+    if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      d.classList.add("anim");
+      window.__revealFailsafe = setTimeout(function () {
+        d.classList.remove("anim");
+        var p = document.getElementById("preloader");
+        if (p) p.style.display = "none";
+      }, 5000);
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- preloader (same as the front page) -->
+<div class="preloader" id="preloader" aria-hidden="true">
+  <span class="pl-inner"><span class="pl-name">KOKI TAKAMATSU</span></span>
+</div>
+
+<!-- custom cursor (fine pointers only) -->
+<div class="cursor-ring" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+
+<!-- fixed top-right camouflage menu (shared with the front page) -->
+<button class="menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menuNav">
+  <span></span><span></span><span></span>
+</button>
+<nav class="menu-nav" id="menuNav" aria-hidden="true">
+  <a href="index.html#about">ABOUT</a>
+  <a href="index.html#works">WORK</a>
+  <a href="index.html#contact">CONTACT</a>
+</nav>
+
+<h1 class="sr-only">Illustration — Koki Takamatsu</h1>
+
+<!-- header: positioned in artboard points, exactly like the front page -->
+<header class="stage istage">
+  <div class="a wh sqg" style="--x:0;--y:0;--w:12;--h:12"></div>
+  <div class="a wh sqg" style="--x:448.8;--y:0;--w:12;--h:12"></div>
+  <div class="a wh sqg" style="--x:448.8;--y:24;--w:12;--h:12"></div>
+
+  <a class="a brand" href="index.html" style="--x:17.35;--y:6.2;--fs:6">KOKI TAKAMATSU</a>
+  <a class="a nav" href="index.html#about"   style="--x:374.64;--y:8.1;--fs:4">ABOUT</a>
+  <a class="a nav" href="index.html#works"   style="--x:397.66;--y:8.1;--fs:4">WORK</a>
+  <a class="a nav" href="index.html#contact" style="--x:419.69;--y:8.1;--fs:4">CONTACT</a>
+</header>
+
+<!-- ============================================================================
+     THE WORKS — one horizontal row. Every work is 162pt tall and keeps its own
+     shape; 6pt between works, 12pt outer margin. Wheel / trackpad / drag / arrow
+     keys move the row sideways; "+" (or a click on the work) opens it large.
+
+     To add a work, copy one <li>. For a real image, replace the grey
+       <span class="work-media" style="--ar:1/1"></span>
+     with
+       <img src="assets/img/illustration/NAME.webp" width="3000" height="2000" alt="TITLE" />
+     (width/height = the file's pixel size, so the layout knows its shape before it
+     loads). Optional: data-full="big-version.webp" on the <img> for the zoom view.
+     The caption is the line under each work: Title / Date / Medium.
+     ============================================================================ -->
+<main class="strip" id="strip">
+  <ul class="strip-track" id="track" aria-label="Illustration works">
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title0&#8221;</span> | <span class="f">Date: 2025</span> | <span class="f">Medium: Graphic Paint</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:4/5"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title1&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Ink and digital</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/2"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title2&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Oil study</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:2/3"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title3&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Mixed media</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title4&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Concept art</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:16/9"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title5&#8221;</span> | <span class="f">Date: 2022</span> | <span class="f">Medium: Graphic Paint</span></p>
+    </li>
+
+    <li class="work">
+      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/4"></span><span class="plus" aria-hidden="true"></span></button>
+      <p class="work-cap"><span class="f">Title: &#8220;title6&#8221;</span> | <span class="f">Date: 2021</span> | <span class="f">Medium: Ink and digital</span></p>
+    </li>
+
+  </ul>
+</main>
+
+<!-- zoom view: the band grey, the work centred with the same margin on opposite sides -->
+<div class="zoom" id="zoom" role="dialog" aria-modal="true" aria-labelledby="zoomTitle" aria-hidden="true" tabindex="-1">
+  <div class="zoom-bg"></div>
+  <p class="sr-only" id="zoomTitle"></p>
+  <div class="zoom-ui">
+    <button type="button" data-act="prev">Previous</button>
+    <button type="button" data-act="next">Next</button>
+    <button type="button" data-act="close">Close</button>
+  </div>
+</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="js/menu.js?v=16"></script>
+<script src="js/illustration.js?v=31"></script>
+</body>
+</html>
