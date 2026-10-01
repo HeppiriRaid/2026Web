@@ -3,8 +3,14 @@
    The site's paper, ink and greys; URW Gothic for labels, the system face for
    anything typed (titles can be in any script).
    ============================================================ */
-@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-display:swap}
+/* URW Gothic, with its line centred on the capitals. As shipped, its capitals fill the top
+   73.9% of the line (cap height = ascent = 739/1000) and the descender room below stays
+   empty, so every uppercase label sat about 0.13em high in its box. Ascent 86.95% /
+   descent 13.05% puts the middle of the capitals exactly on the middle of the line. */
+@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-display:swap;
+  ascent-override:86.95%;descent-override:13.05%;line-gap-override:0%}
+@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-display:swap;
+  ascent-override:86.95%;descent-override:13.05%;line-gap-override:0%}
 
 :root{
   --paper:#fffefc;--band:#f2f1ef;--ink:#434343;--soft:#8a8988;--line:#dcdbd9;--ph:#b3b1b1;--red:#f20000;
