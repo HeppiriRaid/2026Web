@@ -53,12 +53,16 @@
   }, true);
 
   // back / forward straight from the browser's page cache: the page returns still
-  // under the sheet it left with, so lift it off
+  // under the sheet it left with, so lift it off. Two frames later: the animation clock
+  // first jumps by the time the page sat in the cache, which would finish a lift started
+  // now in its first frame.
   window.addEventListener("pageshow", function (ev) {
     if (!ev.persisted) return;
     leaving = false;
     if (getComputedStyle(pre).display === "none") return;
-    gsap.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", overwrite: true,
-      onComplete: function () { pre.style.display = "none"; } });
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      gsap.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", overwrite: true,
+        onComplete: function () { pre.style.display = "none"; } });
+    }); });
   });
 })();
