@@ -8,7 +8,8 @@
    stays invisible (pure camouflage). The instant the squares are cut off
    by the top edge, the button "catches up": it eases back down into the
    corner and the two squares split into a three-bar hamburger. Click it
-   and the hamburger becomes an X with the ABOUT / WORK / CONTACT menu.
+   and the hamburger becomes an X with the ABOUT / WORK / ILLUSTRATION /
+   CONTACT menu.
    The whole thing reverses smoothly on the way back up. Uses Lenis for
    smooth in-page scrolling when available; degrades to a plain fixed
    hamburger under reduced-motion or without the animation layer.
@@ -394,6 +395,8 @@
 
   nav.querySelectorAll("a").forEach(function (a) {
     a.addEventListener("click", function (e) {
+      // the page you are already on (aria-current): just close the menu, don't reload
+      if (a.getAttribute("aria-current") === "page") { e.preventDefault(); setOpen(false); return; }
       var href = a.getAttribute("href");
       var t = document.querySelector(href);
       if (t) {

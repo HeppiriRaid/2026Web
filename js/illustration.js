@@ -441,6 +441,7 @@
     var a = e.target.closest && e.target.closest("a[href]");
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (a.target && a.target !== "_self") return;
+    if (a.getAttribute("aria-current") === "page") return;    // this page (menu.js just closes the menu)
     var url;
     try { url = new URL(a.href, location.href); } catch (err) { return; }
     if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
