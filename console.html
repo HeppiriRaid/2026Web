@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Console — Koki Takamatsu</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="css/console.css" />
+</head>
+<body>
+<!-- ============================================================================
+     The site's console: edit the illustration works and Save. A Save is one commit
+     to the repository's Main branch (through GitHub's API, with your own access
+     token), and GitHub Pages publishes it about a minute later.
+     ============================================================================ -->
+
+<header class="bar">
+  <a class="brand" href="index.html">KOKI TAKAMATSU</a>
+  <span class="crumb">Console</span>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+  <a class="btn ghost" id="viewLink" href="illustration.html" target="_blank" rel="noopener">View page</a>
+  <button class="btn" id="saveBtn" type="button" disabled>Save</button>
+</header>
+
+<main>
+  <!-- sign in -->
+  <section class="login" id="login" hidden>
+    <h1>Sign in</h1>
+    <p>The console saves straight to the website on GitHub. Paste your GitHub access token for it here. It stays in this browser and is only ever sent to GitHub.</p>
+    <form id="loginForm">
+      <label>GitHub token<input id="token" type="password" autocomplete="off" spellcheck="false" required /></label>
+      <label class="check"><input id="remember" type="checkbox" checked /> Remember on this device</label>
+      <button class="btn" type="submit" id="connectBtn">Connect</button>
+      <p class="error" id="loginError" role="alert"></p>
+    </form>
+    <details>
+      <summary>How to make a token</summary>
+      <ol>
+        <li>On GitHub, open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Settings → Developer settings → Fine-grained tokens → Generate new token</a>.</li>
+        <li>Name it <code>Website console</code> and pick an expiry (a year is fine).</li>
+        <li>Repository access: <b>Only select repositories</b> → <code>HeppiriRaid/2026Web</code>.</li>
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Nothing else.</li>
+        <li>Generate it, copy it, and paste it above. Don't paste it anywhere else.</li>
+      </ol>
+    </details>
+  </section>
+
+  <!-- the illustration works -->
+  <section id="editor" hidden>
+    <div class="head">
+      <h1>Illustration</h1>
+      <p class="hint">Drag a work to move it. Drop images on the row (or use +) to add works. Click a work to edit it.</p>
+      <button class="btn ghost" id="addBtn" type="button">Add works…</button>
+    </div>
+    <div class="row" id="row" role="list" aria-label="Works, in order"></div>
+    <input id="pickMany" type="file" accept="image/*" multiple hidden />
+    <input id="pickOne" type="file" accept="image/*" hidden />
+
+    <div class="panel" id="panel" hidden>
+      <div class="pv" id="pv"></div>
+      <div class="fields">
+        <label>Title<input id="fTitle" type="text" autocomplete="off" /></label>
+        <label>Date<input id="fDate" type="text" autocomplete="off" /></label>
+        <label>Medium<input id="fMedium" type="text" autocomplete="off" /></label>
+        <p class="meta" id="fMeta"></p>
+        <div class="actions">
+          <button class="btn ghost" id="replaceBtn" type="button">Replace image…</button>
+          <button class="btn ghost" id="leftBtn" type="button" aria-label="Move left">← Move</button>
+          <button class="btn ghost" id="rightBtn" type="button" aria-label="Move right">Move →</button>
+          <button class="btn danger" id="deleteBtn" type="button">Delete</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="foot" hidden>
+  <span>Saves go live on the site about a minute after you press Save.</span>
+  <button id="signOut" type="button">Sign out</button>
+</footer>
+
+<script src="js/console.js"></script>
+</body>
+</html>

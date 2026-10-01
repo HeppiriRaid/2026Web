@@ -51,23 +51,79 @@
   var worksEase = cubicBezier(0.38, 0, 0.5, 1);   // the front page's panel wipe: slow → fast → slow
   var lift = cubicBezier(0.22, 1, 0.36, 1);       // zoom: answers at once, lands softly
 
-  /* ---------- the works ------------------------------------------------------ */
-  var works = $$(".work", track).map(function (el, i) {
-    var btn = el.querySelector(".work-btn"), cap = el.querySelector(".work-cap");
-    var inner = document.createElement("span");    // the caption rises inside its own mask
-    inner.className = "cap-in";
-    while (cap.firstChild) inner.appendChild(cap.firstChild);
-    cap.appendChild(inner);
-    var first = cap.querySelector(".f");
-    var title = ((first || cap).textContent || "").replace(/^\s*Title:\s*/i, "").replace(/[“”"]/g, "").trim();
-    cap.id = "cap" + i;
-    btn.setAttribute("aria-label", "View " + (title || "work " + (i + 1)));
-    btn.setAttribute("aria-describedby", cap.id);
-    el.setAttribute("data-i", i);
-    return { i: i, el: el, btn: btn, cap: cap, capIn: inner, plus: btn.querySelector(".plus"),
-             img: btn.querySelector("img"), title: title || "Work " + (i + 1), shown: false };
-  });
-  var N = works.length;
+  /* ---------- the works: data/illustration.json (edited in console.html) -------
+     Fetched fresh on every visit, so a Save in the console shows as soon as its
+     deploy lands. Every text goes in as text (never as markup). */
+  var works = [], N = 0;
+  function loadWorks() {
+    if (!window.fetch) return Promise.resolve([]);
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
+    return fetch("data/illustration.json?t=" + Date.now(), { cache: "no-store", signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (d) { return d && Array.isArray(d.works) ? d.works : []; })
+      .catch(function (err) { if (window.console) console.error("illustration: could not load the works", err); return []; })
+      .then(function (list) { clearTimeout(timer); return list; });
+  }
+  function make(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  // one work, in the same markup the page used to carry by hand
+  function build(d) {
+    var li = make("li", "work"), btn = make("button", "work-btn"), cap = make("p", "work-cap");
+    var w = +d.width > 0 ? +d.width : 1, h = +d.height > 0 ? +d.height : 1;
+    btn.type = "button";
+    if (d.image) {                                  // its pixel size, so the row knows its shape before it loads
+      var im = document.createElement("img");
+      im.src = d.image; im.width = w; im.height = h; im.alt = d.title || ""; im.decoding = "async";
+      if (d.full) im.setAttribute("data-full", d.full);
+      btn.appendChild(im);
+    } else {                                        // no picture yet: the grey holder, in its proportion
+      var ph = make("span", "work-media");
+      ph.style.setProperty("--ar", w + "/" + h);
+      btn.appendChild(ph);
+    }
+    var plus = make("span", "plus");
+    plus.setAttribute("aria-hidden", "true");
+    btn.appendChild(plus);
+    [d.title ? "Title: “" + d.title + "”" : "", d.date ? "Date: " + d.date : "", d.medium ? "Medium: " + d.medium : ""]
+      .filter(Boolean).forEach(function (f, i) {
+        if (i) cap.appendChild(document.createTextNode(" | "));
+        cap.appendChild(make("span", "f", f));
+      });
+    li.setAttribute("data-title", d.title || "");
+    li.appendChild(btn); li.appendChild(cap);
+    return li;
+  }
+  function render(list) {
+    var frag = document.createDocumentFragment();
+    list.forEach(function (d) {
+      try { if (d && typeof d === "object") frag.appendChild(build(d)); }
+      catch (err) { if (window.console) console.error("illustration: skipped a work", err); }
+    });
+    track.appendChild(frag);
+  }
+  function collect() {
+    works = $$(".work", track).map(function (el, i) {
+      var btn = el.querySelector(".work-btn"), cap = el.querySelector(".work-cap");
+      var inner = document.createElement("span");  // the caption rises inside its own mask
+      inner.className = "cap-in";
+      while (cap.firstChild) inner.appendChild(cap.firstChild);
+      cap.appendChild(inner);
+      var title = el.getAttribute("data-title") || "";
+      cap.id = "cap" + i;
+      btn.setAttribute("aria-label", "View " + (title || "work " + (i + 1)));
+      btn.setAttribute("aria-describedby", cap.id);
+      el.setAttribute("data-i", i);
+      return { i: i, el: el, btn: btn, cap: cap, capIn: inner, plus: btn.querySelector(".plus"),
+               img: btn.querySelector("img"), title: title || "Work " + (i + 1), shown: false };
+    });
+    N = works.length;
+    if (io) works.forEach(function (w) { io.observe(w.el); });
+  }
 
   /* ---------- sideways scroll ------------------------------------------------ */
   var lenis = null;
@@ -109,7 +165,7 @@
     for (var i = 0; i < N; i++) { var d = Math.abs(stopFor(i) - x); if (d < bd - 0.5) { bd = d; best = i; } }
     return best;
   }
-  function goTo(i) { setScroll(stopFor(clamp(i, 0, N - 1)), REDUCE); }
+  function goTo(i) { if (N) setScroll(stopFor(clamp(i, 0, N - 1)), REDUCE); }   // (the list can be empty)
 
   // drag (mouse / pen) — touch keeps the native swipe
   var drag = null, eatClick = false;
@@ -181,7 +237,6 @@
       .sort(function (a, b) { return a.i - b.i; });
     batch.forEach(function (w, n) { reveal(w, n * 0.08); });
   }, { threshold: 0.12 }) : null;
-  if (io) works.forEach(function (w) { io.observe(w.el); });
 
   /* ---------- zoom ------------------------------------------------------------ */
   var Z = { open: false, busy: false, kbd: false, i: -1, fig: null, ret: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
@@ -451,12 +506,20 @@
     }, 12000);
   }
 
-  try {
-    if (document.readyState === "complete") start();
-    else window.addEventListener("load", start, { once: true });
-  } catch (err) {
-    if (window.console) console.error("illustration.js failed, showing the static page:", err);
-    root.classList.remove("anim");
-    if (pre) pre.style.display = "none";
-  }
+  // the curtain lifts once the page has loaded AND the works are in the row (a failed or
+  // slow list still lifts it, onto an empty row)
+  var loaded = new Promise(function (res) {
+    if (document.readyState === "complete") res();
+    else window.addEventListener("load", res, { once: true });
+  });
+  var listed = loadWorks().then(function (list) { render(list); collect(); })
+    .catch(function (err) { if (window.console) console.error("illustration: the row failed", err); });
+  Promise.all([listed, loaded]).then(function () {
+    try { start(); } catch (err) {
+      if (window.console) console.error("illustration.js failed, showing the static page:", err);
+      introLock = false;
+      root.classList.remove("anim");
+      if (pre) pre.style.display = "none";
+    }
+  });
 })();

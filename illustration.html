@@ -84,54 +84,12 @@
      shape; 6pt between works, 12pt outer margin. Wheel / trackpad / drag / arrow
      keys move the row sideways; "+" (or a click on the work) opens it large.
 
-     To put in a real work, replace its grey holder
-       <span class="work-media" style="--ar:1/1"></span>
-     with
-       <img src="assets/img/illustration/NAME.webp" width="3000" height="2000" alt="TITLE" decoding="async" />
-     (width/height = the file's pixel size, so the row knows its shape before it
-     loads; ~1800px tall keeps the zoom sharp). Optional: data-full="big-version.webp"
-     for a larger file in the zoom view. To add a work, copy one <li>.
-     The caption is the line under each work: Title / Date / Medium.
+     The works themselves live in data/illustration.json and are edited in the
+     console (console.html): add, reorder, retitle, replace or remove them there
+     and Save. js/illustration.js builds the row below from that file.
      ============================================================================ -->
 <main class="strip" id="strip">
-  <ul class="strip-track" id="track" aria-label="Illustration works">
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title0&#8221;</span> | <span class="f">Date: 2025</span> | <span class="f">Medium: Graphic Paint</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:4/5"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title1&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Ink and digital</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/2"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title2&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Oil study</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:2/3"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title3&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Mixed media</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title4&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Concept art</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:16/9"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title5&#8221;</span> | <span class="f">Date: 2022</span> | <span class="f">Medium: Graphic Paint</span></p>
-    </li>
-
-    <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/4"></span><span class="plus" aria-hidden="true"></span></button>
-      <p class="work-cap"><span class="f">Title: &#8220;title6&#8221;</span> | <span class="f">Date: 2021</span> | <span class="f">Medium: Ink and digital</span></p>
-    </li>
-
-  </ul>
+  <ul class="strip-track" id="track" aria-label="Illustration works"></ul>
 </main>
 
 <!-- zoom view: the band grey, the work centred with the same margin on opposite sides -->

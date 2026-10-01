@@ -1,0 +1,12 @@
+{
+  "saveId": "seed",
+  "works": [
+    { "id": "w0", "title": "title0", "date": "2025", "medium": "Graphic Paint", "width": 1, "height": 1 },
+    { "id": "w1", "title": "title1", "date": "2024", "medium": "Ink and digital", "width": 4, "height": 5 },
+    { "id": "w2", "title": "title2", "date": "2024", "medium": "Oil study", "width": 3, "height": 2 },
+    { "id": "w3", "title": "title3", "date": "2023", "medium": "Mixed media", "width": 2, "height": 3 },
+    { "id": "w4", "title": "title4", "date": "2023", "medium": "Concept art", "width": 1, "height": 1 },
+    { "id": "w5", "title": "title5", "date": "2022", "medium": "Graphic Paint", "width": 16, "height": 9 },
+    { "id": "w6", "title": "title6", "date": "2021", "medium": "Ink and digital", "width": 3, "height": 4 }
+  ]
+}

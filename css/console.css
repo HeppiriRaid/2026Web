@@ -1,0 +1,117 @@
+/* ============================================================
+   KOKI TAKAMATSU — console (console.html)
+   The site's paper, ink and greys; URW Gothic for labels, the system face for
+   anything typed (titles can be in any script).
+   ============================================================ */
+@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"GothicC";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-display:swap}
+
+:root{
+  --paper:#fffefc;--band:#f2f1ef;--ink:#434343;--soft:#8a8988;--line:#dcdbd9;--ph:#b3b1b1;--red:#f20000;
+  --label:"GothicC","Century Gothic",system-ui,sans-serif;
+  --ui:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  --h:200px;                                   /* the row's card height */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink)}
+body{font:14px/1.5 var(--ui);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+button,input{font:inherit;color:inherit}
+[hidden]{display:none !important}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* ---- top bar ---- */
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;
+  padding:14px 24px;background:var(--paper);border-bottom:1px solid var(--line)}
+.brand{font:400 18px/1 var(--label);letter-spacing:-.01em;color:var(--ink);text-decoration:none;white-space:nowrap}
+.crumb{font:400 13px/1 var(--label);color:var(--soft);text-transform:uppercase;letter-spacing:.08em}
+.status{flex:1;min-width:0;font-size:13px;color:var(--soft);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status.is-ok{color:#2c7a4b}
+.status.is-err{color:var(--red);white-space:normal}
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 16px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--paper);font:400 13px/1 var(--label);letter-spacing:.04em;text-transform:uppercase;
+  cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:#000;border-color:#000}
+.btn.ghost{background:none;color:var(--ink)}
+.btn.ghost:hover{background:var(--band)}
+.btn.danger{background:none;color:var(--red);border-color:var(--red)}
+.btn.danger:hover{background:#fff1f0}
+.btn:disabled{opacity:.35;cursor:default;background:var(--ink);border-color:var(--ink)}
+.btn.ghost:disabled{background:none}
+
+main{flex:1;padding:28px 24px 40px}
+
+/* ---- sign in ---- */
+.login{max-width:520px;margin:6vh auto 0;padding:32px;border:1px solid var(--line);background:#fff}
+.login h1{font:400 26px/1.1 var(--label);margin-bottom:12px}
+.login p{color:var(--soft);margin-bottom:20px}
+.login label{display:block;font:400 12px/1 var(--label);text-transform:uppercase;letter-spacing:.06em;color:var(--soft);margin-bottom:16px}
+.login input[type=password]{display:block;width:100%;margin-top:8px;height:40px;padding:0 12px;border:1px solid var(--line);background:var(--paper);
+  font:14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;text-transform:none}
+.login .check{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font:14px/1 var(--ui);color:var(--ink)}
+.error{color:var(--red);min-height:1.5em;margin-top:12px;font-size:13px;white-space:pre-wrap}
+.login details{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+.login summary{cursor:pointer;font:400 13px/1.4 var(--label);text-transform:uppercase;letter-spacing:.06em}
+.login ol{margin:12px 0 0 20px;color:var(--ink)}
+.login li{margin-bottom:6px}
+.login code{font:12px ui-monospace,Menlo,monospace;background:var(--band);padding:1px 4px}
+.login a{color:var(--ink)}
+
+/* ---- editor ---- */
+.head{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.head h1{font:400 30px/1 var(--label);letter-spacing:-.01em}
+.hint{flex:1;min-width:240px;color:var(--soft);font-size:13px}
+
+.row{position:relative;display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:16px 8px 22px;
+  background:var(--band);min-height:calc(var(--h) + 80px);scrollbar-width:thin;-webkit-user-select:none;user-select:none}
+.row.is-drop{outline:2px dashed var(--ink);outline-offset:-6px}
+.empty{align-self:center;margin:0 auto;color:var(--soft);font-size:14px;text-align:center;padding:40px 20px}
+
+/* a work */
+.w{position:relative;flex:0 0 auto;cursor:grab;outline:none;border:0;background:none;text-align:left}
+.w .pic{height:var(--h);background:var(--ph);overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
+.w .pic img{display:block;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none;pointer-events:none}
+.w .cap{display:block;width:0;min-width:100%;padding-top:8px;font-size:12px;line-height:1.35}
+.w .cap .t{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w .cap .m{display:block;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.35em}
+.w.is-sel .pic{box-shadow:0 0 0 3px var(--ink)}
+.w:focus-visible .pic{box-shadow:0 0 0 3px var(--ink),0 0 0 6px var(--paper)}
+.w.is-drag{opacity:.25}
+.tag{position:absolute;top:8px;left:8px;padding:2px 7px;background:var(--paper);color:var(--ink);font-size:11px;border-radius:2px}
+.w.is-busy .pic{display:grid;place-items:center;color:var(--paper);font-size:12px}
+.w.is-busy .pic::after{content:"Preparing…"}
+
+/* insert slots between works: a gap that shows a "+" on hover */
+.ins{flex:0 0 auto;align-self:stretch;width:22px;height:var(--h);margin:0;border:0;background:none;cursor:pointer;position:relative;color:transparent}
+.ins::after{content:"+";position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+  background:var(--ink);color:var(--paper);font:16px/22px var(--ui);text-align:center;opacity:0;transform:scale(.6);transition:opacity .15s,transform .15s}
+.ins:hover::after,.ins:focus-visible::after{opacity:1;transform:none}
+.add{flex:0 0 auto;width:150px;height:var(--h);margin-left:4px;border:1px dashed var(--soft);background:none;color:var(--ink);cursor:pointer;
+  font:400 13px/1.3 var(--label);text-transform:uppercase;letter-spacing:.05em;display:grid;place-items:center;text-align:center}
+.add:hover{background:var(--paper);border-style:solid}
+
+/* where a dragged work or dropped files will land */
+.marker{position:absolute;top:12px;width:3px;height:calc(var(--h) + 8px);background:var(--red);pointer-events:none;display:none}
+.drag-ghost{position:fixed;z-index:50;pointer-events:none;opacity:.9;box-shadow:0 10px 30px rgba(0,0,0,.2);transform:translate(-50%,-50%) rotate(-2deg)}
+.drag-ghost img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* the selected work's editor */
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);gap:32px;margin-top:24px;padding:24px;border:1px solid var(--line);background:#fff}
+.pv{display:grid;place-items:center;background:var(--band);min-height:260px;max-height:440px;padding:16px}
+.pv img,.pv .ph{display:block;max-width:100%;max-height:400px;object-fit:contain}
+.pv .ph{background:var(--ph);height:260px}
+.fields label{display:block;margin-bottom:14px;font:400 12px/1 var(--label);text-transform:uppercase;letter-spacing:.06em;color:var(--soft)}
+.fields input{display:block;width:100%;margin-top:7px;height:38px;padding:0 11px;border:1px solid var(--line);background:var(--paper);
+  font:15px/1 var(--ui);color:var(--ink);text-transform:none;letter-spacing:0}
+.fields input:focus{border-color:var(--ink);outline:none}
+.meta{color:var(--soft);font-size:12px;margin:4px 0 18px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+
+footer{display:flex;justify-content:space-between;gap:16px;padding:14px 24px;border-top:1px solid var(--line);color:var(--soft);font-size:12px}
+footer button{background:none;border:0;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:12px}
+
+@media (max-width:760px){
+  .panel{grid-template-columns:1fr}
+  .bar{flex-wrap:wrap;gap:10px}
+  .status{order:5;flex-basis:100%;text-align:left}
+  :root{--h:150px}
+}
