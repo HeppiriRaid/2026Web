@@ -74,16 +74,21 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* "+" — the front page's 4.5pt cross, centred 4.75pt in from the right edge, 4.05pt down.
    It never moves: it only fades — in as its work appears, out when the work is opened,
    and back in once the work has returned to the row (illustration.js). */
-.work .plus{position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));transform:none}
-/* hover highlight: the "+" turns a whitish grey (the band grey, #f2f1ef) while the pointer
-   is on the "+" itself — colour only, it never moves. (Not on the whole work: a highlighted
-   "+" far from the pointer read as left behind.) Inside the cursor's square it shows
-   inverted, as a dark slate. Real-hover devices only, so a tap on a phone can't leave it
-   stuck; keyboard focus on a work gets the same highlight. */
-.work .plus::before,.work .plus::after{transition:background-color .25s ease}
+/* It inverts the work beneath it with the cursor's inverse (#DCCBC3, difference), so it
+   reads on any picture, light or dark. */
+.work .plus{position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));transform:none;
+  mix-blend-mode:difference}
+.work .plus::before,.work .plus::after{background:#dccbc3;transition:background-color .25s ease}
+/* hover highlight: the "+" turns a solid whitish grey (the band grey, #f2f1ef) while the
+   pointer is on the "+" itself — colour only, it never moves. (Not on the whole work: a
+   highlighted "+" far from the pointer read as left behind.) Inside the cursor's square it
+   shows inverted, as a dark slate. Real-hover devices only, so a tap on a phone can't
+   leave it stuck; keyboard focus on a work gets the same highlight. */
 @media (hover:hover){
+  .work .plus:hover{mix-blend-mode:normal}
   .work .plus:hover::before,.work .plus:hover::after{background:var(--band)}
 }
+.work-btn:focus-visible .plus{mix-blend-mode:normal}
 .work-btn:focus-visible .plus::before,.work-btn:focus-visible .plus::after{background:var(--band)}
 
 /* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 222).
