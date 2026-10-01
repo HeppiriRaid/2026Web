@@ -21,7 +21,6 @@
   var gsap = window.gsap;
   function mq(q) { return !!(window.matchMedia && window.matchMedia(q).matches); }
   var REDUCE = mq("(prefers-reduced-motion: reduce)");
-  var FINE = mq("(pointer:fine)");
   if (window.__revealFailsafe) clearTimeout(window.__revealFailsafe);
 
   var strip = document.getElementById("strip");
@@ -402,27 +401,7 @@
     if (ev.persisted && pre) { pre.style.display = "none"; if (gsap) gsap.set(pre, { clearProps: "transform" }); }
   });
 
-  /* ---------- custom cursor (fine pointers) — the front page's ---------------- */
-  function cursor() {
-    var dot = document.querySelector(".cursor-dot"), ring = document.querySelector(".cursor-ring");
-    if (!dot || !ring || !FINE || !gsap) return;
-    root.classList.add("cursor-ready");
-    var mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my;
-    function setDot() { dot.style.transform = "translate3d(" + mx + "px," + my + "px,0) translate(-50%,-50%)"; }
-    function setRing() { ring.style.transform = "translate3d(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px,0) translate(-50%,-50%)"; }
-    setDot(); setRing();
-    window.addEventListener("mousemove", function (e) { mx = e.clientX; my = e.clientY; setDot(); }, { passive: true });
-    gsap.ticker.add(function () {
-      var nx = rx + (mx - rx) * 0.18, ny = ry + (my - ry) * 0.18;
-      if (Math.abs(mx - nx) < 0.05) nx = mx;
-      if (Math.abs(my - ny) < 0.05) ny = my;
-      if (nx === rx && ny === ry) return;
-      rx = nx; ry = ny; setRing();
-    });
-    var HOT = "a, .work-btn, .zoom-ui button";
-    document.addEventListener("mouseover", function (e) { if (e.target.closest(HOT)) ring.classList.add("is-hover"); });
-    document.addEventListener("mouseout", function (e) { if (e.target.closest(HOT)) ring.classList.remove("is-hover"); });
-  }
+  /* (the custom cursor lives in js/cursor.js, shared with the front page) */
 
   /* ---------- intro: the front page's preloader, then the header + works --------- */
   function whenReady(img) {
@@ -473,7 +452,6 @@
   }
 
   try {
-    cursor();
     if (document.readyState === "complete") start();
     else window.addEventListener("load", start, { once: true });
   } catch (err) {

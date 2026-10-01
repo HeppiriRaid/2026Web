@@ -37,22 +37,17 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 ::selection{background:var(--red);color:#fff}
 
 /* ---- header (fixed; same placement primitive as the front page) ------------ */
-/* The header and the row are fixed layers of their own, so they carry the paper they
-   sit on: the inverse effect (css/invert.css) on anything inside them then has the
-   paper to invert. Nothing ever passes beneath either, so the page looks the same.
-   99.9% rather than solid, so their text keeps its usual (greyscale) antialiasing. */
-:root{--paper-layer:color-mix(in srgb,var(--paper) 99.9%,transparent)}
 .istage{
   position:fixed;top:0;left:var(--g);margin:0;z-index:40;pointer-events:none;
   width:calc(460.807 * var(--k));height:calc(36 * var(--k));
-  aspect-ratio:auto;overflow:visible;background:var(--paper-layer);
+  aspect-ratio:auto;overflow:visible;background:none;
 }
 .istage a{pointer-events:auto;text-decoration:none;transition:color .25s ease}
 .istage a:hover{color:#000}
 
 /* ---- the row ------------------------------------------------------------------ */
 .strip{
-  position:fixed;inset:0;z-index:10;margin:0;background:var(--paper-layer);
+  position:fixed;inset:0;z-index:10;margin:0;
   overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
   scrollbar-width:none;-webkit-user-select:none;user-select:none;
 }
@@ -122,7 +117,4 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ---- intro pre-hide (released by illustration.js; the head failsafe clears .anim) ---- */
 .anim .work-btn{clip-path:inset(0 100% 0 0)}
 .anim .work-cap{opacity:0}
-
-/* ---- cursor: inherit the front page's ring; hide the native cursor on buttons too ---- */
-html.cursor-ready button,html.cursor-ready .zoom.is-open{cursor:none}
 

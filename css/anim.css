@@ -46,36 +46,31 @@
 }
 html:not(.anim) .preloader{display:none}
 
-/* ---- custom cursor (fine pointers only) ------------------------ */
+/* ---- custom cursor (fine pointers only; driven by js/cursor.js) -- */
+/* The red dot marks the exact point. Around it, Maison Auge's inverse square:
+   filled with their #DCCBC3 and blended with "difference", so whatever passes
+   under it shows |colour - #DCCBC3|, live (paper -> deep ink-blue, grey -> dark
+   brown, red -> teal). 12pt, the site's square, at the menu's scale (--mk). */
 .cursor-dot,
-.cursor-ring{
-  position:fixed;top:0;left:0;z-index:10000;
-  border-radius:50%;pointer-events:none;
-  transform:translate3d(-50%,-50%,0);
-  opacity:0;
+.cursor-lens{
+  position:fixed;top:0;left:0;z-index:10000;pointer-events:none;
 }
 .cursor-dot{
-  width:6px;height:6px;background:#f20000;
-  transition:opacity .3s ease;
+  width:6px;height:6px;border-radius:50%;background:#f20000;
+  transform:translate3d(-50%,-50%,0);
+  opacity:0;transition:opacity .3s ease;
 }
-.cursor-ring{
-  width:34px;height:34px;border:1px solid rgba(67,67,67,.55);
-  transition:width .25s ease,height .25s ease,border-color .25s ease,
-             background-color .25s ease,opacity .3s ease;
-}
-.cursor-ring.is-hover{
-  width:54px;height:54px;border-color:rgba(242,0,0,0);
-  background:rgba(242,0,0,.08);
+.cursor-lens{
+  width:calc(var(--mk,4) * 12px);height:calc(var(--mk,4) * 12px);
+  background:#dccbc3;mix-blend-mode:difference;
+  transform:scale(0);
 }
 @media (pointer:fine){
-  html.cursor-ready,
-  html.cursor-ready body,
-  html.cursor-ready a{cursor:none}
-  html.cursor-ready .cursor-dot,
-  html.cursor-ready .cursor-ring{opacity:1}
+  html.cursor-ready,html.cursor-ready *{cursor:none !important}
+  html.cursor-on .cursor-dot{opacity:1}
 }
 @media (hover:none),(pointer:coarse){
-  .cursor-dot,.cursor-ring{display:none}
+  .cursor-dot,.cursor-lens{display:none}
 }
 
 /* ---- reduced motion: everything static, instantly ------------- */
@@ -87,8 +82,7 @@ html:not(.anim) .preloader{display:none}
     clip-path:none !important;
   }
   .preloader{display:none !important}
-  .cursor-dot,.cursor-ring{display:none !important}
-  html.cursor-ready,html.cursor-ready body,html.cursor-ready a{cursor:auto !important}
+  .cursor-dot,.cursor-lens{display:none !important}
 }
 
 /* ---- fixed top-right menu -------------------------------------- */

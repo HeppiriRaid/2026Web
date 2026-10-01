@@ -33,12 +33,9 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* the artboard: 460.807 x 1036.66 pt. Width is the design size (460.807pt * --k)
    so it fills the viewport at default zoom and grows/shrinks with browser zoom;
-   margin auto centres it when zoomed out (narrower than the viewport).
-   No z-index: the stage must not become its own layer, or the inverse effect
-   (css/invert.css) on anything inside it could not see the paper and bands beneath.
-   It still paints above the bands, which come before it in the page. */
+   margin auto centres it when zoomed out (narrower than the viewport). */
 .stage{
-  position:relative;width:calc(460.807 * var(--k));margin:0 auto;
+  position:relative;z-index:1;width:calc(460.807 * var(--k));margin:0 auto;
   aspect-ratio:460.807 / 1036.66;background:transparent;overflow:hidden;
   container-type:inline-size;font-family:var(--text);
 }
@@ -49,7 +46,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* background bands (the grey section backgrounds — BACK GROUND, CALLIGRAPHY).
    Direct children of <body>, so width:100% spans the whole viewport and they sit
-   BEHIND the transparent stage (they come first in the page). The stage's overflow:hidden
+   BEHIND the transparent stage (z-index:0 < stage's 1). The stage's overflow:hidden
    no longer clips them, so the grey fills the window edge-to-edge even when a
    wide/short viewport centres the stage; the content rides on top in the stage. */
 .band{position:absolute;left:0;width:100%;z-index:0;
