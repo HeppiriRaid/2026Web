@@ -75,12 +75,14 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
    It never moves: it only fades — in as its work appears, out when the work is opened,
    and back in once the work has returned to the row (illustration.js). */
 .work .plus{position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));transform:none}
-/* hover highlight: over a work (a click anywhere on it opens the zoom) its "+" turns the
-   site's red — colour only, it never moves. Real-hover devices only, so a tap on a phone
-   can't leave it stuck red; keyboard focus gets the same highlight. */
+/* hover highlight: the "+" turns the site's red while the pointer is on the "+" itself —
+   colour only, it never moves. (Not on the whole work: a red "+" far from the pointer read
+   as left behind.) Inside the cursor's square it shows inverted, as teal. Real-hover
+   devices only, so a tap on a phone can't leave it stuck red; keyboard focus on a work
+   gets the same highlight. */
 .work .plus::before,.work .plus::after{transition:background-color .25s ease}
 @media (hover:hover){
-  .work-btn:hover .plus::before,.work-btn:hover .plus::after{background:var(--red)}
+  .work .plus:hover::before,.work .plus:hover::after{background:var(--red)}
 }
 .work-btn:focus-visible .plus::before,.work-btn:focus-visible .plus::after{background:var(--red)}
 
