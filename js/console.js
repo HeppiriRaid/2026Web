@@ -139,7 +139,7 @@
     // a picture saved moments ago may not be published yet: fetch it from the repository instead
     im.onerror = function () {
       im.onerror = null;
-      gh("GET", REPO + "/contents/" + w.image + "?ref=" + BRANCH, null, "application/vnd.github.raw")
+      gh("GET", REPO + "/contents/" + w.image + "?ref=" + BRANCH, null, "application/vnd.github.raw+json")
         .then(function (b) { w._url = URL.createObjectURL(b); im.src = w._url; }, function () {});
     };
     im.src = w.image;

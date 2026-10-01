@@ -512,7 +512,8 @@
     if (document.readyState === "complete") res();
     else window.addEventListener("load", res, { once: true });
   });
-  var listed = loadWorks().then(function (list) { render(list); collect(); })
+  // (emptied first: an old cached copy of the page still carries hand-written works)
+  var listed = loadWorks().then(function (list) { track.textContent = ""; render(list); collect(); })
     .catch(function (err) { if (window.console) console.error("illustration: the row failed", err); });
   Promise.all([listed, loaded]).then(function () {
     try { start(); } catch (err) {
