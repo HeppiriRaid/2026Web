@@ -79,49 +79,51 @@
      shape; 6pt between works, 12pt outer margin. Wheel / trackpad / drag / arrow
      keys move the row sideways; "+" (or a click on the work) opens it large.
 
-     To add a work, copy one <li>. For a real image, replace the grey
-       <span class="work-media" style="--ar:1/1"></span>
-     with
-       <img src="assets/img/illustration/NAME.webp" width="3000" height="2000" alt="TITLE" />
-     (width/height = the file's pixel size, so the layout knows its shape before it
-     loads). Optional: data-full="big-version.webp" on the <img> for the zoom view.
-     The caption is the line under each work: Title / Date / Medium.
+     The seven images are PLACEHOLDERS (assets/img/illustration/placeholder-0N.webp).
+     To put in a real work, change its <img>:
+       <img src="assets/img/illustration/NAME.webp" width="3000" height="2000" alt="TITLE" decoding="async" />
+     (width/height = the file's pixel size, so the row knows its shape before it
+     loads; ~1800px tall keeps the zoom sharp). Optional: data-full="big-version.webp"
+     for a larger file in the zoom view. A work with no image yet can use the grey
+     holder instead:  <span class="work-media" style="--ar:4/5"></span>
+     To add a work, copy one <li>. The caption is the line under each work:
+     Title / Date / Medium.
      ============================================================================ -->
 <main class="strip" id="strip">
   <ul class="strip-track" id="track" aria-label="Illustration works">
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-01.webp" width="1800" height="1800" alt="Placeholder illustration: a red sun over misted ink hills" decoding="async" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title0&#8221;</span> | <span class="f">Date: 2025</span> | <span class="f">Medium: Graphic Paint</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:4/5"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-02.webp" width="1440" height="1800" alt="Placeholder illustration: an ink ensō with a red seal" decoding="async" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title1&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Ink and digital</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/2"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-03.webp" width="2700" height="1800" alt="Placeholder illustration: mountain ranges in morning mist" decoding="async" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title2&#8221;</span> | <span class="f">Date: 2024</span> | <span class="f">Medium: Oil study</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:2/3"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-04.webp" width="1200" height="1800" alt="Placeholder illustration: bamboo" decoding="async" loading="lazy" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title3&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Mixed media</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:1/1"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-05.webp" width="1800" height="1800" alt="Placeholder illustration: circles and lines" decoding="async" loading="lazy" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title4&#8221;</span> | <span class="f">Date: 2023</span> | <span class="f">Medium: Concept art</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:16/9"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-06.webp" width="3200" height="1800" alt="Placeholder illustration: the sea at dusk" decoding="async" loading="lazy" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title5&#8221;</span> | <span class="f">Date: 2022</span> | <span class="f">Medium: Graphic Paint</span></p>
     </li>
 
     <li class="work">
-      <button class="work-btn" type="button"><span class="work-media" style="--ar:3/4"></span><span class="plus" aria-hidden="true"></span></button>
+      <button class="work-btn" type="button"><img src="assets/img/illustration/placeholder-07.webp" width="1350" height="1800" alt="Placeholder illustration: an arcade with a small figure" decoding="async" loading="lazy" /><span class="plus" aria-hidden="true"></span></button>
       <p class="work-cap"><span class="f">Title: &#8220;title6&#8221;</span> | <span class="f">Date: 2021</span> | <span class="f">Medium: Ink and digital</span></p>
     </li>
 

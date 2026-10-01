@@ -71,12 +71,20 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .work-btn:focus{outline:none}
 .work-btn:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(1.5 * var(--k))}
 
-/* "+" — the front page's 4.5pt cross, centred 4.75pt in from the right edge, 4.05pt down */
+/* "+" — the front page's 4.5pt cross, centred 4.75pt in from the right edge, 4.05pt down.
+   It never rotates. Two numbers move it, and the stroke weight never changes:
+     --d draws it — the two strokes grow out from the centre (0 → 1): when a work
+         first appears, and again when it lands back from the zoom (illustration.js)
+     --h lengthens the arms on hover / focus — a quiet "open this" */
+@property --d{syntax:"<number>";inherits:true;initial-value:1}
+@property --h{syntax:"<number>";inherits:true;initial-value:1}
 .work .plus{
   position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));
-  transform:none;transition:transform .6s cubic-bezier(.38,0,.5,1);
+  transform:none;--h:1;transition:--h .5s cubic-bezier(.38,0,.5,1);
 }
-.work-btn:hover .plus,.work-btn:focus-visible .plus{transform:rotate(90deg)}
+.work .plus::before{transform:translateY(-50%) scaleX(calc(var(--d) * var(--h)))}
+.work .plus::after{transform:translateX(-50%) scaleY(calc(var(--d) * var(--h)))}
+.work-btn:hover .plus,.work-btn:focus-visible .plus{--h:1.45}
 
 /* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 222).
    Line-height 1.3 puts the baseline .889em below the box top, hence 6 - 2.667 = 3.333pt.
@@ -104,7 +112,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   background:none;border:0;padding:calc(1.2 * var(--k)) calc(2.4 * var(--k));cursor:pointer;
 }
 .zoom-ui button:focus-visible{opacity:1;pointer-events:auto;outline:max(1px,calc(.4 * var(--k))) solid var(--red)}
-.work.is-zoomed .work-btn{visibility:hidden}
+/* while a work is up in the zoom its place in the row is empty — only the picture is
+   hidden, so its "+" can fold away and later draw itself back in */
+.work.is-zoomed .work-media,.work.is-zoomed .work-btn img{visibility:hidden}
 
 /* ---- intro pre-hide (released by illustration.js; the head failsafe clears .anim) ---- */
 .anim .work-btn{clip-path:inset(0 100% 0 0)}

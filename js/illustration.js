@@ -143,6 +143,21 @@
   window.addEventListener("pointerup", endDrag);
   window.addEventListener("pointercancel", endDrag);
 
+  /* ---------- the "+": drawn, never rotated -------------------------------------
+     --d (0..1) scales its two strokes out from the centre; the hover lengthening is
+     pure CSS (--h). Same slow → fast → slow curve as the front page's panels. */
+  function drawPlus(w, delay) {
+    if (!w.plus) return;
+    if (!gsap || REDUCE) { w.plus.style.opacity = 1; w.plus.style.setProperty("--d", 1); return; }
+    gsap.set(w.plus, { opacity: 1 });
+    gsap.fromTo(w.plus, { "--d": 0 }, { "--d": 1, duration: 0.6, delay: delay || 0, ease: worksEase, overwrite: true });
+  }
+  function foldPlus(w) {
+    if (!w.plus || !gsap || REDUCE) return;
+    gsap.to(w.plus, { "--d": 0, duration: 0.3, ease: "power2.in", overwrite: true });
+  }
+  function setPlus(w, v) { if (w.plus) { if (gsap) gsap.killTweensOf(w.plus); w.plus.style.setProperty("--d", v); } }
+
   /* ---------- reveal: the front page's panel wipe, as works come into view ---- */
   var introLock = true;
   function reveal(w, delay) {
@@ -158,7 +173,7 @@
     w.cap.style.opacity = 1;
     gsap.to(w.capIn, { yPercent: 0, duration: 0.85, delay: delay + 0.32, ease: "power3.out",
       onComplete: function () { gsap.set(w.capIn, { clearProps: "transform" }); } });
-    if (w.plus) gsap.fromTo(w.plus, { opacity: 0 }, { opacity: 1, duration: 0.5, delay: delay + 0.78, ease: "power2.out" });
+    drawPlus(w, delay + 0.72);                       // the "+" draws itself as the wipe reaches it
   }
   var io = ("IntersectionObserver" in window) ? new IntersectionObserver(function (entries) {
     if (introLock) return;                          // the intro reveals what is on screen first
@@ -171,7 +186,7 @@
   if (io) works.forEach(function (w) { io.observe(w.el); });
 
   /* ---------- zoom ------------------------------------------------------------ */
-  var Z = { open: false, busy: false, i: -1, fig: null, ret: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
+  var Z = { open: false, busy: false, kbd: false, i: -1, fig: null, ret: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
   function aspect(w) { var r = w.btn.getBoundingClientRect(); return r.height ? r.width / r.height : 1; }
   // the work, centred, with the same margin (12pt) on opposite sides
@@ -207,6 +222,13 @@
     return f;
   }
   function focusIn(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+  // a big image painted for the first time is decoded on that very frame (a visible hitch);
+  // decode it off the main thread first — capped, so a slow file never holds the motion
+  function ready(f) {
+    var im = f.querySelector("img");
+    if (!im || !im.decode) return Promise.resolve();
+    return Promise.race([im.decode().then(null, function () {}), wait(160)]);
+  }
 
   function openZoom(i) {
     var w = works[i];
@@ -217,12 +239,18 @@
     var f = makeFig(w); place(f, r1); Z.fig = f;
     zoomTitle.textContent = w.title;
     zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
-    w.el.classList.add("is-zoomed");
     focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
-    if (!gsap || REDUCE) { zoomBg.style.opacity = 1; Z.busy = false; return; }
-    gsap.fromTo(f, flip(r0, r1), { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: lift,
-      onComplete: function () { Z.busy = false; } });
-    gsap.fromTo(zoomBg, { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" });
+    if (!gsap || REDUCE) { w.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; return; }
+    gsap.set(f, flip(r0, r1));                         // sits exactly on the work in the row…
+    f.style.visibility = "hidden";
+    gsap.fromTo(zoomBg, { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" });   // the answer is immediate
+    ready(f).then(function () {                        // …and lifts off once its picture can paint
+      f.style.visibility = "";
+      w.el.classList.add("is-zoomed");
+      foldPlus(w);                                     // the "+" folds away as its work lifts off
+      gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: lift,
+        onComplete: function () { Z.busy = false; } });
+    });
   }
 
   function closeZoom() {
@@ -234,13 +262,18 @@
     var r0 = rectOf(w.btn);
     function done() {
       w.el.classList.remove("is-zoomed");               // the real work takes over in the same frame
+      drawPlus(w, 0.08);                                // …and then its "+" draws itself back in
       if (f.parentNode) f.parentNode.removeChild(f);
       Z.fig = null; Z.open = false; Z.busy = false;
       zoom.classList.remove("is-open");
       if (lenis) lenis.start();
-      focusIn(w.btn);
+      // keyboard visitors get their place back (with its focus ring); a mouse visitor
+      // gets no ring at all — just the work landing and its "+" drawing in
+      if (Z.kbd) focusIn(w.btn);
+      else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     }
     if (!gsap || REDUCE) { zoomBg.style.opacity = 0; done(); return; }
+    setPlus(w, 0);
     gsap.to(f, Object.assign(flip(r0, r1), { duration: 0.75, ease: lift, overwrite: true, onComplete: done }));
     gsap.to(zoomBg, { opacity: 0, duration: 0.5, delay: 0.1, ease: "power2.inOut" });
   }
@@ -258,6 +291,7 @@
     var ow = works[Z.i], nw = works[j], of = Z.fig;
     setScroll(stopFor(j), true);                             // the row follows underneath, so closing lands home
     ow.el.classList.remove("is-zoomed"); nw.el.classList.add("is-zoomed");
+    setPlus(ow, 1); setPlus(nw, gsap && !REDUCE ? 0 : 1);    // both under the grey: no motion needed
     var nf = makeFig(nw); place(nf, fit(aspect(nw)));
     Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
     if (!gsap || REDUCE) { of.parentNode.removeChild(of); Z.busy = false; return; }
@@ -267,10 +301,15 @@
       onUpdate: function () { of.style.clipPath = d > 0 ? "inset(0px " + (a.p * 100) + "% 0px 0px)" : "inset(0px 0px 0px " + (a.p * 100) + "%)"; },
       onComplete: function () { if (of.parentNode) of.parentNode.removeChild(of); } });
     gsap.to(of, { xPercent: -5 * d, duration: 0.7, ease: worksEase });
-    gsap.to(b, { p: 1, duration: 0.8, delay: 0.1, ease: worksEase,
-      onUpdate: function () { nf.style.clipPath = d > 0 ? "inset(0px 0px 0px " + ((1 - b.p) * 100) + "%)" : "inset(0px " + ((1 - b.p) * 100) + "% 0px 0px)"; },
-      onComplete: function () { nf.style.clipPath = ""; Z.busy = false; } });
-    gsap.fromTo(nf, { xPercent: 5 * d }, { xPercent: 0, duration: 0.8, delay: 0.1, ease: worksEase });
+    gsap.set(nf, { xPercent: 5 * d });
+    var t0 = performance.now();
+    ready(nf).then(function () {                             // the new work sweeps in once it can paint —
+      var delay = Math.max(0, 0.1 - (performance.now() - t0) / 1000);   // on the usual 0.1s cue when that is quick
+      gsap.to(b, { p: 1, duration: 0.8, delay: delay, ease: worksEase,
+        onUpdate: function () { nf.style.clipPath = d > 0 ? "inset(0px 0px 0px " + ((1 - b.p) * 100) + "%)" : "inset(0px " + ((1 - b.p) * 100) + "% 0px 0px)"; },
+        onComplete: function () { nf.style.clipPath = ""; Z.busy = false; } });
+      gsap.to(nf, { xPercent: 0, duration: 0.8, delay: delay, ease: worksEase });
+    });
   }
 
   // open: "+" or anywhere on the work (unless that press was a drag)
@@ -280,6 +319,7 @@
     var w = e.target.closest(".work");
     if (!w) return;
     if (eatClick) { e.preventDefault(); e.stopPropagation(); return; }
+    Z.kbd = e.detail === 0;                         // opened with Enter / Space (a keyboard "click")
     openZoom(+w.getAttribute("data-i"));
   });
   // inside the zoom: the controls, else a click / tap anywhere closes
