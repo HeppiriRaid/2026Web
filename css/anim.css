@@ -35,7 +35,7 @@
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
-.pl-inner{display:inline-block;overflow:hidden;padding:.16em 0}
+.pl-inner{display:inline-block;overflow:hidden;padding:.16em 0;position:relative;z-index:1}
 .pl-name{
   display:inline-block;
   font-family:var(--disp);font-weight:400;color:#434343;
@@ -63,6 +63,11 @@ html:not(.anim) .preloader{display:none}
 }
 .cursor-lens,.cursor-dot{z-index:10000}
 .cursor-fold{z-index:1}
+/* The white sheet (the preloader) covers the page and its under-squares, so it carries
+   its own pair, beneath the name. While the sheet moves, js/wipe.js keeps it on whole
+   device pixels and these ride back against it (--sheet-y), so they stay exactly under
+   the square: the name, and the sheet's moving edge, stay clean inside it. */
+.preloader .cursor-fold{z-index:0;translate:0 calc(-1 * var(--sheet-y,0px))}
 /* The page content paints above the under-squares, so the browser lifts it onto a
    layer of its own whenever they show. Keep it lifted for as long as the cursor
    is live, or its text rendering would flip each time the mouse enters or leaves. */

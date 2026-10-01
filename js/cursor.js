@@ -12,8 +12,10 @@
    (350 / 25 / 0.5). A small rhombus marks the exact point, inverting live too.
    Two under-squares follow it beneath the page content and mirror the paper
    about #DCCBC3 first (see css/anim.css), so letters inside the square come out
-   clean instead of outlined in black. All three share one rectangle, snapped to
-   whole device pixels.
+   clean instead of outlined in black. (The white sheet carries its own pair, and
+   the zoom's grey a mirror patch — every .cursor-fold.) They all share one
+   rectangle, snapped to whole device pixels. The rule that keeps the square
+   clean, and its check (tests/fold-check.mjs), are in CLAUDE.md.
    Fine pointers only; with reduced motion the normal cursor stays.
    ============================================================ */
 (function () {
@@ -22,7 +24,7 @@
   var mm = window.matchMedia;
   if (!lens || !dot || !mm || !mm("(pointer:fine)").matches) return;
   var root = document.documentElement, reduce = mm("(prefers-reduced-motion: reduce)");
-  // the square and its two under-squares (css/anim.css) always share one rectangle
+  // the square and every under-square / mirror patch (css/anim.css) always share one rectangle
   var squares = [lens].concat([].slice.call(document.querySelectorAll(".cursor-fold")));
   var FIT = window.__fit || { dw: 460.807, clampPt: 259.2 };
 
@@ -123,7 +125,22 @@
     // (while the menu is open its labels may be sliding: keep their mirrors in step)
     if (a && b && c && !(menuLive() && size > 0)) { raf = 0; last = 0; } else raf = requestAnimationFrame(frame);
   }
-  function wake() { if (!raf) raf = requestAnimationFrame(frame); }
+  function wake() { if (!raf && !held) raf = requestAnimationFrame(frame); }
+
+  // automated checks only (tests/fold-check.mjs, in a test browser): hold the square
+  // anywhere, at any size, exactly as the cursor would draw it there; null lets go
+  var held = false;
+  if (navigator.webdriver) window.__cursorProbe = function (l, t, s) {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; last = 0; }
+    held = s != null;
+    if (!held) { size = -1; wake(); return; }
+    for (var i = 0; i < squares.length; i++) {
+      squares[i].style.width = squares[i].style.height = s + "px";
+      squares[i].style.transform = "translate(" + l + "px," + t + "px)";
+    }
+    size = s;
+    mirrorLabels(l, t, s);
+  };
   function setHot(el) {
     var h = !!(el && el.closest && el.closest(HOT));
     if (h !== hot) { hot = h; wake(); }

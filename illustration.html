@@ -41,8 +41,9 @@
 </head>
 <body>
 
-<!-- preloader (same as the front page) -->
+<!-- preloader (same as the front page); the cursor's under-squares again, beneath the name -->
 <div class="preloader" id="preloader" aria-hidden="true">
+  <div class="cursor-fold"></div><div class="cursor-fold"></div>
   <span class="pl-inner"><span class="pl-name">KOKI TAKAMATSU</span></span>
 </div>
 
@@ -95,7 +96,7 @@
 
 <!-- zoom view: the band grey, the work centred with the same margin on opposite sides -->
 <div class="zoom" id="zoom" role="dialog" aria-modal="true" aria-labelledby="zoomTitle" aria-hidden="true" tabindex="-1">
-  <div class="zoom-bg"></div>
+  <div class="zoom-bg"><div class="cursor-fold" aria-hidden="true"></div></div>
   <p class="sr-only" id="zoomTitle"></p>
   <div class="zoom-ui">
     <button type="button" data-act="prev">Previous</button>

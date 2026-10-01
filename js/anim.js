@@ -100,10 +100,40 @@
       return gsap.fromTo(t, { opacity: 0 }, Object.assign(
         { opacity: 1, duration: 0.6, ease: "power2.out" }, o || {}));
     }
+    // The clip for a wipe that has revealed p (0→1) of el, from its "left", "right" or "top"
+    // edge. The moving edge lands on a whole device pixel and the still sides lie a pixel
+    // outside the box: inside the cursor's square, a half-covered pixel on a wipe's edge
+    // would fold through black (css/anim.css). (A scaled element keeps plain percentages.)
+    function wipeClip(el, p, from) {
+      var r = el.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+      var snap = function (v) { return Math.round(v * d) / d; };
+      if (Math.abs(r.width - el.offsetWidth) > 0.5) {
+        var q = (1 - p) * 100 + "%";
+        return from === "left" ? "inset(0px " + q + " 0px 0px)" : from === "right" ? "inset(0px 0px 0px " + q + ")" : "inset(0px 0px " + q + " 0px)";
+      }
+      var t = -1, rt = -1, b = -1, l = -1;
+      if (from === "left") rt = r.right - snap(r.left + r.width * p);
+      else if (from === "right") l = snap(r.right - r.width * p) - r.left;
+      else b = r.bottom - snap(r.top + r.height * p);
+      return "inset(" + t + "px " + rt + "px " + b + "px " + l + "px)";
+    }
+
     function imageIn(t, o) {    // photos — wipe in (top→down); optional settle from a slight zoom
       // images marked data-noscale wipe at their natural size (no size change)
       var els = gsap.utils.toArray(t);
       var noScale = els.length && els[0].hasAttribute("data-noscale");
+      if (noScale) {             // (through a proxy each, so the wipe's edge can land on whole pixels)
+        var opt = o || {}, first;
+        els.forEach(function (el, i) {
+          var s = { p: 0 }, draw = function () { el.style.clipPath = wipeClip(el, s.p, "top"); };
+          draw();
+          var tw = gsap.to(s, { p: 1, duration: opt.duration || 1.25, ease: "power3.out",
+            delay: (opt.delay || 0) + (opt.stagger || 0) * i, onUpdate: draw,
+            onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); } });
+          if (!i) first = tw;
+        });
+        return first;
+      }
       var from = { clipPath: "inset(0px 0px 100% 0px)" };
       var to = { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
                  onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } };
@@ -127,9 +157,9 @@
       });
       return first;
     }
-    function clipLR(p) { return "inset(0px " + ((1 - p) * 100) + "% 0px 0px)"; }  // wipe left→right
-    function clipRL(p) { return "inset(0px 0px 0px " + ((1 - p) * 100) + "%)"; }   // wipe right→left
-    function clipTB(p) { return "inset(0px 0px " + ((1 - p) * 100) + "% 0px)"; }  // wipe top→bottom
+    function clipLR(p, el) { return wipeClip(el, p, "left"); }   // wipe left→right
+    function clipRL(p, el) { return wipeClip(el, p, "right"); }  // wipe right→left
+    function clipTB(p, el) { return wipeClip(el, p, "top"); }    // wipe top→bottom
 
     function boxIn(t, o) {      // grey panels — sideways wipe, slow→fast→slow
       o = o || {};
@@ -143,7 +173,7 @@
       }
       // most panels wipe left→right; data-rtl panels (Ressolve) wipe right→left
       return wipeProxy(els, stag, function (p, el) {
-        return el.hasAttribute("data-rtl") ? clipRL(p) : clipLR(p);
+        return el.hasAttribute("data-rtl") ? clipRL(p, el) : clipLR(p, el);
       });
     }
     function vimageIn(t, o) {   // calligraphy photo — the SAME panel wipe, top→bottom
@@ -324,7 +354,7 @@
           landOnSection();
           var exit = gsap.timeline();
           exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
-              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
+              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", modifiers: window.__wipe && window.__wipe.sheet }, "-=0.25")
               .add(function () {
                 pre.style.display = "none";
                 if (lenis) lenis.start();

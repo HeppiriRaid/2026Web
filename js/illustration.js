@@ -51,6 +51,18 @@
   var worksEase = cubicBezier(0.38, 0, 0.5, 1);   // the front page's panel wipe: slow → fast → slow
   var lift = cubicBezier(0.22, 1, 0.36, 1);       // zoom: answers at once, lands softly
 
+  // the "+" in whole device pixels — its size and its bars' thickness, with the bars exactly
+  // centred — so all its edges land on pixels (css/illustration.css)
+  function crispPlus() {
+    var r = window.devicePixelRatio || 1, k = K();
+    var w = Math.max(1, Math.round(0.6 * k * r)), s = Math.round(4.5 * k * r);
+    if ((s - w) % 2) s += 1;
+    root.style.setProperty("--plus-w", w / r + "px");
+    root.style.setProperty("--plus-s", s / r + "px");
+  }
+  crispPlus();
+  window.addEventListener("resize", crispPlus);
+
   /* ---------- the works: data/illustration.json (edited in console.html) -------
      Fetched fresh on every visit, so a Save in the console shows as soon as its
      deploy lands. Every text goes in as text (never as markup). */
@@ -232,6 +244,20 @@
   }
   function setPlus(w, v) { if (w.plus) { if (gsap) gsap.killTweensOf(w.plus); w.plus.style.opacity = v; } }
 
+  /* ---------- whole device pixels for every moving edge ------------------------
+     Inside the cursor's square a half-covered pixel on an edge folds through black
+     (css/anim.css), so a wipe's moving edge, and a sliding picture, land on whole pixels. */
+  function dp(v) { var d = window.devicePixelRatio || 1; return Math.round(v * d) / d; }
+  // the clip for a wipe that has revealed p (0→1) of el, from its "left" or "right" edge;
+  // the still sides lie a pixel outside the box
+  function wipeClip(el, p, from) {
+    var r = el.getBoundingClientRect();
+    return from === "left" ? "inset(-1px " + (r.right - dp(r.left + r.width * p)) + "px -1px -1px)"
+      : "inset(-1px -1px -1px " + (dp(r.right - r.width * p) - r.left) + "px)";
+  }
+  // GSAP modifiers for a picture sliding sideways by xPercent
+  function slideX(f) { return { xPercent: function (v) { var w = parseFloat(f.style.width) || f.offsetWidth || 1; return dp(v / 100 * w) / w * 100; } }; }
+
   /* ---------- reveal: the front page's panel wipe, as works come into view ---- */
   var introLock = true;
   function reveal(w, delay) {
@@ -241,7 +267,7 @@
     if (!gsap || REDUCE) { w.btn.style.clipPath = "none"; w.cap.style.opacity = 1; if (w.plus) w.plus.style.opacity = 1; return; }
     var s = { p: 0 };
     gsap.to(s, { p: 1, duration: 1.1, delay: delay, ease: worksEase,
-      onUpdate: function () { w.btn.style.clipPath = "inset(0px " + ((1 - s.p) * 100).toFixed(3) + "% 0px 0px)"; },
+      onUpdate: function () { w.btn.style.clipPath = wipeClip(w.btn, s.p, "left"); },
       onComplete: function () { w.btn.style.clipPath = "none"; } });
     gsap.set(w.capIn, { yPercent: 108 });
     w.cap.style.opacity = 1;
@@ -275,12 +301,16 @@
   var Z = { open: false, busy: false, kbd: false, i: -1, fig: null, ret: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
   function aspect(w) { var r = w.btn.getBoundingClientRect(); return r.height ? r.width / r.height : 1; }
-  // the work, centred, with the same margin (12pt) on opposite sides
+  // the work, centred, with the same margin (12pt) on opposite sides — on whole device
+  // pixels: a picture edge on a half pixel blurs, and inside the cursor's square a blurred
+  // edge folds through black (css/anim.css)
   function fit(ar) {
-    var m = 12 * K(), vw = window.innerWidth, vh = window.innerHeight;
+    var m = 12 * K(), vw = window.innerWidth, vh = window.innerHeight, r = window.devicePixelRatio || 1;
     var aw = vw - 2 * m, ah = vh - 2 * m, w, h;
     if (aw / ah > ar) { h = ah; w = h * ar; } else { w = aw; h = w / ar; }
-    return { left: (vw - w) / 2, top: (vh - h) / 2, width: w, height: h };
+    function px(v) { return Math.round(v * r) / r; }
+    var left = px((vw - w) / 2), top = px((vh - h) / 2);
+    return { left: left, top: top, width: px(left + w) - left, height: px(top + h) - top };
   }
   function rectOf(el) { var r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; }
   function place(f, r) {
@@ -370,7 +400,7 @@
     if (!Z.open || Z.busy) return;
     var j = Z.i + d;
     if (j < 0 || j >= N) {                                   // the ends: a small nudge, nothing more
-      if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1 });
+      if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1, modifiers: slideX(Z.fig) });
       return;
     }
     Z.busy = true;
@@ -382,19 +412,20 @@
     Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
     if (!gsap || REDUCE) { of.parentNode.removeChild(of); Z.busy = false; return; }
     var a = { p: 0 }, b = { p: 0 };
-    nf.style.clipPath = d > 0 ? "inset(0px 0px 0px 100%)" : "inset(0px 100% 0px 0px)";
+    var outFrom = d > 0 ? "left" : "right", inFrom = d > 0 ? "right" : "left";
+    nf.style.clipPath = wipeClip(nf, 0, inFrom);
     gsap.to(a, { p: 1, duration: 0.7, ease: worksEase,
-      onUpdate: function () { of.style.clipPath = d > 0 ? "inset(0px " + (a.p * 100) + "% 0px 0px)" : "inset(0px 0px 0px " + (a.p * 100) + "%)"; },
+      onUpdate: function () { of.style.clipPath = wipeClip(of, 1 - a.p, outFrom); },
       onComplete: function () { if (of.parentNode) of.parentNode.removeChild(of); } });
-    gsap.to(of, { xPercent: -5 * d, duration: 0.7, ease: worksEase });
-    gsap.set(nf, { xPercent: 5 * d });
+    gsap.to(of, { xPercent: -5 * d, duration: 0.7, ease: worksEase, modifiers: slideX(of) });
+    gsap.set(nf, { xPercent: 5 * d, modifiers: slideX(nf) });
     var t0 = performance.now();
     ready(nf).then(function () {                             // the new work sweeps in once it can paint —
       var delay = Math.max(0, 0.1 - (performance.now() - t0) / 1000);   // on the usual 0.1s cue when that is quick
       gsap.to(b, { p: 1, duration: 0.8, delay: delay, ease: worksEase,
-        onUpdate: function () { nf.style.clipPath = d > 0 ? "inset(0px 0px 0px " + ((1 - b.p) * 100) + "%)" : "inset(0px " + ((1 - b.p) * 100) + "% 0px 0px)"; },
+        onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
         onComplete: function () { nf.style.clipPath = ""; Z.busy = false; } });
-      gsap.to(nf, { xPercent: 0, duration: 0.8, delay: delay, ease: worksEase });
+      gsap.to(nf, { xPercent: 0, duration: 0.8, delay: delay, ease: worksEase, modifiers: slideX(nf) });
     });
   }
 
@@ -525,7 +556,7 @@
       }
       var tl = gsap.timeline();
       if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15");   // (never shown when arriving)
-      tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, arrive ? 0 : "-=0.25")
+      tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", modifiers: window.__wipe && window.__wipe.sheet }, arrive ? 0 : "-=0.25")
         .add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
         .add(intro, "-=0.45");
     });

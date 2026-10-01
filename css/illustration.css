@@ -79,6 +79,13 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .work .plus{position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));transform:none;
   mix-blend-mode:difference}
 .work .plus::before,.work .plus::after{background:#dccbc3;transition:background-color .25s ease}
+/* Every edge of it on a whole device pixel: its size and bar thickness come in whole
+   device pixels (--plus-s / --plus-w, illustration.js) and the bars are centred by layout,
+   not by half-bar transforms. A half-covered edge pixel over a bright picture would fold
+   through black inside the cursor's square (css/anim.css). */
+.work .plus{width:var(--plus-s,calc(4.5 * var(--k)));height:var(--plus-s,calc(4.5 * var(--k)))}
+.work .plus::before{transform:none;height:var(--plus-w,max(.75px,calc(.6 * var(--k))));top:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
+.work .plus::after{transform:none;width:var(--plus-w,max(.75px,calc(.6 * var(--k))));left:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
 /* hover highlight: the "+" turns a solid whitish grey (the band grey, #f2f1ef) while the
    pointer is on the "+" itself — colour only, it never moves. (Not on the whole work: a
    highlighted "+" far from the pointer read as left behind.) Inside the cursor's square it
@@ -106,6 +113,11 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .zoom{position:fixed;inset:0;z-index:95;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
 .zoom.is-open{visibility:visible;pointer-events:auto;cursor:pointer}
 .zoom-bg{position:absolute;inset:0;background:var(--band);opacity:0}
+/* Under the cursor's square the grey is drawn as its mirror about #DCCBC3 (#c6a597 —
+   the very same colour once the square inverts it), a patch that follows the square
+   (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
+   through #DCCBC3 and flash the square black (css/anim.css). */
+.zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
 .zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
 .zoom-fig.has-img{background:none}
 .zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}

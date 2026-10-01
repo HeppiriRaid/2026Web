@@ -36,15 +36,28 @@
   var name = pre.querySelector(".pl-name");
   var leaving = false;
 
+  // Every move of the sheet goes through this (as GSAP modifiers): it lands on whole
+  // device pixels, so its edge is never a blurred half pixel, and it tells its own copy
+  // of the cursor's under-squares how far it has moved (--sheet-y, css/anim.css), so they
+  // stay exactly under the square. Inside the square a blurred edge, or a square
+  // that slipped, would show as a dark line.
+  var SHEET = { yPercent: function (v) {
+    var h = pre.getBoundingClientRect().height || 1, r = window.devicePixelRatio || 1;
+    var y = Math.round(v / 100 * h * r) / r;
+    pre.style.setProperty("--sheet-y", y + "px");
+    return y / h * 100;
+  } };
+
   // ---- arriving: the sheet lifts off at once and the page's intro rises in behind it.
   // The whole animation clock runs PACE x faster until everything has settled (so the
   // intro keeps its exact rhythm, only quicker), then returns to normal speed.
   window.__wipe = {
+    sheet: SHEET,
     arrive: function (intro, done) {
       var clock = gsap.globalTimeline, t0 = performance.now();
       clock.timeScale(PACE);
       gsap.timeline()
-        .to(pre, { yPercent: -100, duration: LIFT * PACE, ease: "power3.out" }, 0)
+        .to(pre, { yPercent: -100, duration: LIFT * PACE, ease: "power3.out", modifiers: SHEET }, 0)
         .add(function () { intro(); }, 0.06 * PACE)
         .add(function () { pre.style.display = "none"; if (done) done(); }, LIFT * PACE);
       (function settle() {
@@ -92,7 +105,7 @@
     gsap.globalTimeline.timeScale(1);
     if (name) { gsap.killTweensOf(name); gsap.set(name, { y: "110%" }); }
     pre.style.display = "flex";
-    gsap.fromTo(pre, { yPercent: 100 }, { yPercent: 0, duration: COVER, ease: "power3.in", overwrite: true,
+    gsap.fromTo(pre, { yPercent: 100 }, { yPercent: 0, duration: COVER, ease: "power3.in", overwrite: true, modifiers: SHEET,
       onComplete: function () {
         try { sessionStorage.setItem(KEY, String(Date.now())); } catch (err) {}
         location.href = url.href;
@@ -109,7 +122,7 @@
     gsap.globalTimeline.timeScale(1);
     if (getComputedStyle(pre).display === "none") return;
     requestAnimationFrame(function () { requestAnimationFrame(function () {
-      gsap.to(pre, { yPercent: -100, duration: LIFT, ease: "power3.out", overwrite: true,
+      gsap.to(pre, { yPercent: -100, duration: LIFT, ease: "power3.out", overwrite: true, modifiers: SHEET,
         onComplete: function () { pre.style.display = "none"; } });
     }); });
   });
