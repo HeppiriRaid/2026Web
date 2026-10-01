@@ -67,6 +67,19 @@ html:not(.anim) .preloader{display:none}
    layer of its own whenever they show. Keep it lifted for as long as the cursor
    is live, or its text rendering would flip each time the mouse enters or leaves. */
 html.cursor-live .stage{will-change:transform}
+/* The open menu sits above the under-squares, and its white labels over the grey panel
+   sit on both sides of #DCCBC3: inside the square their soft edges would fold through
+   black. So there (js/cursor.js) each label shows only this copy, in white's mirror
+   about #DCCBC3 (black's mirror is black, for hover): the square turns it into exactly
+   the colour white would give, with clean edges. Hidden until the square is over it. */
+.menu-nav a{position:relative}
+.menu-nav a::after{
+  content:attr(data-label);content:attr(data-label) / "";      /* (empty alt: not read twice) */
+  position:absolute;left:0;top:0;white-space:nowrap;pointer-events:none;
+  color:#b99787;transition:color .2s ease;
+  clip-path:var(--cursor-copy,inset(0 0 100% 0));
+}
+.menu-nav a:hover::after{color:#000}
 /* The point itself: a rhombus (a square turned 45 degrees) whose tips sit on the
    old 6px dot's circle, inverting live with the same #DCCBC3 difference. Over the
    square it inverts the inverse, so it opens a small window back onto the page. */

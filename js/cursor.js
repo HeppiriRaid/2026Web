@@ -45,6 +45,44 @@
       squares[i].style.transform = tf;
     }
     size = s;
+    if (menuLive() || mirrored) mirrorLabels(l, t, s);
+  }
+
+  // ---- the open menu's labels -------------------------------------------------------
+  // White over the grey panel, they sit on both sides of #DCCBC3, so inside the square
+  // their soft edges would fold through black — and the menu is above the under-squares.
+  // So inside the square each label is drawn only as its copy in white's mirror
+  // (css/anim.css, .menu-nav a::after), cut out of the label itself: the square turns the
+  // copy into exactly white's colour, with clean edges. Outside the square, unchanged.
+  var menu = document.querySelector(".menu-nav"), menuUntil = 0, mirrored = false;
+  var labels = !menu ? [] : [].map.call(menu.querySelectorAll("a"), function (a) {
+    var own = document.createElement("span");
+    while (a.firstChild) own.appendChild(a.firstChild);
+    a.appendChild(own);
+    a.setAttribute("data-label", own.textContent);
+    return { a: a, own: own, on: false };
+  });
+  function menuLive() { return !!menu && (menu.classList.contains("open") || performance.now() < menuUntil); }
+  function poly(pts) { return "polygon(" + pts.map(function (p) { return p[0] + "px " + p[1] + "px"; }).join(", ") + ")"; }
+  function mirrorLabels(l, t, s) {
+    var boxes = labels.map(function (b) { return [b.own.getBoundingClientRect(), b.a.getBoundingClientRect()]; });
+    mirrored = false;
+    labels.forEach(function (b, i) {
+      var ro = boxes[i][0], ra = boxes[i][1], M = 6;              // letters can overhang their box a little
+      var hit = s > 0 && menuLive() && l < ro.right + M && l + s > ro.left - M && t < ro.bottom + M && t + s > ro.top - M;
+      if (!hit) {
+        if (b.on) { b.on = false; b.own.style.clipPath = ""; b.a.style.removeProperty("--cursor-copy"); }
+        return;
+      }
+      b.on = mirrored = true;
+      var x0 = l - ro.left, y0 = t - ro.top, x1 = x0 + s, y1 = y0 + s, W = ro.width + 999, H = ro.height + 999;
+      // the label itself, with the square cut out of it (even-odd: the inner square is a hole)
+      b.own.style.clipPath = "polygon(evenodd, -999px -999px, " + W + "px -999px, " + W + "px " + H + "px, -999px " + H + "px, -999px -999px, " +
+        x0 + "px " + y0 + "px, " + x1 + "px " + y0 + "px, " + x1 + "px " + y1 + "px, " + x0 + "px " + y1 + "px, " + x0 + "px " + y0 + "px)";
+      // …and its mirror copy, only inside the square
+      var cx = l - ra.left, cy = t - ra.top;
+      b.a.style.setProperty("--cursor-copy", poly([[cx, cy], [cx + s, cy], [cx + s, cy + s], [cx, cy + s]]));
+    });
   }
 
   // m x'' + c x' + k (x - to) = 0, solved exactly over dt: the same curve at any frame rate
@@ -82,7 +120,8 @@
     spring(S, to, dt, 350, 25, 0.5);
     var a = settled(X, mx, 0.05, 2), b = settled(Y, my, 0.05, 2), c = settled(S, to, 0.0005, 0.005);
     place();
-    if (a && b && c) { raf = 0; last = 0; } else raf = requestAnimationFrame(frame);
+    // (while the menu is open its labels may be sliding: keep their mirrors in step)
+    if (a && b && c && !(menuLive() && size > 0)) { raf = 0; last = 0; } else raf = requestAnimationFrame(frame);
   }
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
   function setHot(el) {
@@ -117,4 +156,9 @@
   }
   apply();
   if (reduce.addEventListener) reduce.addEventListener("change", apply);
+  // the menu opening / closing: its labels slide in, or fade out over ~0.8s
+  if (menu && window.MutationObserver) new MutationObserver(function () {
+    if (!menu.classList.contains("open")) menuUntil = performance.now() + 800;
+    wake();
+  }).observe(menu, { attributes: true, attributeFilter: ["class"] });
 })();
