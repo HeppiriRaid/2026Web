@@ -56,6 +56,12 @@
      deploy lands. Every text goes in as text (never as markup). */
   var works = [], N = 0;
   function loadWorks() {
+    // the list the last page fetched a moment ago, on the way here (js/wipe.js)
+    try {
+      var s = JSON.parse(sessionStorage.getItem("kt-works") || "null");
+      sessionStorage.removeItem("kt-works");
+      if (s && Date.now() - s.t < 15000 && s.d && Array.isArray(s.d.works)) return Promise.resolve(s.d.works);
+    } catch (e) {}
     if (!window.fetch) return Promise.resolve([]);
     var ctl = window.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
@@ -509,15 +515,18 @@
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
     var firstImgs = works.filter(function (w) { return w.img && onScreen(w); }).map(function (w) { return whenReady(w.img); });
     // the curtain never lifts onto a blank work — except from another page of the site,
-    // where a long white pause would read as stuck: there it waits a moment at most, and
-    // any work still loading wipes in as soon as its picture arrives (intro())
-    var imgs = Promise.race([Promise.all(firstImgs), wait(arrive ? 700 : 6000)]);
+    // where the sheet lifts at once: any work still loading wipes in as soon as its
+    // picture can paint (intro())
+    var imgs = arrive ? Promise.resolve() : Promise.race([Promise.all(firstImgs), wait(6000)]);
     Promise.all([entered, fonts, imgs]).then(function () {
+      if (arrive && window.__wipe) {               // the white sheet lifts straight off as the intro rises in
+        window.__wipe.arrive(intro, function () { if (lenis) lenis.start(); });
+        return;
+      }
       var tl = gsap.timeline();
-      if (arrive) tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, 0.05);   // the white sheet lifts off
-      else tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
-              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25");
-      tl.add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
+      if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15");   // (never shown when arriving)
+      tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, arrive ? 0 : "-=0.25")
+        .add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
         .add(intro, "-=0.45");
     });
     setTimeout(function () {                                  // failsafe: never leave the page covered

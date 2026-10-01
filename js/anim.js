@@ -195,6 +195,8 @@
     var introTL = gsap.timeline({ paused: true });
     var dur = { slide: 1.0, pop: 0.7, tick: 0.5, plus: 0.6, image: 1.25, box: 1.0 };
     var at = 0;
+    // arriving from another page (js/wipe.js) the parts come in closer together
+    var step = window.__arrive ? 0.045 : 0.075;
     intro.forEach(function (el) {
       var ty = typeOf(el);
       // The hero photo LEADS the cascade (position 0). Because the intro
@@ -203,7 +205,7 @@
       // "progressing without photo, then it suddenly appears").
       var pos = (ty === "image") ? 0 : at;
       introTL.add(revealBy(ty, el, { duration: dur[ty] }), pos);
-      if (ty !== "image") at += 0.075;
+      if (ty !== "image") at += step;
     });
 
     var TYPES = ["slide", "pop", "tick", "plus", "image", "vimage", "box"];
@@ -304,18 +306,12 @@
       var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
       var heroReady = withTimeout(whenReady(hero), 6000);
 
-      if (window.__arrive) {
+      if (window.__arrive && window.__wipe) {
         // From another page of the site (js/wipe.js): no name — the white sheet that
-        // covered the last page just lifts off this one, and the intro follows.
+        // covered the last page lifts straight off this one as the intro rises in.
         heroReady.then(function () {
           landOnSection();
-          gsap.timeline()
-              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, 0.05)
-              .add(function () {
-                pre.style.display = "none";
-                if (lenis) lenis.start();
-              })
-              .add(runIntro, "-=0.45");
+          window.__wipe.arrive(runIntro, function () { if (lenis) lenis.start(); });
         });
       } else {
         // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
