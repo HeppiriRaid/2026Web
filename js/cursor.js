@@ -10,6 +10,10 @@
    pointer on their follow spring (stiffness 200, damping 25, mass 0.2), and it
    springs in, out, and up to 18pt over links and works on their box spring
    (350 / 25 / 0.5). The red dot marks the exact point.
+   Two under-squares follow it beneath the page content and mirror the paper
+   about #DCCBC3 first (see css/anim.css), so letters inside the square come out
+   clean instead of outlined in black. All three share one rectangle, snapped to
+   whole device pixels.
    Fine pointers only; with reduced motion the normal cursor stays.
    ============================================================ */
 (function () {
@@ -18,10 +22,30 @@
   var mm = window.matchMedia;
   if (!lens || !dot || !mm || !mm("(pointer:fine)").matches) return;
   var root = document.documentElement, reduce = mm("(prefers-reduced-motion: reduce)");
+  // the square and its two under-squares (css/anim.css) always share one rectangle
+  var squares = [lens].concat([].slice.call(document.querySelectorAll(".cursor-fold")));
+  var FIT = window.__fit || { dw: 460.807, clampPt: 259.2 };
 
   var HOT = "a, button, .plus", GROW = 1.5;      // over these the square grows 12pt -> 18pt
   var X = { x: 0, v: 0 }, Y = { x: 0, v: 0 }, S = { x: 0, v: 0 };
-  var mx = 0, my = 0, shown = false, hot = false, live = false, raf = 0, last = 0, recheck = false;
+  var mx = 0, my = 0, shown = false, hot = false, live = false, raf = 0, last = 0, recheck = false, size = -1;
+
+  // Place all three on whole device pixels. An edge pixel the square only partly
+  // covered would mix mirrored and plain paper, which crosses #DCCBC3 again and
+  // would show as a dark line round the square. The size is whole CSS pixels:
+  // the browser gives a layer whole-pixel bounds, so 41.5px would draw as 42.
+  function place() {
+    var r = window.devicePixelRatio || 1;
+    var k = Math.min(window.innerWidth / FIT.dw, FIT.clampPt ? window.innerHeight / FIT.clampPt : Infinity);
+    var s = Math.round(12 * k * Math.max(0, S.x));
+    var l = Math.round((X.x - s / 2) * r) / r, t = Math.round((Y.x - s / 2) * r) / r, i;
+    var tf = "translate(" + l + "px," + t + "px)";
+    for (i = 0; i < squares.length; i++) {
+      if (s !== size) squares[i].style.width = squares[i].style.height = s + "px";
+      squares[i].style.transform = tf;
+    }
+    size = s;
+  }
 
   // m x'' + c x' + k (x - to) = 0, solved exactly over dt: the same curve at any frame rate
   function spring(s, to, dt, k, c, m) {
@@ -57,7 +81,7 @@
     spring(Y, my, dt, 200, 25, 0.2);
     spring(S, to, dt, 350, 25, 0.5);
     var a = settled(X, mx, 0.05, 2), b = settled(Y, my, 0.05, 2), c = settled(S, to, 0.0005, 0.005);
-    lens.style.transform = "translate3d(" + X.x.toFixed(2) + "px," + Y.x.toFixed(2) + "px,0) translate(-50%,-50%) scale(" + Math.max(0, S.x).toFixed(4) + ")";
+    place();
     if (a && b && c) { raf = 0; last = 0; } else raf = requestAnimationFrame(frame);
   }
   function wake() { if (!raf) raf = requestAnimationFrame(frame); }
@@ -87,6 +111,8 @@
     window[how]("mousemove", move, { passive: true });
     document[how]("mouseout", out);
     window[how]("scroll", scrolled, { capture: true, passive: true });
+    window[how]("resize", wake);                                         // new scale / pixel ratio
+    root.classList.toggle("cursor-live", live);                          // css/anim.css: steady text layer
     if (!live) { hide(); root.classList.remove("cursor-ready"); }
   }
   apply();

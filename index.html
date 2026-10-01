@@ -9,7 +9,7 @@
 <!-- start the hero photo downloading immediately so the preloader rarely has to wait on it -->
 <link rel="preload" as="image" href="assets/img/about-portrait.webp" fetchpriority="high" />
 <link rel="stylesheet" href="css/style.css?v=18" />
-<link rel="stylesheet" href="css/anim.css?v=13" />
+<link rel="stylesheet" href="css/anim.css?v=15" />
 <script>
   /* Arm the animation layer before paint (no FOUC). If the user prefers
      reduced motion we never hide anything. A failsafe reveals the static
@@ -85,6 +85,11 @@
      transparent so the grey shows through behind the content. -->
 <div class="band" style="top:calc(259.2 * var(--k))"></div>
 <div class="band" style="top:calc(777.9 * var(--k))"></div>
+
+<!-- the cursor's two under-squares (css/anim.css, js/cursor.js): beneath the page content,
+     so letters inside the inverse square stay clean -->
+<div class="cursor-fold" aria-hidden="true"></div>
+<div class="cursor-fold" aria-hidden="true"></div>
 
 <main class="stage">
 
@@ -230,6 +235,6 @@
 <script src="vendor/lenis.min.js"></script>
 <script src="js/anim.js?v=13"></script>
 <script src="js/menu.js?v=16"></script>
-<script src="js/cursor.js?v=2"></script>
+<script src="js/cursor.js?v=4"></script>
 </body>
 </html>
