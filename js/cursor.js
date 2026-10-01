@@ -69,9 +69,9 @@
   function move(e) {
     mx = e.clientX; my = e.clientY;
     dot.style.transform = "translate3d(" + mx + "px," + my + "px,0) translate(-50%,-50%)";
-    if (!shown) {                                    // appear where the mouse is, springing in
-      shown = true; X.x = mx; Y.x = my; X.v = Y.v = 0;
-      root.classList.add("cursor-on");
+    if (!shown) {                                    // appear where the mouse is, springing in; until
+      shown = true; X.x = mx; Y.x = my; X.v = Y.v = 0;  // this first move the normal cursor stays
+      root.classList.add("cursor-on", "cursor-ready");
     }
     setHot(e.target);
     wake();
@@ -87,8 +87,7 @@
     window[how]("mousemove", move, { passive: true });
     document[how]("mouseout", out);
     window[how]("scroll", scrolled, { capture: true, passive: true });
-    root.classList.toggle("cursor-ready", live);
-    if (!live) hide();
+    if (!live) { hide(); root.classList.remove("cursor-ready"); }
   }
   apply();
   if (reduce.addEventListener) reduce.addEventListener("change", apply);
