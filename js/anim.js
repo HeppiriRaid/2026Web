@@ -290,22 +290,36 @@
       var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
       var heroReady = withTimeout(whenReady(hero), 6000);
 
-      // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
-      // the entrance has played and the hero image is ready to paint.
-      var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
-      var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+      if (window.__arrive) {
+        // From another page of the site (js/wipe.js): no name — the white sheet that
+        // covered the last page just lifts off this one, and the intro follows.
+        heroReady.then(function () {
+          gsap.timeline()
+              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, 0.05)
+              .add(function () {
+                pre.style.display = "none";
+                if (lenis) lenis.start();
+              })
+              .add(runIntro, "-=0.45");
+        });
+      } else {
+        // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
+        // the entrance has played and the hero image is ready to paint.
+        var enter = gsap.timeline();
+        enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
+        var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
 
-      Promise.all([entered, heroReady]).then(function () {
-        var exit = gsap.timeline();
-        exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
-            .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
-            .add(function () {
-              pre.style.display = "none";
-              if (lenis) lenis.start();
-            })
-            .add(runIntro, "-=0.45");
-      });
+        Promise.all([entered, heroReady]).then(function () {
+          var exit = gsap.timeline();
+          exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
+              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
+              .add(function () {
+                pre.style.display = "none";
+                if (lenis) lenis.start();
+              })
+              .add(runIntro, "-=0.45");
+        });
+      }
     } else {
       if (pre) pre.style.display = "none";
       runIntro();

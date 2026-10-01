@@ -78,7 +78,9 @@
     btn.type = "button";
     if (d.image) {                                  // its pixel size, so the row knows its shape before it loads
       var im = document.createElement("img");
-      im.src = d.image; im.width = w; im.height = h; im.alt = d.title || ""; im.decoding = "async";
+      // the address waits in data-src: loadPictures() lets the ones on screen load first
+      im.setAttribute("data-src", d.image);
+      im.width = w; im.height = h; im.alt = d.title || ""; im.decoding = "async";
       if (d.full) im.setAttribute("data-full", d.full);
       btn.appendChild(im);
     } else {                                        // no picture yet: the grey holder, in its proportion
@@ -123,6 +125,18 @@
     });
     N = works.length;
     if (io) works.forEach(function (w) { io.observe(w.el); });
+    loadPictures();
+  }
+  // The pictures on screen (and the first few) load at once, at high priority; the rest
+  // only once those are in, so the first screen doesn't share the connection with every
+  // picture in the row. (The browser's own lazy loading never starts inside this
+  // sideways-scrolling row, so it is staged here.)
+  function loadPictures() {
+    var now = [], later = [];
+    works.forEach(function (w) { if (w.img) (onScreen(w) || w.i < 4 ? now : later).push(w); });
+    now.forEach(function (w) { w.img.setAttribute("fetchpriority", "high"); w.img.src = w.img.getAttribute("data-src"); });
+    Promise.race([Promise.all(now.map(function (w) { return whenReady(w.img); })), wait(4000)])
+      .then(function () { later.forEach(function (w) { w.img.src = w.img.getAttribute("data-src"); }); });
   }
 
   /* ---------- sideways scroll ------------------------------------------------ */
@@ -229,13 +243,26 @@
       onComplete: function () { gsap.set(w.capIn, { clearProps: "transform" }); } });
     showPlus(w, delay + 0.72, 0.6);                  // the "+" fades in as the wipe reaches it
   }
+  // wipe works in, in order, each only once its picture can paint (a work never wipes in
+  // as an empty grey box) — but never waiting longer than `cap` ms for one
+  function revealInOrder(list, base, step, cap) {
+    var t0 = performance.now(), prev = -1;
+    list.reduce(function (chain, w, k) {
+      return chain.then(function () { return w.img ? Promise.race([whenReady(w.img), wait(cap)]) : null; })
+        .then(function () {
+          var now = (performance.now() - t0) / 1000, at = Math.max(base + step * k, prev + step, now);
+          prev = at;
+          reveal(w, at - now);
+        });
+    }, Promise.resolve());
+  }
   var io = ("IntersectionObserver" in window) ? new IntersectionObserver(function (entries) {
     if (introLock) return;                          // the intro reveals what is on screen first
     var batch = entries.filter(function (en) { return en.isIntersecting; })
       .map(function (en) { return works[+en.target.getAttribute("data-i")]; })
       .filter(function (w) { return w && !w.shown; })
       .sort(function (a, b) { return a.i - b.i; });
-    batch.forEach(function (w, n) { reveal(w, n * 0.08); });
+    revealInOrder(batch, 0, 0.08, 4000);
   }, { threshold: 0.12 }) : null;
 
   /* ---------- zoom ------------------------------------------------------------ */
@@ -263,7 +290,7 @@
     if (w.img) {
       var im = document.createElement("img");
       im.alt = w.img.alt || w.title;
-      im.src = w.img.currentSrc || w.img.src;                // already decoded: no blank frame
+      im.src = w.img.currentSrc || w.img.getAttribute("src") || w.img.getAttribute("data-src");   // already decoded: no blank frame
       var full = w.img.getAttribute("data-full");
       if (full) {                                           // swap to the large file once it can paint
         var hi = new Image(); hi.src = full;
@@ -436,26 +463,7 @@
     if (Z.open && Z.fig && !Z.busy) place(Z.fig, fit(aspect(works[Z.i])));
   });
 
-  /* ---------- leaving: the paper curtain comes down (the preloader's own element) ---- */
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest && e.target.closest("a[href]");
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    if (a.target && a.target !== "_self") return;
-    if (a.getAttribute("aria-current") === "page") return;    // this page (menu.js just closes the menu)
-    var url;
-    try { url = new URL(a.href, location.href); } catch (err) { return; }
-    if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search)) return;
-    if (!gsap || REDUCE || !pre) return;
-    e.preventDefault();
-    pre.style.display = "flex";
-    var name = pre.querySelector(".pl-name");
-    if (name) gsap.set(name, { y: "110%" });
-    gsap.fromTo(pre, { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: "power4.inOut",
-      onComplete: function () { location.href = url.href; } });
-  }, true);
-  window.addEventListener("pageshow", function (ev) {        // back / forward cache: never restore a covered page
-    if (ev.persisted && pre) { pre.style.display = "none"; if (gsap) gsap.set(pre, { clearProps: "transform" }); }
-  });
+  /* (leaving for another page — the white wipe — lives in js/wipe.js, shared with the front page) */
 
   /* (the custom cursor lives in js/cursor.js, shared with the front page) */
 
@@ -474,9 +482,12 @@
     introLock = false;
     gsap.fromTo($$(".istage .brand, .istage .nav"), { opacity: 0, y: 42 },
       { opacity: 1, y: 0, duration: 1.0, ease: "power3.out", stagger: 0.075, clearProps: "transform" });
-    var n = 0;
-    works.forEach(function (w) { if (onScreen(w)) reveal(w, 0.12 + 0.09 * n++); });
-    if (!io) works.forEach(function (w) { reveal(w, 0.12 + 0.09 * n++); });
+    // the works on screen wipe in left to right, each once its picture can paint. Usually
+    // they all can already, and this is the plain 0.09s cascade; on a slow first visit
+    // from another page the sheet doesn't wait for them, and they follow as they arrive.
+    var list = works.filter(onScreen);
+    revealInOrder(list, 0.12, 0.09, 8000);
+    if (!io) works.forEach(function (w) { if (list.indexOf(w) < 0) reveal(w, 0.12 + 0.09 * list.length); });
   }
 
   function start() {
@@ -488,18 +499,25 @@
       return;
     }
     if (lenis) lenis.stop();
-    var name = pre.querySelector(".pl-name");
-    var enter = gsap.timeline();
-    enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
-    var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+    var name = pre.querySelector(".pl-name"), arrive = !!window.__arrive;
+    var entered = Promise.resolve();
+    if (!arrive) {                     // a fresh visit: the name rises first (from another page of the site, no name)
+      var enter = gsap.timeline();
+      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
+      entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+    }
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
     var firstImgs = works.filter(function (w) { return w.img && onScreen(w); }).map(function (w) { return whenReady(w.img); });
-    var imgs = Promise.race([Promise.all(firstImgs), wait(6000)]);    // the curtain never lifts onto a blank work
+    // the curtain never lifts onto a blank work — except from another page of the site,
+    // where a long white pause would read as stuck: there it waits a moment at most, and
+    // any work still loading wipes in as soon as its picture arrives (intro())
+    var imgs = Promise.race([Promise.all(firstImgs), wait(arrive ? 700 : 6000)]);
     Promise.all([entered, fonts, imgs]).then(function () {
-      gsap.timeline()
-        .to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
-        .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25")
-        .add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
+      var tl = gsap.timeline();
+      if (arrive) tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, 0.05);   // the white sheet lifts off
+      else tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
+              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut" }, "-=0.25");
+      tl.add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
         .add(intro, "-=0.45");
     });
     setTimeout(function () {                                  // failsafe: never leave the page covered
@@ -507,16 +525,14 @@
     }, 12000);
   }
 
-  // the curtain lifts once the page has loaded AND the works are in the row (a failed or
-  // slow list still lifts it, onto an empty row)
-  var loaded = new Promise(function (res) {
-    if (document.readyState === "complete") res();
-    else window.addEventListener("load", res, { once: true });
-  });
+  // start once the works are in the row and the type is in (a failed or slow list still
+  // starts, onto an empty row). Not on the page's load event: that waits for every
+  // picture in the row, and only the ones on screen matter here (start() waits for those).
+  var typeIn = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
   // (emptied first: an old cached copy of the page still carries hand-written works)
   var listed = loadWorks().then(function (list) { track.textContent = ""; render(list); collect(); })
     .catch(function (err) { if (window.console) console.error("illustration: the row failed", err); });
-  Promise.all([listed, loaded]).then(function () {
+  Promise.all([listed, typeIn]).then(function () {
     try { start(); } catch (err) {
       if (window.console) console.error("illustration.js failed, showing the static page:", err);
       introLock = false;
