@@ -30,6 +30,10 @@ html,body{background:var(--paper)}
    are positioned in document space, scrolling with the page. */
 body{position:relative;font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 img{display:block;width:100%;height:100%;object-fit:cover}
+/* keyboard focus: a plain ink ring, square, no halo. The browser's own ring has a white halo
+   and round corners, which the cursor's square folds into dark lines (CLAUDE.md). The menu
+   button and labels, a work, the zoom's buttons and the colour test panel draw their own. */
+:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid #434343;outline-offset:calc(1 * var(--k))}
 
 /* the artboard: 460.807 x 1036.66 pt. Width is the design size (460.807pt * --k)
    so it fills the viewport at default zoom and grows/shrinks with browser zoom;

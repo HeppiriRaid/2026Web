@@ -121,8 +121,11 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
 .zoom-fig.has-img{background:none}
 .zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}
-/* keyboard / screen-reader controls: invisible until focused */
-.zoom-ui{position:absolute;right:calc(12 * var(--k));top:calc(12 * var(--k));display:flex;gap:calc(4 * var(--k))}
+/* keyboard / screen-reader controls: invisible until focused. On a layer of their own, so
+   their letters are smoothed in grey like all the site's text: over the opaque grey the
+   browser would smooth them in colour (subpixel), and those coloured edges fold through
+   black inside the cursor's square. */
+.zoom-ui{position:absolute;right:calc(12 * var(--k));top:calc(12 * var(--k));display:flex;gap:calc(4 * var(--k));will-change:transform}
 .zoom-ui button{
   position:relative;opacity:0;pointer-events:none;
   font-family:"GothicCap","Gothic",sans-serif;font-size:calc(4 * var(--k));line-height:1;color:var(--ink);

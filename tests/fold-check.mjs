@@ -7,16 +7,26 @@
    outline. (How the site avoids it: css/anim.css, "custom cursor", and
    CLAUDE.md.)
 
-   This puts every page state on screen twice, held still — plainly, and with
-   the cursor's square stretched over the whole window — and flags each pixel
+   First the colour audit (tests/colour-audit.mjs): every colour the cursor
+   pages paint that could fold has to be on its reviewed list. Then this puts
+   every page state on screen twice, held still — plainly, and with the
+   cursor's square stretched over the whole window — and flags each pixel
    where the plain page runs smoothly across an edge but the inverse dips
    darker than both sides of it. Pixels inside a picture are counted apart:
    a picture's own soft edges fold the same way on Maison Auge's site; that is
    the effect itself, not this bug.
 
-   Run (Node 18+ and Chromium):
+   The states come in flows (FLOWS, at the bottom): the whole site in one
+   visit, the colour test panel (index.html?shader), keyboard focus. Anything
+   new on screen — a page, a panel, a ?switch, a test tool — gets its states
+   here before it ships. A full run that is clean leaves a stamp for exactly
+   this code (tests/code-stamp.mjs); without it the push guard
+   (.claude/hooks/push-guard.mjs) stops a `git push`.
+
+   Run (Node 18+ and Chromium), about 12 minutes:
      npm install --no-save playwright-core
      node tests/fold-check.mjs            # exits 1 if any outline is found
+     node tests/fold-check.mjs shader     # only the flows named (quicker; no stamp)
    Options (environment): CHROMIUM=/path/to/chromium   PLAYWRIGHT_CORE=/path/to/playwright-core
                           FOLD_SHOTS=dir  (saves both screenshots of every state with an outline)
    ============================================================ */
@@ -24,13 +34,21 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
+import { audit, report, DIP } from "./colour-audit.mjs";
+import { codeHere, writeStamp } from "./code-stamp.mjs";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
-const { chromium } = await import(process.env.PLAYWRIGHT_CORE ? url.pathToFileURL(path.join(process.env.PLAYWRIGHT_CORE, "index.mjs")).href : "playwright-core");
-const DIP = 12;      // an outline pixel: at least this much darker (0-255) than both sides of its edge
-const MIN_PX = 3;    // …and at least this many of them on one element
+const ONLY = process.argv.slice(2);
+const MIN_PX = 3;    // an outline: at least this many pixels on one element, each DIP (0-255) darker than both sides of its edge
 const SHOTS = process.env.FOLD_SHOTS;
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
+
+// ---- the colours, read from the code --------------------------------------------------------
+const colours = audit(ROOT);
+report(colours);
+console.log("");
+const code = codeHere(ROOT);   // (the stamp is for this code: a file changed during the run, and there is none)
+const { chromium } = await import(process.env.PLAYWRIGHT_CORE ? url.pathToFileURL(path.join(process.env.PLAYWRIGHT_CORE, "index.mjs")).href : "playwright-core");
 
 // ---- the site, served from this checkout -----------------------------------------
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json",
@@ -194,6 +212,17 @@ async function expect(p, fn, arg, what) {
   try { await p.waitForFunction(fn, arg, { timeout: 8000 }); }
   catch (e) { throw new Error("could not reach the state: " + what); }
 }
+// Tab (as a keyboard visitor does) until something matching `sel` has the keyboard's focus ring
+async function tabTo(p, sel) {
+  for (let i = 0; i < 80; i++) {
+    if (await p.evaluate((sel) => { const a = document.activeElement; return !!a && a.matches(sel) && a.matches(":focus-visible"); }, sel)) {
+      await p.waitForTimeout(700);
+      return;
+    }
+    await p.keyboard.press("Tab");
+  }
+  throw new Error("could not reach the state: keyboard focus on " + sel);
+}
 // hold everything still once something matching `sel` is half-way through wiping in
 function wipeAt(p, sel) {
   return p.waitForFunction((sel) => {
@@ -221,156 +250,277 @@ function sheetAt(p, from, to) {
   }, [from, to], { polling: "raf", timeout: 20000 });
 }
 
+// ---- the states ---------------------------------------------------------------------------
+const FLOWS = {
+  // the whole site in one visit: arriving, scrolling, the hamburger's colours, the menu, the
+  // page changes both ways, the illustration page and its zoom
+  async site(p, dpr) {
+    // -- the front page: a first visit, while the name is up
+    await p.goto(SITE + "/index.html");
+    await p.waitForFunction(() => {
+      const n = document.querySelector(".pl-name"), t = n && getComputedStyle(n).transform;
+      return !!t && (t === "none" || Math.abs(new DOMMatrix(t).m42) < 0.5);
+    }, null, { polling: "raf", timeout: 15000 });
+    await p.evaluate(() => { window.gsap.globalTimeline.pause(); });
+    await check(p, "front page: first visit, the name", dpr);
+    await settled(p);
+    await p.waitForTimeout(2600);
+
+    // -- the front page, top to bottom
+    const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    for (let y = 0; ; y = Math.min(H, y + 700)) {
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await p.waitForTimeout(2600);
+      await check(p, `front page: scrolled to ${y}px`, dpr);
+      if (y >= H) break;
+    }
+
+    // -- text selected. A KNOWN LIMIT, reported but not failed: the browser paints the
+    // highlight and the letters on it in one go, on both sides of #DCCBC3, and nothing can
+    // mirror a text selection; only other highlight colours would avoid it.
+    await p.evaluate(() => { window.__lenis.scrollTo(0, { immediate: true, force: true }); });
+    await p.waitForTimeout(1200);
+    await p.evaluate(() => {
+      const t = [...document.querySelectorAll("p")].find((e) => { const r = e.getBoundingClientRect(); return r.top > 0 && r.bottom < innerHeight && e.textContent.trim().length > 40; });
+      if (!t) return;
+      t.setAttribute("data-fold-known", "selected text");
+      const r = document.createRange(); r.selectNodeContents(t);
+      getSelection().removeAllRanges(); getSelection().addRange(r);
+    });
+    await expect(p, () => String(getSelection()).length > 40, null, "some text selected");
+    await check(p, "front page: text selected", dpr);
+    await p.evaluate(() => { getSelection().removeAllRanges(); document.querySelector("[data-fold-known]").removeAttribute("data-fold-known"); });
+
+    // -- the hamburger over the BACK GROUND picture, in each of its colour variations
+    // (js/menu-shade.js): the bars alone, then the menu open over it with a label under the pointer
+    const shades = await p.evaluate(() => (window.__menuShade ? window.__menuShade.names : []));
+    if (shades.length) {
+      const was = await p.evaluate(() => window.__menuShade.get());
+      const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
+      const coloured = () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage);
+      for (let m = 1; m < shades.length; m++) {
+        await p.evaluate((m) => { window.__menuShade.set(m); }, m);
+        await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
+        await p.waitForTimeout(m === 1 ? 2200 : 700);   // (the first time, the hamburger catches the corner)
+        await expect(p, coloured, null, `the hamburger coloured over the picture (${shades[m]})`);
+        await check(p, `front page: hamburger over the picture, ${shades[m]}`, dpr);
+        await click(p, "#menuBtn");
+        await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+        await p.waitForTimeout(1600);
+        const lw = await menuLink(p, "WORK");
+        await p.mouse.move(lw.x, lw.y, { steps: 4 });
+        await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+        await p.waitForTimeout(900);
+        await check(p, `front page: menu open over the picture, pointer on WORK, ${shades[m]}`, dpr);
+        await p.keyboard.press("Escape");
+        await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
+        await p.mouse.move(700, 500);
+        await p.waitForTimeout(1300);
+      }
+      await p.evaluate((was) => { window.__menuShade.set(was); }, was);
+      // A KNOWN LIMIT, reported but not failed: over a real painting, a deep bar's soft edge
+      // next to a bright part of the painting straddles #DCCBC3 (as today's grey bars would).
+      // (A real work stands in for the picture here, as the test panel's preview does.)
+      const src = await p.evaluate(async () => { const d = await (await fetch("data/illustration.json")).json(); const w = (d.works || []).find((w) => w.image); return w ? w.image : null; });
+      if (src) {
+        await p.evaluate((src) => new Promise((res) => {
+          const im = new Image(); im.alt = ""; im.id = "fold-check-picture"; im.onload = res; im.onerror = res; im.src = src;
+          document.querySelector("[data-menu-shade]").appendChild(im);
+          document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
+        }), src);
+        await p.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
+        await p.waitForTimeout(1500);                        // (and the scrollbar's thumb fades)
+        await check(p, "front page: hamburger over a painting in the picture's place", dpr);
+        await p.evaluate(() => { document.getElementById("fold-check-picture").remove(); document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
+      }
+    }
+
+    // -- the menu, open, and a label under the pointer
+    await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
+    await p.waitForTimeout(1500);
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await p.waitForTimeout(1600);
+    await check(p, "front page: menu open", dpr);
+    const work = await menuLink(p, "WORK");
+    await p.mouse.move(work.x, work.y, { steps: 4 });
+    await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+    await p.waitForTimeout(900);
+    await check(p, "front page: menu open, pointer on WORK", dpr);
+
+    // -- leaving: the sheet half-way up over the page
+    const il = await menuLink(p, "ILLUSTRATION");
+    await p.mouse.move(il.x, il.y, { steps: 2 });
+    await p.mouse.down(); await p.mouse.up();
+    await sheetAt(p, 60, 30);
+    await check(p, "page change: the sheet rising (front page)", dpr);
+
+    // -- arriving at the illustration page: the sheet half-way off, the intro rising in
+    await p.waitForURL(/illustration\.html/, { waitUntil: "commit" });
+    await sheetAt(p, -35, -70);
+    await check(p, "page change: the sheet lifting, the intro rising (illustration)", dpr);
+    await wipeAt(p, ".work-btn");
+    await check(p, "illustration page: a work wiping in", dpr);
+    await settled(p);
+    await p.waitForTimeout(2800);
+
+    // -- the illustration page
+    await check(p, "illustration page", dpr);
+    await hover(p, ".work .plus", 0);
+    await expect(p, () => !!document.querySelector(".work .plus:hover"), null, "the pointer on a +");
+    await check(p, "illustration page: pointer on a +", dpr);
+    for (const k of [3, 6]) {
+      await p.keyboard.press("Home"); await p.waitForTimeout(1500);
+      for (let i = 0; i < k; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(60); }
+      await p.waitForTimeout(2600);
+      await expect(p, (k) => { const w = document.querySelectorAll(".work")[k]; return w && Math.abs(w.getBoundingClientRect().left - parseFloat(getComputedStyle(document.getElementById("track")).paddingLeft)) < 2; }, k, `the row at work ${k + 1}`);
+      await check(p, `illustration page: the row at work ${k + 1}`, dpr);
+    }
+    await click(p, ".work-btn", 0);
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
+    await p.waitForTimeout(2200);
+    await check(p, "illustration page: a work zoomed", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
+    await p.waitForTimeout(1200);
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await p.waitForTimeout(1600);
+    await check(p, "illustration page: menu open", dpr);
+
+    // -- back to the front page: arriving there
+    const ab = await menuLink(p, "ABOUT");
+    await p.mouse.move(ab.x, ab.y, { steps: 2 });
+    await p.mouse.down(); await p.mouse.up();
+    await p.waitForURL(/index\.html/, { waitUntil: "commit" });
+    await sheetAt(p, -35, -70);
+    await check(p, "page change: the sheet lifting, the intro rising (front page)", dpr);
+    await settled(p);
+    await p.waitForTimeout(1500);
+    await p.evaluate(() => { window.__lenis.scrollTo(2000, { immediate: true, force: true }); });
+    await wipeAt(p, ".ph img");
+    await check(p, "front page: a photo wiping in", dpr);
+  },
+
+  // the colour test panel (index.html?shader, js/menu-shade.js): a panel above the
+  // under-squares, tried with the cursor and the keyboard, over the page and over photos
+  async shader(p, dpr) {
+    await p.goto(SITE + "/index.html?shader");
+    await settled(p);
+    await p.waitForTimeout(2600);
+    await expect(p, () => { const b = document.querySelector(".shade-lab"); return !!b && b.getBoundingClientRect().height > 100; }, null, "the test panel open");
+    await check(p, "test panel (?shader): open", dpr);
+    await hover(p, ".shade-lab li button", 3);
+    await expect(p, () => !!document.querySelector(".shade-lab li button:hover"), null, "the pointer on a colour");
+    await check(p, "test panel: pointer on a colour", dpr);
+
+    // -- at the picture: a colour tried on the hamburger with the cursor, then kept with a click
+    await click(p, ".shade-lab .go");
+    await p.waitForTimeout(1600);                                    // (the scroll there)
+    await expect(p, () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage), null, "the hamburger coloured over the picture");
+    await check(p, "test panel: the hamburger over the picture", dpr);
+    await hover(p, ".shade-lab li button", 5);
+    await expect(p, () => window.__menuShade.get() === 5, null, "a colour tried on the hamburger, the pointer on it");
+    await check(p, "test panel: a colour tried on the hamburger, the pointer on it", dpr);
+    await p.mouse.down(); await p.mouse.up();
+    await p.mouse.move(720, 300, { steps: 4 });
+    await expect(p, () => window.__menuShade.get() === 5, null, "the colour kept after the click");
+
+    // -- a painting in the picture's place (the hamburger over it is a known limit, as above)
+    await expect(p, () => document.querySelectorAll(".shade-lab .pics button").length > 1, null, "the works offered as pictures");
+    await click(p, ".shade-lab .pics button", 1);
+    await expect(p, () => { const i = document.querySelector("[data-menu-shade] img[data-shade-preview]"); return !!i && i.complete && i.naturalWidth > 0; }, null, "a painting in the picture's place");
+    await p.evaluate(() => { document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting"); });
+    await p.mouse.move(720, 300, { steps: 4 });
+    await p.waitForTimeout(1500);
+    await check(p, "test panel: a painting in the picture's place", dpr);
+    await click(p, ".shade-lab .pics button", 0);
+    await p.evaluate(() => { document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
+
+    // -- keyboard focus in the panel (its own ring, not the browser's)
+    await p.focus(".shade-lab li button");
+    await p.keyboard.press("Tab");
+    await expect(p, () => !!document.querySelector(".shade-lab li button:focus-visible"), null, "keyboard focus on a colour");
+    await p.mouse.move(720, 300, { steps: 4 });
+    await p.waitForTimeout(700);
+    await check(p, "test panel: keyboard focus on a colour", dpr);
+    await p.evaluate(() => { document.activeElement.blur(); });
+
+    // -- folded small
+    await click(p, ".shade-lab .hd b");
+    await expect(p, () => document.querySelector(".shade-lab").classList.contains("small"), null, "the panel folded small");
+    await p.mouse.move(720, 300, { steps: 4 });
+    await p.waitForTimeout(600);
+    await check(p, "test panel: folded small", dpr);
+    await click(p, ".shade-lab .hd b");
+
+    // -- over a photo: the panel's edges against a bright picture
+    const spots = await p.evaluate(() => {
+      const b = document.querySelector(".shade-lab").getBoundingClientRect(), H = document.documentElement.scrollHeight - innerHeight;
+      return [...document.querySelectorAll(".stage img")].map((im) => {
+        const r = im.getBoundingClientRect();
+        if (r.width < 40 || r.left >= b.right || r.right <= b.left) return null;            // never beside the panel
+        return Math.max(0, Math.min(H, Math.round(r.top + scrollY + r.height / 2 - b.top)));  // its middle at the panel's top edge
+      }).filter((y) => y !== null);
+    });
+    let overPhoto = 0;
+    for (const y of [...new Set(spots)]) {
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await p.mouse.move(720, 300, { steps: 2 });
+      await p.waitForTimeout(2600);
+      const on = await p.evaluate(() => {
+        const b = document.querySelector(".shade-lab").getBoundingClientRect();
+        return [...document.querySelectorAll(".stage img")].some((im) => {
+          const r = im.getBoundingClientRect();
+          return im.complete && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top && !(r.top >= b.top && r.bottom <= b.bottom && r.left >= b.left && r.right <= b.right);
+        });
+      });
+      if (!on) continue;
+      await check(p, `test panel over a photo (scrolled to ${y}px)`, dpr);
+      if (++overPhoto === 2) break;
+    }
+    if (!overPhoto) throw new Error("could not reach the state: the test panel over a photo");
+  },
+
+  // keyboard focus: each kind of focus ring the cursor pages draw (the browser's own has a
+  // white halo, which the square folds — so each must be the site's own)
+  async focus(p, dpr) {
+    await p.goto(SITE + "/index.html");
+    await settled(p);
+    await p.waitForTimeout(2600);
+    await tabTo(p, "#menuBtn");
+    await p.keyboard.press("Enter");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await p.waitForTimeout(1600);
+    await tabTo(p, "#menuNav a");
+    await check(p, "front page: keyboard focus on a menu label", dpr);
+    await p.keyboard.press("Escape");
+
+    await p.goto(SITE + "/illustration.html");
+    await settled(p);
+    await p.waitForTimeout(2800);
+    await tabTo(p, "a.brand");
+    await check(p, "illustration page: keyboard focus on a link", dpr);
+    await tabTo(p, ".work-btn");
+    await check(p, "illustration page: keyboard focus on a work", dpr);
+    await p.keyboard.press("Enter");
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed from the keyboard");
+    await p.waitForTimeout(2200);
+    await tabTo(p, ".zoom-ui button");
+    await check(p, "illustration page: keyboard focus on a zoom button", dpr);
+  },
+};
+
+for (const f of ONLY) if (!FLOWS[f]) { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}).`); process.exit(2); }
+const stopped = [];
 for (const dpr of [1, 2]) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: dpr });
-  const p = await ctx.newPage();
-
-  // -- the front page: a first visit, while the name is up
-  await p.goto(SITE + "/index.html");
-  await p.waitForFunction(() => {
-    const n = document.querySelector(".pl-name"), t = n && getComputedStyle(n).transform;
-    return !!t && (t === "none" || Math.abs(new DOMMatrix(t).m42) < 0.5);
-  }, null, { polling: "raf", timeout: 15000 });
-  await p.evaluate(() => { window.gsap.globalTimeline.pause(); });
-  await check(p, "front page: first visit, the name", dpr);
-  await settled(p);
-  await p.waitForTimeout(2600);
-
-  // -- the front page, top to bottom
-  const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
-  for (let y = 0; ; y = Math.min(H, y + 700)) {
-    await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
-    await p.waitForTimeout(2600);
-    await check(p, `front page: scrolled to ${y}px`, dpr);
-    if (y >= H) break;
+  for (const [name, flow] of Object.entries(FLOWS)) {
+    if (ONLY.length && !ONLY.includes(name)) continue;
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: dpr });
+    try { await flow(await ctx.newPage(), dpr); }
+    catch (e) { stopped.push(`${name} @${dpr}x: ${e.message.split("\n")[0]}`); console.log(`  STOPPED  ${name} @${dpr}x: ${e.message.split("\n")[0]}`); }
+    await ctx.close();
   }
-
-  // -- text selected. A KNOWN LIMIT, reported but not failed: the browser paints the
-  // highlight and the letters on it in one go, on both sides of #DCCBC3, and nothing can
-  // mirror a text selection; only other highlight colours would avoid it.
-  await p.evaluate(() => { window.__lenis.scrollTo(0, { immediate: true, force: true }); });
-  await p.waitForTimeout(1200);
-  await p.evaluate(() => {
-    const t = [...document.querySelectorAll("p")].find((e) => { const r = e.getBoundingClientRect(); return r.top > 0 && r.bottom < innerHeight && e.textContent.trim().length > 40; });
-    if (!t) return;
-    t.setAttribute("data-fold-known", "selected text");
-    const r = document.createRange(); r.selectNodeContents(t);
-    getSelection().removeAllRanges(); getSelection().addRange(r);
-  });
-  await expect(p, () => String(getSelection()).length > 40, null, "some text selected");
-  await check(p, "front page: text selected", dpr);
-  await p.evaluate(() => { getSelection().removeAllRanges(); document.querySelector("[data-fold-known]").removeAttribute("data-fold-known"); });
-
-  // -- the hamburger over the BACK GROUND picture, in each of its colour variations
-  // (js/menu-shade.js): the bars alone, then the menu open over it with a label under the pointer
-  const shades = await p.evaluate(() => (window.__menuShade ? window.__menuShade.names : []));
-  if (shades.length) {
-    const was = await p.evaluate(() => window.__menuShade.get());
-    const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
-    const coloured = () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage);
-    for (let m = 1; m < shades.length; m++) {
-      await p.evaluate((m) => { window.__menuShade.set(m); }, m);
-      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
-      await p.waitForTimeout(m === 1 ? 2200 : 700);   // (the first time, the hamburger catches the corner)
-      await expect(p, coloured, null, `the hamburger coloured over the picture (${shades[m]})`);
-      await check(p, `front page: hamburger over the picture, ${shades[m]}`, dpr);
-      await click(p, "#menuBtn");
-      await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-      await p.waitForTimeout(1600);
-      const lw = await menuLink(p, "WORK");
-      await p.mouse.move(lw.x, lw.y, { steps: 4 });
-      await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
-      await p.waitForTimeout(900);
-      await check(p, `front page: menu open over the picture, pointer on WORK, ${shades[m]}`, dpr);
-      await p.keyboard.press("Escape");
-      await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
-      await p.mouse.move(700, 500);
-      await p.waitForTimeout(1300);
-    }
-    await p.evaluate((was) => { window.__menuShade.set(was); }, was);
-    // A KNOWN LIMIT, reported but not failed: over a real painting, a deep bar's soft edge
-    // next to a bright part of the painting straddles #DCCBC3 (as today's grey bars would).
-    // (A real work stands in for the picture here, as the test panel's preview does.)
-    const src = await p.evaluate(async () => { const d = await (await fetch("data/illustration.json")).json(); const w = (d.works || []).find((w) => w.image); return w ? w.image : null; });
-    if (src) {
-      await p.evaluate((src) => new Promise((res) => {
-        const im = new Image(); im.alt = ""; im.id = "fold-check-picture"; im.onload = res; im.onerror = res; im.src = src;
-        document.querySelector("[data-menu-shade]").appendChild(im);
-        document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
-      }), src);
-      await p.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
-      await p.waitForTimeout(1500);                        // (and the scrollbar's thumb fades)
-      await check(p, "front page: hamburger over a painting in the picture's place", dpr);
-      await p.evaluate(() => { document.getElementById("fold-check-picture").remove(); document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
-    }
-  }
-
-  // -- the menu, open, and a label under the pointer
-  await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
-  await p.waitForTimeout(1500);
-  await click(p, "#menuBtn");
-  await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-  await p.waitForTimeout(1600);
-  await check(p, "front page: menu open", dpr);
-  const work = await menuLink(p, "WORK");
-  await p.mouse.move(work.x, work.y, { steps: 4 });
-  await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
-  await p.waitForTimeout(900);
-  await check(p, "front page: menu open, pointer on WORK", dpr);
-
-  // -- leaving: the sheet half-way up over the page
-  const il = await menuLink(p, "ILLUSTRATION");
-  await p.mouse.move(il.x, il.y, { steps: 2 });
-  await p.mouse.down(); await p.mouse.up();
-  await sheetAt(p, 60, 30);
-  await check(p, "page change: the sheet rising (front page)", dpr);
-
-  // -- arriving at the illustration page: the sheet half-way off, the intro rising in
-  await p.waitForURL(/illustration\.html/, { waitUntil: "commit" });
-  await sheetAt(p, -35, -70);
-  await check(p, "page change: the sheet lifting, the intro rising (illustration)", dpr);
-  await wipeAt(p, ".work-btn");
-  await check(p, "illustration page: a work wiping in", dpr);
-  await settled(p);
-  await p.waitForTimeout(2800);
-
-  // -- the illustration page
-  await check(p, "illustration page", dpr);
-  await hover(p, ".work .plus", 0);
-  await expect(p, () => !!document.querySelector(".work .plus:hover"), null, "the pointer on a +");
-  await check(p, "illustration page: pointer on a +", dpr);
-  for (const k of [3, 6]) {
-    await p.keyboard.press("Home"); await p.waitForTimeout(1500);
-    for (let i = 0; i < k; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(60); }
-    await p.waitForTimeout(2600);
-    await expect(p, (k) => { const w = document.querySelectorAll(".work")[k]; return w && Math.abs(w.getBoundingClientRect().left - parseFloat(getComputedStyle(document.getElementById("track")).paddingLeft)) < 2; }, k, `the row at work ${k + 1}`);
-    await check(p, `illustration page: the row at work ${k + 1}`, dpr);
-  }
-  await click(p, ".work-btn", 0);
-  await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
-  await p.waitForTimeout(2200);
-  await check(p, "illustration page: a work zoomed", dpr);
-  await p.keyboard.press("Escape");
-  await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
-  await p.waitForTimeout(1200);
-  await click(p, "#menuBtn");
-  await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-  await p.waitForTimeout(1600);
-  await check(p, "illustration page: menu open", dpr);
-
-  // -- back to the front page: arriving there
-  const ab = await menuLink(p, "ABOUT");
-  await p.mouse.move(ab.x, ab.y, { steps: 2 });
-  await p.mouse.down(); await p.mouse.up();
-  await p.waitForURL(/index\.html/, { waitUntil: "commit" });
-  await sheetAt(p, -35, -70);
-  await check(p, "page change: the sheet lifting, the intro rising (front page)", dpr);
-  await settled(p);
-  await p.waitForTimeout(1500);
-  await p.evaluate(() => { window.__lenis.scrollTo(2000, { immediate: true, force: true }); });
-  await wipeAt(p, ".ph img");
-  await check(p, "front page: a photo wiping in", dpr);
-  await ctx.close();
 }
 
 await browser.close();
@@ -382,5 +532,12 @@ for (const r of results) for (const w of r.known) console.log(`Known limit: ${r.
 if (bad.length) {
   console.log(`\nOUTLINES in ${bad.length} of ${results.length} states:`);
   for (const r of bad) for (const w of r.bad) console.log(`  ${r.state} — ${w.key.slice(3)}: ${w.n} px, up to ${w.max} levels darker (near x ${w.at[0]}, y ${w.at[1]})`);
-  process.exitCode = 1;
 } else console.log(`\nNo outlines: all ${results.length} states are clean.`);
+if (stopped.length) console.log(`\nNOT CHECKED — a flow stopped before its states:\n  ${stopped.join("\n  ")}`);
+if (colours.problems.length) console.log(`\nThe colour audit failed (at the top).`);
+process.exitCode = bad.length || stopped.length || colours.problems.length ? 1 : 0;
+if (ONLY.length) console.log(`(Only ${ONLY.join(", ")}: no stamp — the push guard wants a full run.)`);
+else if (!process.exitCode) {
+  if (codeHere(ROOT) !== code) console.log("The code changed during the run: no stamp. Run it again.");
+  else console.log(`Stamp: this code (${writeStamp(ROOT, results.length).code}) passed; .claude/hooks/push-guard.mjs lets a push of it through.`);
+}

@@ -22,10 +22,10 @@
    Every bar colour stays at or below #DCCBC3 in each channel — the cursor
    square's rule (CLAUDE.md) — so inside the square the bars stay clean.
 
-   index.html?shader opens a small test panel: switch the variations
-   (keys 0-7), try them over a real painting in the picture's place (P),
-   jump to the picture. A choice made there is remembered in that browser
-   only; everyone else sees DEFAULT.
+   index.html?shader opens a small test panel: point at a variation to try
+   it on the hamburger, click to keep it (or keys 0-7); try them over a real
+   painting in the picture's place (P); jump to the picture. A choice made
+   there is remembered in that browser only; everyone else sees DEFAULT.
    ============================================================ */
 (function () {
   "use strict";
@@ -329,7 +329,6 @@
   /* ---------- every frame (after menu.js has placed the button) -------------------------- */
   var lastSig = "";
   function frame() {
-    if (!VARIATIONS[mode].map) { if (lastSig !== "off") { clearAll(); lastSig = "off"; } return; }
     var br = btn.getBoundingClientRect(), nr = nav.getBoundingClientRect(), hit = null, pr = null, vr = null;
     for (var i = 0; i < pics.length && !hit; i++) {
       var r = pics[i].getBoundingClientRect();
@@ -339,6 +338,8 @@
         if (v.width > 0 && v.height > 0) { hit = pics[i]; pr = r; vr = v; }
       }
     }
+    if (lab_) lab_.over(!!(hit && br.width));
+    if (!VARIATIONS[mode].map) { if (lastSig !== "off") { clearAll(); lastSig = "off"; } return; }
     if (!hit || !br.width) { if (lastSig !== "none") { clearAll(); lastSig = "none"; } return; }
     var src = sourceOf(hit, pr), W = parseFloat(getComputedStyle(btn).width), s = br.width / W;
     var sig = [mode, src.key, br.left, br.top, br.width, pr.left, pr.top, pr.width, pr.height, vr.left, vr.right, vr.top, vr.bottom, nr.top, nr.left].map(function (v) { return typeof v === "number" ? v.toFixed(2) : v; }).join("|") +
@@ -354,10 +355,16 @@
   if (window.gsap && window.gsap.ticker) window.gsap.ticker.add(frame);
   else (function loop() { frame(); requestAnimationFrame(loop); })();
 
-  var lab_ = null;
-  function setMode(n, keep) {
+  var lab_ = null, chosen = mode;
+  // what the bars show: the chosen variation, or one being tried for a moment (the test panel)
+  function show(n) {
     if (!VARIATIONS[n] || n === mode) return;
     mode = n; lastSig = "";
+    if (lab_) lab_.update();
+  }
+  function setMode(n, keep) {
+    if (!VARIATIONS[n]) return;
+    chosen = n; show(n);
     if (keep) try { localStorage.setItem(KEY, String(n)); } catch (e) {}
     if (lab_) lab_.update();
   }
@@ -373,36 +380,45 @@
   function testPanel() {
     var fig = pics[0], previews = [{ name: "Grey box", src: "" }], pick = 0;
     var style = document.createElement("style");
+    // The panel lies above the cursor's under-squares, so every colour in it is #DCCBC3 or
+    // darker in every channel (CLAUDE.md), or inside the square its soft edges would fold into
+    // dark outlines: ink, with light text that stays under #DCCBC3. (tests/colour-audit.mjs
+    // holds the code to it; tests/fold-check.mjs, flow "shader", shows the panel's states.)
     style.textContent =
-      ".shade-lab{position:fixed;left:12px;bottom:12px;z-index:96;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;" +
-      "background:#fffefc;border:1px solid #b3b1b1;box-shadow:0 6px 24px rgba(0,0,0,.12);padding:12px 12px 10px;" +
-      "font:12px/1.4 'Gothic','Century Gothic',system-ui,sans-serif;color:#434343}" +
+      ".shade-lab{position:fixed;left:12px;bottom:12px;z-index:96;box-sizing:border-box;width:min(330px,calc(100vw - 24px));" +
+      "background:#434343;color:#d2c8c0;font:12px/1.4 'Gothic','Century Gothic',system-ui,sans-serif}" +
+      ".shade-lab .in{padding:12px 12px 10px}.shade-lab.small .in{padding:8px 10px}" +
       ".shade-lab b{font-weight:400;letter-spacing:.06em}.shade-lab .hd{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px}" +
       ".shade-lab button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}" +
+      ".shade-lab :focus-visible{outline:1px solid #d2c8c0;outline-offset:1px}" +                     /* (not the browser's white-haloed ring) */
       ".shade-lab ol{list-style:none;margin:0 0 10px;padding:0}.shade-lab li button{display:flex;gap:8px;align-items:flex-start;width:100%;padding:5px 4px}" +
-      ".shade-lab li button:hover,.shade-lab li button[aria-pressed=true]{background:#f2f1ef}" +
-      ".shade-lab .sw{flex:0 0 auto;display:grid;gap:2px;width:22px;padding:5px 4px;background:var(--g,#b3b3b3)}" +
-      ".shade-lab .sw i{display:block;height:3px;background:var(--c)}" +
-      ".shade-lab .t{flex:1 1 auto}.shade-lab .zh{font-size:14px;margin-right:6px}.shade-lab .n{display:block;color:#8a8686;font-size:11px}" +
-      ".shade-lab .k{flex:0 0 auto;color:#8a8686;width:10px}.shade-lab [aria-pressed=true] .k{color:#f20000}" +
+      ".shade-lab li button:hover{background:#504d4b}.shade-lab li button[aria-pressed=true]{background:#5e5a57}" +
+      ".shade-lab .sw{flex:0 0 auto;display:grid;gap:2px;width:22px;padding:5px 4px;background:var(--sw-ground,#b3b3b3)}" +
+      ".shade-lab .sw i{display:block;height:3px;background:var(--sw-bar,#b3b1b1)}" +
+      ".shade-lab .t{flex:1 1 auto}.shade-lab .zh{font-size:14px;margin-right:6px}.shade-lab .n{display:block;color:#a0958f;font-size:11px}" +
+      ".shade-lab .k{flex:0 0 auto;color:#a0958f;width:10px}.shade-lab [aria-pressed=true] .k{color:#dccbc3}" +
       ".shade-lab .row{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin:0 0 8px}.shade-lab .row button{text-decoration:underline;text-underline-offset:2px}" +
-      ".shade-lab .row button[aria-pressed=true]{text-decoration:none;color:#f20000}.shade-lab .go{border:1px solid #b3b1b1;padding:5px 10px}" +
-      ".shade-lab .keys{color:#8a8686;font-size:11px;margin:8px 0 0}" +
-      ".shade-lab .hd b{cursor:pointer}.shade-lab.small{padding:8px 10px}.shade-lab.small ol{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 6px}" +
+      ".shade-lab .row button[aria-pressed=true]{text-decoration:none;color:#dccbc3}.shade-lab .go{border:1px solid #a0958f;padding:5px 10px}" +
+      ".shade-lab .st,.shade-lab .keys{color:#a0958f;font-size:11px;margin:8px 0 0}" +
+      ".shade-lab .hd b{cursor:pointer}.shade-lab.small ol{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 6px}" +
       ".shade-lab.small li button{width:auto;padding:4px}.shade-lab.small .t,.shade-lab.small .keys,.shade-lab.small .go{display:none}";
     document.head.appendChild(style);
     var box = document.createElement("div");
     box.className = "shade-lab";
     box.setAttribute("role", "region");
     box.setAttribute("aria-label", "Menu colour test");
-    box.innerHTML = '<div class="hd"><b role="button" tabindex="0" title="Show or hide the descriptions">MENU COLOURS · 菜单色</b><button class="x" aria-label="Close the test panel">✕</button></div>' +
+    box.innerHTML = '<div class="in"><div class="hd"><b role="button" tabindex="0" title="Show or hide the descriptions">MENU COLOURS · 菜单色</b><button class="x" aria-label="Close the test panel">✕</button></div>' +
       '<ol></ol><div class="row pics"><span>Picture:</span></div>' +
-      '<button class="go">Go to the picture ↓</button><p class="keys">Keys: 0–7 colours · P next picture</p>';
-    var list = box.querySelector("ol"), picRow = box.querySelector(".pics"), head = box.querySelector(".hd b");
-    if (window.innerWidth < 640) box.classList.add("small");             // a phone: one compact row
+      '<button class="go">Go to the picture ↓</button><p class="st"></p><p class="keys">Keys: 0–7 colours · P next picture</p></div>';
+    var inner = box.firstChild, list = box.querySelector("ol"), picRow = box.querySelector(".pics"), head = box.querySelector(".hd b"), st = box.querySelector(".st");
+    if (window.innerWidth < 640) box.classList.add("small");             // a phone: one compact row (and a short window, below)
     function fold() { box.classList.toggle("small"); }
     head.addEventListener("click", fold);
     head.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fold(); } });
+    // Try a variation with the cursor: while the pointer (or keyboard focus) is on one, the
+    // hamburger shows it; click to keep it. Off the list it goes back to the one kept.
+    var hov = null, foc = null;
+    function tryOut() { show(hov !== null ? hov : foc !== null ? foc : chosen); }
     VARIATIONS.forEach(function (v, i) {
       var li = document.createElement("li"), b = document.createElement("button");
       b.title = v.zh + " " + v.en;
@@ -411,6 +427,10 @@
       b.querySelector(".en").textContent = v.en + (v.py ? " (" + v.py + ")" : "");
       b.querySelector(".n").textContent = v.note;
       b.addEventListener("click", function () { setMode(i, true); });
+      b.addEventListener("mouseenter", function () { hov = i; tryOut(); });
+      b.addEventListener("mouseleave", function () { hov = null; tryOut(); });
+      b.addEventListener("focus", function () { foc = b.matches(":focus-visible") ? i : null; tryOut(); });
+      b.addEventListener("blur", function () { foc = null; tryOut(); });
       li.appendChild(b); list.appendChild(li);
     });
     function addPic(p, i) {
@@ -458,19 +478,45 @@
       else if (e.key === "p" || e.key === "P") showPic((pick + 1) % previews.length);
     });
     document.body.appendChild(box);
-    // each swatch: three bars in that variation's colour, over the picture's mean colour
+    // The box on whole device pixels: over a bright photo its edges stay crisp, where a soft
+    // edge between it and the photo would fold (CLAUDE.md). Kept so as its contents change.
+    function snap() {
+      if (box.style.display === "none") return;
+      var d = window.devicePixelRatio || 1, s = box.style;
+      s.width = Math.floor(Math.min(330, window.innerWidth - 24) * d) / d + "px";
+      var h = Math.ceil(inner.getBoundingClientRect().height * d - 0.01) / d;
+      s.height = h + "px";
+      s.left = Math.round(12 * d) / d + "px";
+      s.top = Math.max(Math.round(12 * d), Math.round((window.innerHeight - 12 - h) * d)) / d + "px";
+      s.bottom = "auto";
+    }
+    if (window.ResizeObserver) new ResizeObserver(snap).observe(inner);
+    window.addEventListener("resize", snap);
+    function fits() { snap(); if (inner.getBoundingClientRect().height > window.innerHeight - 24) box.classList.add("small"); }
+    // each swatch: three bars in that variation's colour, over the picture's mean colour (held
+    // under #DCCBC3 like everything in the panel: a bright painting's mean would fold)
     function update() {
       var r = fig.getBoundingClientRect(), avg = mean(sourceOf(fig, r), r, r.left, r.top, r.width, r.height);
-      var x = stateFor(lab(avg)[0], null);
+      var x = stateFor(lab(avg)[0], null), ground = css(fit(lab(avg)));
       [].forEach.call(list.children, function (li, i) {
         var b = li.firstChild;
-        b.setAttribute("aria-pressed", i === mode ? "true" : "false");
-        b.style.setProperty("--g", css(avg));
-        b.style.setProperty("--c", VARIATIONS[i].map ? shade(avg, x, i) : getComputedStyle(bars[0]).backgroundColor);
+        b.setAttribute("aria-pressed", i === chosen ? "true" : "false");
+        b.style.setProperty("--sw-ground", ground);
+        b.style.setProperty("--sw-bar", VARIATIONS[i].map ? shade(avg, x, i) : getComputedStyle(bars[0]).backgroundColor);
       });
       [].forEach.call(picRow.querySelectorAll("button"), function (b, i) { b.setAttribute("aria-pressed", i === pick ? "true" : "false"); });
     }
+    // whether the hamburger is over the picture right now (only there does it take the colours)
+    var wasOver = null;
+    function over(on) {
+      if (on === wasOver) return;
+      wasOver = on;
+      st.textContent = on ? "The hamburger is over the picture: point at a colour to try it, click to keep it."
+        : "The hamburger is not over the picture: go to the picture, then point at a colour to try it.";
+    }
+    over(false);
     update();
-    return { update: update };
+    fits();                                                              // a window too short for it all: compact
+    return { update: update, over: over };
   }
 })();
