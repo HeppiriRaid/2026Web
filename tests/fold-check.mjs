@@ -17,9 +17,9 @@
    the effect itself, not this bug.
 
    The states come in flows (FLOWS, at the bottom): the whole site in one
-   visit, the colour test panel (index.html?shader), keyboard focus. Anything
-   new on screen — a page, a panel, a ?switch, a test tool — gets its states
-   here before it ships. A full run that is clean leaves a stamp for exactly
+   visit, the colour test panel (index.html?shader), the front page's photos
+   as the console sets them, keyboard focus. Anything new on screen — a page,
+   a panel, a ?switch, a test tool — gets its states here before it ships. A full run that is clean leaves a stamp for exactly
    this code (tests/code-stamp.mjs); without it the push guard
    (.claude/hooks/push-guard.mjs) stops a `git push`.
 
@@ -132,8 +132,33 @@ async function check(p, state, dpr) {
   const inverse = await p.screenshot();
   await p.evaluate(() => { window.__cursorProbe(0, 0, 0); });
   const shoot = async (css) => { const t = await p.addStyleTag({ content: css }); await p.waitForTimeout(100); const b = await p.screenshot(); await t.evaluate((e) => e.remove()); return b; };
+  // (these two only tell which pixels are a picture's: a picture part-way through a fade is all
+  // picture still, so whatever holds a visible picture is shown opaque for them)
+  await p.evaluate(() => {
+    for (const im of document.images) {
+      const chain = [];
+      let e = im;
+      for (; e && e.nodeType === 1; e = e.parentElement) {
+        const o = +getComputedStyle(e).opacity;
+        if (o < 0.01) break;
+        if (o < 1) chain.push(e);
+      }
+      if (!e || e.nodeType !== 1) chain.forEach((c) => {
+        if (c.hasAttribute("data-fold-lift")) return;
+        c.setAttribute("data-fold-lift", c.style.getPropertyValue("opacity") + "|" + c.style.getPropertyPriority("opacity"));
+        c.style.setProperty("opacity", "1", "important");
+      });
+    }
+  });
   const bare = await shoot("img{opacity:0!important}");
   const black = await shoot("img{filter:brightness(0)!important}");
+  await p.evaluate(() => {
+    for (const c of document.querySelectorAll("[data-fold-lift]")) {
+      const [v, pr] = c.getAttribute("data-fold-lift").split("|");
+      if (v) c.style.setProperty("opacity", v, pr); else c.style.removeProperty("opacity");
+      c.removeAttribute("data-fold-lift");
+    }
+  });
   await p.evaluate(() => { window.__cursorProbe(null); });
   await dot.evaluate((e) => e.remove());
   const px = await folds(plain, inverse, bare, black);
@@ -325,6 +350,7 @@ const FLOWS = {
       if (src) {
         await p.evaluate((src) => new Promise((res) => {
           const im = new Image(); im.alt = ""; im.id = "fold-check-picture"; im.onload = res; im.onerror = res; im.src = src;
+          im.style.cssText = "position:absolute;left:0;top:0";            // (over any photo the holder has)
           document.querySelector("[data-menu-shade]").appendChild(im);
           document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
         }), src);
@@ -555,6 +581,54 @@ const FLOWS = {
     await check(p, "test ended (✕): the usual square back, works' page", dpr);
   },
 
+  // the front page's photos as the owner sets them in the console (data/front.json, js/photos.js):
+  // every holder given one (two pictures the site has stand in), each wiping in with its holder,
+  // then at rest. The hamburger over the BACK GROUND photo is the known limit (CLAUDE.md).
+  async photos(p, dpr) {
+    await p.goto(SITE + "/index.html");
+    await wipeAt(p, ".ph img");
+    await check(p, "front page photos: the new portrait wiping in", dpr);
+    await settled(p);
+    await p.waitForTimeout(2600);
+    await expect(p, () => {
+      const im = [...document.querySelectorAll("figure[data-slot] img")];
+      return im.length === 5 && im.every((i) => i.complete && i.naturalWidth > 0) &&
+        document.querySelector('[data-slot="about"] img').getAttribute("src") === "assets/img/calligraphy.webp";
+    }, null, "every holder with its photo");
+    await check(p, "front page photos: the top", dpr);
+    const known = (on) => p.evaluate((on) => {
+      const b = document.getElementById("menuBtn");
+      if (on) b.setAttribute("data-fold-known", "the hamburger over a painting"); else b.removeAttribute("data-fold-known");
+    }, on);
+    // each holder brought to the middle of the window, so it wipes in on its own
+    for (const [name, sel, wiping] of [["BACK GROUND", '[data-slot="background"]', '[data-slot="background"]'],
+      ["Graphic Paint", '[data-slot="graphic"]', '[data-slot="graphic"]'], ["Resolve Steps", '[data-slot="resolve"]', '[data-slot="resolve"]'],
+      ["Calligraphy", '[data-slot="calligraphy"]', '[data-slot="calligraphy"] img']]) {
+      const y = await p.evaluate((sel) => Math.max(0, Math.round(document.querySelector(sel).getBoundingClientRect().top + scrollY - innerHeight * 0.45)), sel);
+      await known(name === "BACK GROUND");
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await wipeAt(p, wiping);
+      await check(p, `front page photos: ${name} wiping in`, dpr);
+      await p.waitForTimeout(2600);
+      await check(p, `front page photos: ${name} at rest`, dpr);
+    }
+    // the hamburger over the BACK GROUND photo, then the menu open over it
+    const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
+    await known(true);
+    await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
+    await p.waitForTimeout(2200);
+    await check(p, "front page photos: the hamburger over the BACK GROUND photo", dpr);
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await p.waitForTimeout(1600);
+    const lw = await menuLink(p, "WORK");
+    await p.mouse.move(lw.x, lw.y, { steps: 4 });
+    await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+    await p.waitForTimeout(900);
+    await check(p, "front page photos: the menu open over the BACK GROUND photo, pointer on WORK", dpr);
+    await known(false);
+  },
+
   // keyboard focus: each kind of focus ring the cursor pages draw (the browser's own has a
   // white halo, which the square folds — so each must be the site's own)
   async focus(p, dpr) {
@@ -584,12 +658,22 @@ const FLOWS = {
   },
 };
 
+// The front page's photos are the owner's (data/front.json, set in the console): every flow gets a
+// fixed list instead, so the check never depends on what was uploaded — none (the page's own),
+// or, in "photos", a photo in every holder.
+const FRONT = {
+  photos: { saveId: "fold-check", photos: {
+    about: { image: "assets/img/calligraphy.webp", alt: "" }, background: { image: "assets/img/about-portrait.webp", alt: "" },
+    graphic: { image: "assets/img/about-portrait.webp", alt: "" }, resolve: { image: "assets/img/calligraphy.webp", alt: "" },
+    calligraphy: { image: "assets/img/about-portrait.webp", alt: "" } } },
+};
 for (const f of ONLY) if (!FLOWS[f]) { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}).`); process.exit(2); }
 const stopped = [];
 for (const dpr of [1, 2]) {
   for (const [name, flow] of Object.entries(FLOWS)) {
     if (ONLY.length && !ONLY.includes(name)) continue;
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: dpr });
+    await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
     try { await flow(await ctx.newPage(), dpr); }
     catch (e) { stopped.push(`${name} @${dpr}x: ${e.message.split("\n")[0]}`); console.log(`  STOPPED  ${name} @${dpr}x: ${e.message.split("\n")[0]}`); }
     await ctx.close();

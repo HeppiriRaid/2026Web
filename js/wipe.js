@@ -9,7 +9,9 @@
    A link here leaves a note for the next page (sessionStorage, read once,
    good for 15 s); anim.js and illustration.js read window.__arrive, skip
    the name and hand their intro to window.__wipe.arrive(). Stepping back /
-   forward through the pages counts as moving too.
+   forward through the pages counts as moving too. The cursor goes with the
+   page: it hears "kt:leave" as the sheet starts to rise and "kt:arrive" as
+   it starts to lift (js/cursor.js).
    ============================================================ */
 (function () {
   "use strict";
@@ -35,6 +37,8 @@
   if (!pre || !gsap || REDUCE) return;
   var name = pre.querySelector(".pl-name");
   var leaving = false;
+  // the cursor (js/cursor.js) goes with the page: out as the sheet rises, back in as it lifts
+  function tell(what) { try { document.dispatchEvent(new CustomEvent(what)); } catch (e) {} }
 
   // Every move of the sheet goes through this (as GSAP modifiers): it lands on whole
   // device pixels, so its edge is never a blurred half pixel, and it tells its own copy
@@ -56,6 +60,7 @@
     arrive: function (intro, done) {
       var clock = gsap.globalTimeline, t0 = performance.now();
       clock.timeScale(PACE);
+      tell("kt:arrive");                                         // (the cursor springs back in: js/cursor.js)
       gsap.timeline()
         .to(pre, { yPercent: -100, duration: LIFT * PACE, ease: "power3.out", modifiers: SHEET }, 0)
         .add(function () { intro(); }, 0.06 * PACE)
@@ -101,6 +106,7 @@
     e.preventDefault();
     if (leaving) return;
     leaving = true;
+    tell("kt:leave");
     warm(url);
     gsap.globalTimeline.timeScale(1);
     if (name) { gsap.killTweensOf(name); gsap.set(name, { y: "110%" }); }
@@ -122,6 +128,7 @@
     gsap.globalTimeline.timeScale(1);
     if (getComputedStyle(pre).display === "none") return;
     requestAnimationFrame(function () { requestAnimationFrame(function () {
+      tell("kt:arrive");
       gsap.to(pre, { yPercent: -100, duration: LIFT, ease: "power3.out", overwrite: true, modifiers: SHEET,
         onComplete: function () { pre.style.display = "none"; } });
     }); });

@@ -10,9 +10,10 @@
 </head>
 <body>
 <!-- ============================================================================
-     The site's console: edit the illustration works and Save. A Save is one commit
-     to the repository's Main branch (through GitHub's API, with your own access
-     token), and GitHub Pages publishes it about a minute later.
+     The site's console: change the front page's photos and the illustration works,
+     and Save. A Save is one commit to the repository's Main branch (through GitHub's
+     API, with your own access token), and GitHub Pages publishes it about a minute
+     later.
      ============================================================================ -->
 
 <header class="bar">
@@ -44,6 +45,29 @@
         <li>Generate it, copy it, and paste it above. Don't paste it anywhere else.</li>
       </ol>
     </details>
+  </section>
+
+  <!-- the front page's photos (the holders are the page's own figure[data-slot]) -->
+  <section id="front" hidden>
+    <div class="head">
+      <h1>Front page</h1>
+      <p class="hint">The photos on the front page, each cropped as the page shows it. Click one to change it, or drop an image on it.</p>
+    </div>
+    <div class="slots" id="slots" role="group" aria-label="Front page photos"></div>
+    <input id="pickSlot" type="file" accept="image/*" hidden />
+
+    <div class="panel" id="slotPanel" hidden>
+      <div class="pv" id="slotPv"></div>
+      <div class="fields">
+        <p class="slot-name" id="slotName"></p>
+        <label>Description<input id="fAlt" type="text" autocomplete="off" placeholder="What the photo shows, for visitors who can't see it" /></label>
+        <p class="meta" id="slotMeta"></p>
+        <div class="actions">
+          <button class="btn ghost" id="slotReplace" type="button">Replace photo…</button>
+          <button class="btn ghost" id="slotReset" type="button">Remove photo</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- the illustration works -->

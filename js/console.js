@@ -1,10 +1,12 @@
 /* ============================================================
    KOKI TAKAMATSU — console (console.html)
-   Edits data/illustration.json (the list the illustration page builds its row
-   from) and the work images, then saves everything as ONE commit to Main
-   through GitHub's API, with the owner's own fine-grained token (Contents:
-   read and write). GitHub Pages publishes it about a minute later; the console
-   watches the live file and says when the Save is on the site.
+   Edits the front page's photos (data/front.json, read by js/photos.js; the
+   holders themselves are the front page's figure[data-slot]), data/illustration.json
+   (the list the illustration page builds its row from) and their images, then
+   saves everything as ONE commit to Main through GitHub's API, with the owner's
+   own fine-grained token (Contents: read and write). GitHub Pages publishes it
+   about a minute later; the console watches the live file and says when the
+   Save is on the site.
    ============================================================ */
 (function () {
   "use strict";
@@ -12,7 +14,9 @@
   var OWNER = "HeppiriRaid", NAME = "2026Web", BRANCH = "Main";
   var REPO = "/repos/" + OWNER + "/" + NAME;
   var DATA = "data/illustration.json", DIR = "assets/img/illustration/";
+  var FRONT = "data/front.json", FDIR = "assets/img/front/";
   var ROW_MAX = 1200, FULL_MAX = 2400;      // px: the row picture's height / the zoom picture's long side
+  var SLOT_MAX = 2000;                      // px: the long side of the part of a front photo its holder shows
   var KEY = "kt-console-token";
   // The token is only ever sent to GitHub. A stand-in API (for testing) is honoured
   // only when this page itself is opened on this computer, never from a link.
@@ -25,11 +29,17 @@
     token: $("token"), remember: $("remember"), loginError: $("loginError"), connect: $("connectBtn"),
     editor: $("editor"), row: $("row"), add: $("addBtn"), many: $("pickMany"), one: $("pickOne"),
     panel: $("panel"), pv: $("pv"), title: $("fTitle"), date: $("fDate"), medium: $("fMedium"), meta: $("fMeta"),
-    replace: $("replaceBtn"), left: $("leftBtn"), right: $("rightBtn"), del: $("deleteBtn"), foot: $("foot"), signOut: $("signOut")
+    replace: $("replaceBtn"), left: $("leftBtn"), right: $("rightBtn"), del: $("deleteBtn"), foot: $("foot"), signOut: $("signOut"),
+    front: $("front"), slots: $("slots"), pickSlot: $("pickSlot"), slotPanel: $("slotPanel"), slotPv: $("slotPv"), slotName: $("slotName"),
+    alt: $("fAlt"), slotMeta: $("slotMeta"), slotReplace: $("slotReplace"), slotReset: $("slotReset")
   };
   // works: [{ id, title, date, medium, width, height, image?, full?   (saved)
   //           _pend? (a new picture, uploaded on Save), _url? (its preview), _busy? }]
   var S = { token: "", works: [], sha: null, removed: [], dirty: false, saving: false, busy: 0, sel: -1, at: -1, watch: "" };
+  // the front page's holders: [{ id, name, w, h (its shape), grey, def / defAlt (the page's own photo, if any),
+  //   image?, width?, height? (a photo set here and saved), alt, _pend? (a new photo, uploaded on Save),
+  //   _url? (a just-saved photo's preview), _reset? (back to the page's own on Save), _busy? }]
+  var F = { slots: [], sha: null, dirty: false, sel: -1, err: "" };
 
   function mk(tag, cls, text) {
     var e = document.createElement(tag);
@@ -91,6 +101,41 @@
     }
     S.removed = []; S.dirty = false; S.sel = -1;
   }
+  // The front page's holders, read from the page itself (its figure[data-slot]: name, shape,
+  // its own photo or its grey), so the console always matches the page. Then the photos set
+  // here before (data/front.json). A problem here shows in its own section, it never stops
+  // the sign-in.
+  async function loadFront() {
+    F.slots = []; F.sha = null; F.dirty = false; F.sel = -1; F.err = "";
+    try {
+      var r = await fetch("index.html?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) throw new Error("the front page answered " + r.status);
+      var doc = new DOMParser().parseFromString(await r.text(), "text/html");
+      F.slots = [].map.call(doc.querySelectorAll("figure[data-slot]"), function (f) {
+        var st = f.getAttribute("style") || "", img = f.querySelector("img"), c = /--c:\s*(#[0-9a-f]{3,8})/i.exec(st);
+        var num = function (k) { var m = new RegExp("--" + k + ":\\s*([\\d.]+)").exec(st); return m ? +m[1] : 1; };
+        return { id: f.getAttribute("data-slot"), name: f.getAttribute("data-slot-name") || f.getAttribute("data-slot"),
+                 w: num("w"), h: num("h"), grey: c ? c[1] : "#b3b1b1",
+                 def: img ? img.getAttribute("src") || "" : "", defAlt: img ? img.getAttribute("alt") || "" : "" };
+      });
+      var photos = {};
+      try {
+        var j = await gh("GET", REPO + "/contents/" + FRONT + "?ref=" + BRANCH);
+        var d = JSON.parse(b64Text(j.content));
+        F.sha = j.sha;
+        photos = (d && d.photos) || {};
+      } catch (e) { if (e.status !== 404) throw e; }            // none set yet
+      F.slots.forEach(function (s) {
+        var p = photos[s.id];
+        if (p && typeof p.image === "string") {
+          s.image = p.image; s.width = +p.width || 0; s.height = +p.height || 0;
+          s.alt = typeof p.alt === "string" ? p.alt : s.defAlt;
+        } else s.alt = s.defAlt;
+      });
+    } catch (e) {
+      F.slots = []; F.err = "Couldn't read the front page's photos (" + why(e) + "). Reload the console to try again.";
+    }
+  }
 
   /* ---------- sign in / out ---------------------------------------------------- */
   async function signIn(token, remember) {
@@ -98,6 +143,7 @@
     ui.connect.disabled = true; ui.loginError.textContent = "";
     try {
       await load();
+      await loadFront();
       if (remember) { try { localStorage.setItem(KEY, token); } catch (e) {} }
       showEditor();
     } catch (e) {
@@ -112,13 +158,13 @@
     } finally { ui.connect.disabled = false; }
   }
   function showLogin() {
-    ui.login.hidden = false; ui.editor.hidden = true; ui.foot.hidden = true; ui.save.hidden = true;
+    ui.login.hidden = false; ui.editor.hidden = true; ui.front.hidden = true; ui.foot.hidden = true; ui.save.hidden = true;
     ui.token.value = ""; setTimeout(function () { ui.token.focus(); }, 0);
   }
   function showEditor() {
-    ui.login.hidden = true; ui.editor.hidden = false; ui.foot.hidden = false; ui.save.hidden = false;
-    renderRow(); renderPanel(); updateSave();
-    say(S.works.length + (S.works.length === 1 ? " work" : " works") + " loaded");
+    ui.login.hidden = true; ui.editor.hidden = false; ui.front.hidden = false; ui.foot.hidden = false; ui.save.hidden = false;
+    renderSlots(); renderSlotPanel(); renderRow(); renderPanel(); updateSave();
+    say(F.err ? F.err : "Loaded: " + F.slots.length + " front page photos, " + S.works.length + (S.works.length === 1 ? " work" : " works"), F.err ? "err" : "");
   }
   ui.form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -126,10 +172,144 @@
     if (t) signIn(t, ui.remember.checked);
   });
   ui.signOut.addEventListener("click", function () {
-    if ((S.dirty || S.busy) && !confirm("Sign out and lose the unsaved changes?")) return;
+    if ((S.dirty || F.dirty || S.busy) && !confirm("Sign out and lose the unsaved changes?")) return;
     try { localStorage.removeItem(KEY); } catch (e) {}
     S.token = ""; S.works = []; S.dirty = false; S.sel = -1;
+    F.slots = []; F.dirty = false; F.sel = -1;
     say(""); showLogin();
+  });
+
+  /* ---------- the front page's photos -------------------------------------------- */
+  // what a holder shows: a new photo, one just saved, one set here before, or the page's own
+  function shownSrc(s) { return s._pend ? s._pend.url : s._reset ? s.def : (s._url || s.image || s.def); }
+  function setSlotSrc(im, s) {
+    var src = shownSrc(s);
+    if (/^blob:/.test(src) || src === s.def) { im.src = src; return; }
+    // a photo saved moments ago may not be published yet: fetch it from the repository instead
+    im.onerror = function () {
+      im.onerror = null;
+      gh("GET", REPO + "/contents/" + src + "?ref=" + BRANCH, null, "application/vnd.github.raw+json")
+        .then(function (b) { s._url = URL.createObjectURL(b); im.src = s._url; }, function () {});
+    };
+    im.src = src;
+  }
+  function slotCard(s, i) {
+    var c = mk("button", "slot" + (i === F.sel ? " is-sel" : "") + (s._busy ? " is-busy" : ""));
+    c.type = "button";
+    c.setAttribute("data-i", i);
+    var src = shownSrc(s);
+    c.setAttribute("aria-label", s.name + (src ? "" : ", no photo"));
+    var pic = mk("span", "pic");
+    pic.style.aspectRatio = s.w + " / " + s.h;
+    pic.style.background = s.grey;
+    if (src && !s._busy) { var im = mk("img"); im.alt = ""; im.draggable = false; setSlotSrc(im, s); pic.appendChild(im); }
+    if (s._pend) pic.appendChild(mk("span", "tag", "New photo"));
+    else if (s._reset) pic.appendChild(mk("span", "tag", s.def ? "Original" : "Removed"));
+    c.appendChild(pic);
+    c.appendChild(mk("span", "name", s.name));
+    return c;
+  }
+  function renderSlots() {
+    ui.slots.textContent = "";
+    if (F.err) { ui.slots.appendChild(mk("p", "empty", F.err)); return; }
+    F.slots.forEach(function (s, i) { ui.slots.appendChild(slotCard(s, i)); });
+  }
+  function slotEl(i) { return ui.slots.querySelector('.slot[data-i="' + i + '"]'); }
+  // the selected holder, larger: exactly its shape, the photo cropped as the page crops it
+  function renderSlotPanel() {
+    var s = F.slots[F.sel];
+    if (!s) { ui.slotPanel.hidden = true; return; }
+    ui.slotPanel.hidden = false;
+    ui.slotName.textContent = s.name;
+    ui.slotPv.textContent = "";
+    var frame = mk("div", "frame"), src = shownSrc(s);
+    frame.style.background = s.grey;
+    if (src && !s._busy) { var im = mk("img"); im.alt = ""; setSlotSrc(im, s); frame.appendChild(im); }
+    ui.slotPv.appendChild(frame);
+    sizeFrame();
+    ui.alt.value = s.alt || "";
+    ui.alt.disabled = !src || !!s._busy;
+    ui.slotMeta.textContent = s._busy ? "Preparing the photo…" :
+      s._pend ? "New photo, " + s._pend.width + " × " + s._pend.height + " px, uploaded when you Save. The holder shows the part above; the rest is cropped." :
+      !src ? "No photo: a grey holder. Replace photo gives it one." :
+      (s._reset || !s.image || s.image === s.def ? "The page's own photo." : "Set here.") + " The holder shows the part above; the rest is cropped.";
+    ui.slotReset.textContent = s.def ? "Use the original" : "Remove photo";
+    ui.slotReset.disabled = !!s._busy || !(s._pend || (s.image && !s._reset) || (s.alt || "") !== s.defAlt);
+    ui.slotReplace.disabled = !!s._busy;
+  }
+  function sizeFrame() {                                     // as big as fits, in the holder's own shape
+    var s = F.slots[F.sel], f = ui.slotPv.querySelector(".frame");
+    if (!s || !f) return;
+    var maxW = Math.max(120, ui.slotPv.clientWidth - 32), maxH = 400, k = Math.min(maxW / s.w, maxH / s.h);
+    f.style.width = Math.round(s.w * k) + "px"; f.style.height = Math.round(s.h * k) + "px";
+  }
+  window.addEventListener("resize", sizeFrame);
+  function selectSlot(i) {
+    F.sel = i;
+    ui.slots.querySelectorAll(".slot.is-sel").forEach(function (c) { c.classList.remove("is-sel"); });
+    var c = slotEl(i); if (c) c.classList.add("is-sel");
+    renderSlotPanel();
+  }
+  function touchFront() { F.dirty = true; updateSave(); if (!S.saving) say(S.busy ? "Preparing images…" : "Unsaved changes"); }
+  ui.slots.addEventListener("click", function (e) {
+    var c = e.target.closest(".slot");
+    if (c) selectSlot(+c.getAttribute("data-i"));
+  });
+  ui.slotReplace.addEventListener("click", function () { ui.pickSlot.value = ""; ui.pickSlot.click(); });
+  ui.pickSlot.addEventListener("change", function () {
+    var s = F.slots[F.sel], f = ui.pickSlot.files[0];
+    if (s && f && isImage(f)) prepareSlot(s, f);
+  });
+  ui.slotReset.addEventListener("click", function () {
+    var s = F.slots[F.sel];
+    if (!s || s._busy) return;
+    if (s._pend) { URL.revokeObjectURL(s._pend.url); delete s._pend; }
+    if (s.image) s._reset = true;
+    s.alt = s.defAlt;
+    touchFront(); renderSlots(); renderSlotPanel();
+  });
+  ui.alt.addEventListener("input", function () {
+    var s = F.slots[F.sel];
+    if (!s) return;
+    s.alt = ui.alt.value;
+    touchFront();
+    ui.slotReset.disabled = !!s._busy || !(s._pend || (s.image && !s._reset) || s.alt !== s.defAlt);
+  });
+  async function prepareSlot(s, file) {
+    s._busy = true; S.busy++; updateSave(); say("Preparing the photo…");
+    renderSlots(); renderSlotPanel();
+    try {
+      var out = await processPhoto(file, s.w, s.h);
+      if (s._pend) URL.revokeObjectURL(s._pend.url);
+      s._pend = out; s._reset = false;
+      touchFront();
+    } catch (e) {
+      say("Couldn't read " + file.name + " (" + ((e && e.message) || e) + ")", "err");
+    }
+    delete s._busy; S.busy--; updateSave();
+    renderSlots(); renderSlotPanel();
+    if (!S.busy && !S.saving && (S.dirty || F.dirty)) say("Unsaved changes");
+  }
+  // an image dropped on a holder
+  function slotUnder(e) { return e.target && e.target.closest && e.target.closest(".slot"); }
+  function unmarkSlots() { ui.slots.querySelectorAll(".slot.is-drop").forEach(function (c) { c.classList.remove("is-drop"); }); }
+  ui.slots.addEventListener("dragover", function (e) {
+    var c = slotUnder(e);
+    if (!hasFiles(e) || !c) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+    if (!c.classList.contains("is-drop")) { unmarkSlots(); c.classList.add("is-drop"); }
+  });
+  ui.slots.addEventListener("dragleave", function (e) { if (!ui.slots.contains(e.relatedTarget)) unmarkSlots(); });
+  ui.slots.addEventListener("drop", function (e) {
+    var c = slotUnder(e);
+    if (!hasFiles(e)) return;
+    e.preventDefault(); unmarkSlots();
+    var f = [].filter.call(e.dataTransfer.files || [], isImage)[0];
+    if (!c || !f) return;
+    var i = +c.getAttribute("data-i");
+    if (F.slots[i]._busy) return;
+    selectSlot(i);
+    prepareSlot(F.slots[i], f);
   });
 
   /* ---------- the row ---------------------------------------------------------- */
@@ -334,6 +514,19 @@
       return { row: row.blob, full: full ? full.blob : null, ext: row.ext, width: rowSize.w, height: rowSize.h, url: URL.createObjectURL(row.blob) };
     } finally { if (bmp.close) bmp.close(); }
   }
+  // A front page photo: one file, the whole picture, scaled so the part its holder shows (the
+  // middle, cropped to the holder's shape like the page does) is at most SLOT_MAX on its long side.
+  async function processPhoto(file, w, h) {
+    var bmp = await createImageBitmap(file);
+    try {
+      var ar = w / h, cw = Math.min(bmp.width, bmp.height * ar), ch = cw / ar;
+      var k = Math.min(1, SLOT_MAX / Math.max(cw, ch));
+      var size = { w: Math.max(1, Math.round(bmp.width * k)), h: Math.max(1, Math.round(bmp.height * k)) };
+      var out = await encode(bmp, size);
+      if (!out.blob) throw new Error("this browser couldn't save the picture");
+      return { blob: out.blob, ext: out.ext, width: size.w, height: size.h, url: URL.createObjectURL(out.blob) };
+    } finally { if (bmp.close) bmp.close(); }
+  }
 
   /* ---------- dragging works, dropping files ------------------------------------ */
   function slotAt(x) {                                          // the gap a drop at x lands in
@@ -432,7 +625,7 @@
 
   /* ---------- saving: one commit ------------------------------------------------ */
   function updateSave() {
-    ui.save.disabled = !S.dirty || S.saving || S.busy > 0;
+    ui.save.disabled = !(S.dirty || F.dirty) || S.saving || S.busy > 0;
     ui.save.textContent = S.saving ? "Saving…" : "Save";
   }
   function touch() { S.dirty = true; updateSave(); if (!S.saving) say(S.busy ? "Preparing images…" : "Unsaved changes"); }
@@ -456,50 +649,107 @@
       }
     }
   }
+  async function shaOf(path) {                                 // its version on Main now (null: none)
+    try { return (await gh("GET", REPO + "/contents/" + path + "?ref=" + BRANCH)).sha; }
+    catch (e) { if (e.status !== 404) throw e; return null; }
+  }
+  function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
   async function save() {
-    if (S.saving || S.busy || !S.dirty) return;
+    if (S.saving || S.busy || !(S.dirty || F.dirty)) return;
+    var works = S.dirty, front = F.dirty;
     S.saving = true; updateSave();
     try {
       say("Checking the repository…");
-      var now = null;
-      try { now = (await gh("GET", REPO + "/contents/" + DATA + "?ref=" + BRANCH)).sha; } catch (e) { if (e.status !== 404) throw e; }
-      if (now !== S.sha && !confirm("The works were changed somewhere else after you opened the console (another tab or device).\n\nSave anyway, replacing that version with this one?")) {
+      var elsewhere = [];
+      if (works && (await shaOf(DATA)) !== S.sha) elsewhere.push("The works");
+      if (front && (await shaOf(FRONT)) !== F.sha) elsewhere.push(works ? "the front page photos" : "The front page photos");
+      if (elsewhere.length && !confirm(elsewhere.join(" and ") + " were changed somewhere else after you opened the console (another tab or device).\n\nSave anyway, replacing that version with this one?")) {
         say("Not saved. Reload the console to get the other version.", "err");
         return;
       }
-      var entries = [], next = [], gone = S.removed.slice(), fresh = [];
-      var count = S.works.filter(function (w) { return w._pend; }).length, n = 0;
-      for (var i = 0; i < S.works.length; i++) {
-        var w = S.works[i], o = { id: w.id, title: w.title.trim(), date: w.date.trim(), medium: w.medium.trim(), width: w.width, height: w.height };
-        if (w._pend) {
-          say("Uploading image " + (++n) + " of " + count + "…");
-          var stem = DIR + newId(), p = w._pend;
-          o.image = stem + "." + p.ext;
-          entries.push({ path: o.image, mode: "100644", type: "blob", sha: await upload(p.row) });
-          if (p.full) { o.full = stem + "-full." + p.ext; entries.push({ path: o.full, mode: "100644", type: "blob", sha: await upload(p.full) }); }
-          if (w.image) gone.push(w.image);
-          if (w.full) gone.push(w.full);
-          fresh.push([w, o]);
-        } else {
-          if (w.image) o.image = w.image;
-          if (w.full) o.full = w.full;
-        }
-        next.push(o);
-      }
       var saveId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      var json = JSON.stringify({ saveId: saveId, works: next }, null, 2) + "\n";
-      var dataSha = (await gh("POST", REPO + "/git/blobs", { content: json, encoding: "utf-8" })).sha;
-      entries.push({ path: DATA, mode: "100644", type: "blob", sha: dataSha });
+      var entries = [], gone = [], what = [];
+      // the illustration works
+      var next = [], fresh = [], dataSha = null;
+      if (works) {
+        gone = gone.concat(S.removed);
+        var count = S.works.filter(function (w) { return w._pend; }).length, n = 0;
+        for (var i = 0; i < S.works.length; i++) {
+          var w = S.works[i], o = { id: w.id, title: w.title.trim(), date: w.date.trim(), medium: w.medium.trim(), width: w.width, height: w.height };
+          if (w._pend) {
+            say("Uploading image " + (++n) + " of " + count + "…");
+            var stem = DIR + newId(), p = w._pend;
+            o.image = stem + "." + p.ext;
+            entries.push({ path: o.image, mode: "100644", type: "blob", sha: await upload(p.row) });
+            if (p.full) { o.full = stem + "-full." + p.ext; entries.push({ path: o.full, mode: "100644", type: "blob", sha: await upload(p.full) }); }
+            if (w.image) gone.push(w.image);
+            if (w.full) gone.push(w.full);
+            fresh.push([w, o]);
+          } else {
+            if (w.image) o.image = w.image;
+            if (w.full) o.full = w.full;
+          }
+          next.push(o);
+        }
+        var json = JSON.stringify({ saveId: saveId, works: next }, null, 2) + "\n";
+        dataSha = (await gh("POST", REPO + "/git/blobs", { content: json, encoding: "utf-8" })).sha;
+        entries.push({ path: DATA, mode: "100644", type: "blob", sha: dataSha });
+        what.push("the illustration works" + (count ? " (" + plural(count, "new image", "new images") + ")" : ""));
+      }
+      // the front page's photos: only those set here are listed; a holder left out keeps the
+      // page's own. Only photos the console put in assets/img/front/ are ever deleted.
+      var photos = {}, freshF = [], frontSha = null, mine = function (path) { return !!path && path.indexOf(FDIR) === 0; };
+      if (front) {
+        var fcount = F.slots.filter(function (s) { return s._pend; }).length, fn = 0;
+        for (var k = 0; k < F.slots.length; k++) {
+          var s = F.slots[k], alt = (s.alt || "").trim(), entry = null;
+          if (s._pend) {
+            say("Uploading photo " + (++fn) + " of " + fcount + "…");
+            var path = FDIR + s.id + "-" + newId().slice(1) + "." + s._pend.ext;
+            entries.push({ path: path, mode: "100644", type: "blob", sha: await upload(s._pend.blob) });
+            entry = { image: path, width: s._pend.width, height: s._pend.height, alt: alt };
+            if (mine(s.image)) gone.push(s.image);
+            freshF.push([s, entry]);
+          } else if (s._reset) {
+            if (mine(s.image)) gone.push(s.image);
+          } else if (s.image) {
+            entry = { image: s.image, width: s.width, height: s.height, alt: alt };
+          } else if (s.def && alt !== s.defAlt) {
+            entry = { image: s.def, alt: alt };                    // the page's own photo, described anew
+          }
+          if (entry) photos[s.id] = entry;
+        }
+        var fjson = JSON.stringify({ saveId: saveId, photos: photos }, null, 2) + "\n";
+        frontSha = (await gh("POST", REPO + "/git/blobs", { content: fjson, encoding: "utf-8" })).sha;
+        entries.push({ path: FRONT, mode: "100644", type: "blob", sha: frontSha });
+        what.unshift("the front page photos" + (fcount ? " (" + plural(fcount, "new photo", "new photos") + ")" : ""));
+      }
       gone.forEach(function (path) { entries.push({ path: path, mode: "100644", type: "blob", sha: null }); });
       say("Saving…");
-      await commit(entries, "Console: update the illustration works" + (count ? " (" + count + " new " + (count === 1 ? "image" : "images") + ")" : ""));
-      // saved: the list now matches the repository
-      fresh.forEach(function (pair) { var w = pair[0], o = pair[1]; w.image = o.image; if (o.full) w.full = o.full; else delete w.full; delete w._pend; });
-      S.works.forEach(function (w) { w.title = w.title.trim(); w.date = w.date.trim(); w.medium = w.medium.trim(); });
-      S.sha = dataSha; S.removed = []; S.dirty = false;
-      renderRow(); renderPanel();
+      await commit(entries, "Console: update " + what.join(" and "));
+      // saved: the console now matches the repository
+      if (works) {
+        fresh.forEach(function (pair) { var w = pair[0], o = pair[1]; w.image = o.image; if (o.full) w.full = o.full; else delete w.full; delete w._pend; });
+        S.works.forEach(function (w) { w.title = w.title.trim(); w.date = w.date.trim(); w.medium = w.medium.trim(); });
+        S.sha = dataSha; S.removed = []; S.dirty = false;
+        renderRow(); renderPanel();
+      }
+      if (front) {
+        freshF.forEach(function (pair) {
+          var s = pair[0], o = pair[1];
+          s.image = o.image; s.width = o.width; s.height = o.height;
+          s._url = s._pend.url; delete s._pend;                    // (shown from here until the site has it)
+        });
+        F.slots.forEach(function (s) {
+          if (s._reset) { delete s.image; delete s.width; delete s.height; delete s._url; delete s._reset; }
+          else if (s.image && !photos[s.id]) { delete s.image; delete s.width; delete s.height; }
+          s.alt = (s.alt || "").trim();
+        });
+        F.sha = frontSha; F.dirty = false;
+        renderSlots(); renderSlotPanel();
+      }
       say("Saved. Publishing to the site (about a minute)…");
-      watchLive(saveId);
+      watchLive(saveId, front ? FRONT : DATA, front ? "index.html" : "illustration.html");
     } catch (e) {
       say("Not saved. " + why(e), "err");
     } finally {
@@ -507,16 +757,16 @@
     }
   }
   ui.save.addEventListener("click", save);
-  // the Save is live once the site serves the list it wrote
-  function watchLive(id) {
+  // the Save is live once the site serves the file it wrote
+  function watchLive(id, file, page) {
     S.watch = id;
     var t0 = Date.now();
     (function poll() {
       if (S.watch !== id) return;
-      fetch(DATA + "?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      fetch(file + "?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         if (S.watch !== id) return;
         if (d && d.saveId === id) {
-          ui.view.href = "illustration.html?t=" + Date.now();
+          ui.view.href = page + "?t=" + Date.now();
           say("Live on the site ✓", "ok");
           return;
         }
@@ -527,7 +777,7 @@
   }
 
   window.addEventListener("beforeunload", function (e) {
-    if (S.dirty || S.saving || S.busy) { e.preventDefault(); e.returnValue = ""; }
+    if (S.dirty || F.dirty || S.saving || S.busy) { e.preventDefault(); e.returnValue = ""; }
   });
 
   /* ---------- start --------------------------------------------------------------- */

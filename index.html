@@ -44,6 +44,8 @@
       if (z !== lastDPR) { lastDPR = z; return; } // zoom -> keep --k (content scales)
       fitK();                                      // real resize -> re-fit to viewport
     });
+    // the photos the owner set in the console (data/front.json): asked for at once, put in by js/photos.js
+    window.__front = window.fetch ? fetch("data/front.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }) : null;
 
     if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       d.classList.add("anim");
@@ -106,7 +108,8 @@
   <a class="a nav" style="--x:419.69;--y:8.1;--fs:4">CONTACT</a>
 
   <!-- ========================= ABOUT ME ========================= -->
-  <figure class="a wh ph fr" style="--x:81.9;--y:36;--w:137.8;--h:206.7">
+  <!-- data-slot: a photo holder the owner can fill or change in the console (data/front.json, js/photos.js) -->
+  <figure class="a wh ph fr" data-slot="about" data-slot-name="About me" style="--x:81.9;--y:36;--w:137.8;--h:206.7">
     <img src="assets/img/about-portrait.webp" alt="Koki Takamatsu" data-noscale fetchpriority="high" />
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
   </figure>
@@ -163,7 +166,7 @@
     developed a deep appreciation for aesthetics that continues to inform my work as an artist.</p></div>
 
   <!-- data-menu-shade: the hamburger takes harmonious colours from this picture when over it (js/menu-shade.js) -->
-  <figure class="a wh box" data-menu-shade style="--x:176.5;--y:294.7;--w:284.3;--h:188.2;--c:#b3b3b3"></figure>
+  <figure class="a wh box" data-slot="background" data-slot-name="Back ground (My House)" data-menu-shade style="--x:176.5;--y:294.7;--w:284.3;--h:188.2;--c:#b3b3b3"></figure>
   <div class="a cap" style="--x:339.2;--y:486.4">Title: &#8220;My House&#8221; | Date: 6/15/2026 | Made with: Graphic Paint |  Location: Redmond, WA</div>
 
   <!-- ========================= SELECTED WORKS ========================= -->
@@ -180,14 +183,14 @@
     is recorded data, so a soft, painterly mark stays editable after it&#8217;s made.</p></div>
   <div class="a copy" style="--x:12;--y:599.4;--w:152.5">
     <p>AI has been used for solely the help of writing codes.</p></div>
-  <figure class="a wh box" data-fade style="--x:176.5;--y:530.5;--w:272.3;--h:111.7;--c:#d1d1d1"></figure>
+  <figure class="a wh box" data-slot="graphic" data-slot-name="Graphic Paint" data-fade style="--x:176.5;--y:530.5;--w:272.3;--h:111.7;--c:#d1d1d1"></figure>
   <a class="a copy" style="--x:16.4;--y:635.6;--fs:5;--w:40">Details</a>
   <a class="a copy" style="--x:52.4;--y:635.6;--fs:5;--w:50">Kickstarter</a>
   <i class="ltick tl" style="--x:11.5;--y:635.5"></i><i class="ltick br" style="--x:33.75;--y:639.95"></i>
   <i class="ltick tl" style="--x:47.5;--y:635.5"></i><i class="ltick br" style="--x:77.55;--y:639.85"></i>
 
   <!-- RESSOLVE STEPS -->
-  <figure class="a wh box" data-fade data-rtl style="--x:12;--y:654;--w:273.1;--h:111.6;--c:#d1d1d1"></figure>
+  <figure class="a wh box" data-slot="resolve" data-slot-name="Resolve Steps" data-fade data-rtl style="--x:12;--y:654;--w:273.1;--h:111.6;--c:#d1d1d1"></figure>
   <div class="a plus" style="--x:280.65;--y:658.1"></div>
   <h3 class="a h" style="--x:296.5;--y:651.1;--w:170;--fs:10">RESSOLVE STEPS</h3>
   <div class="a copy j" style="--x:297.2;--y:665.9;--w:151.6">
@@ -224,7 +227,7 @@
     illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui
     blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.</p></div>
 
-  <figure class="a wh ph fr" style="--x:247.9;--y:797;--w:113.7;--h:226.2">
+  <figure class="a wh ph fr" data-slot="calligraphy" data-slot-name="Calligraphy" style="--x:247.9;--y:797;--w:113.7;--h:226.2">
     <img src="assets/img/calligraphy.webp" alt="Cursive calligraphy" data-noscale data-vwipe />
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
   </figure>
@@ -237,6 +240,7 @@
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
 <script src="js/wipe.js"></script>
+<script src="js/photos.js"></script>
 <script src="js/anim.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/menu-shade.js"></script>

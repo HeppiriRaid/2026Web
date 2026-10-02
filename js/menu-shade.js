@@ -199,7 +199,7 @@
 
   /* ---------- the picture's colours: a small, softened copy, read where the bars are ---------- */
   function sourceOf(fig, r) {
-    var img = fig.querySelector("img");
+    var img = fig.querySelector("img[data-shade-preview]") || fig.querySelector("img");   // (the test panel's preview lies on top)
     if (img && img.complete && img.naturalWidth) {
       var key = (img.currentSrc || img.src) + "|" + Math.round(r.width) + "x" + Math.round(r.height);
       if (fig.__shade && fig.__shade.key === key) return fig.__shade;
@@ -479,7 +479,7 @@
   if (wantLab) { lab_ = testPanel(); lens(); }
 
   function testPanel() {
-    var fig = pics[0], previews = [{ name: "Grey box", src: "" }], pick = 0;
+    var fig = pics[0], previews = [{ name: "On the page", src: "" }], pick = 0;
     var style = document.createElement("style");
     // The panel lies above the cursor's under-squares, so every colour in it is #DCCBC3 or
     // darker in every channel (CLAUDE.md), or inside the square its soft edges would fold into
@@ -563,6 +563,7 @@
       if (previews[i].src) {
         var im = new Image();
         im.alt = ""; im.setAttribute("data-shade-preview", "");
+        im.style.cssText = "position:absolute;left:0;top:0";          // over the picture the page has there, if any
         im.onload = function () { lastSig = ""; update(); };
         im.src = previews[i].src;
         fig.appendChild(im);

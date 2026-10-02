@@ -150,6 +150,7 @@
 
   function move(e) {
     mx = e.clientX; my = e.clientY;
+    if (leavingPage) { remember(); return; }          // (the page is going: the square stays out)
     dot.style.transform = "translate3d(" + mx + "px," + my + "px,0) translate(-50%,-50%)";
     if (!shown) {                                    // appear where the mouse is, springing in; until
       shown = true; X.x = mx; Y.x = my; X.v = Y.v = 0;  // this first move the normal cursor stays
@@ -159,6 +160,35 @@
     wake();
   }
   function hide() { if (shown) { shown = false; root.classList.remove("cursor-on"); wake(); } }
+
+  // ---- moving between pages (js/wipe.js) -------------------------------------------
+  // The square goes with the page: as the white sheet starts to rise it springs out (its
+  // own box spring), and on the next page it springs back in where the pointer is, as the
+  // sheet lifts off, without waiting for the mouse to move. Where the pointer is crosses
+  // over in sessionStorage (read once, good for 15 s).
+  var leavingPage = false, SPOT = "kt-cursor";
+  function remember() {
+    try { sessionStorage.setItem(SPOT, JSON.stringify({ x: mx, y: my, t: Date.now() })); } catch (e) {}
+  }
+  document.addEventListener("kt:leave", function () {
+    if (!live) return;
+    leavingPage = true;
+    if (shown) remember(); else { try { sessionStorage.removeItem(SPOT); } catch (e) {} }
+    hide();
+  });
+  document.addEventListener("kt:arrive", function () {
+    leavingPage = false;
+    var at = null;
+    try { at = JSON.parse(sessionStorage.getItem(SPOT) || "null"); sessionStorage.removeItem(SPOT); } catch (e) {}
+    // (only while the pointer is over the page: it may have left the window meanwhile)
+    if (!live || shown || !at || !(Date.now() - at.t < 15000) || !root.matches(":hover")) return;
+    mx = at.x; my = at.y;
+    dot.style.transform = "translate3d(" + mx + "px," + my + "px,0) translate(-50%,-50%)";
+    shown = true; X.x = mx; Y.x = my; X.v = Y.v = 0; S.x = 0; S.v = 0;
+    root.classList.add("cursor-on", "cursor-ready");
+    recheck = true;
+    wake();
+  });
   function out(e) { if (!e.relatedTarget) hide(); }                     // left the window
   function scrolled() { if (shown) { recheck = true; wake(); } }         // the page moved under a still mouse
 
@@ -175,6 +205,11 @@
   }
   apply();
   if (reduce.addEventListener) reduce.addEventListener("change", apply);
+  // (arriving from another page, the plain arrow stays hidden while the sheet still covers this one)
+  try {
+    var waiting = window.__arrive && JSON.parse(sessionStorage.getItem(SPOT) || "null");
+    if (live && waiting && Date.now() - waiting.t < 15000) root.classList.add("cursor-ready");
+  } catch (e) {}
   // the menu opening / closing: its labels slide in, or fade out over ~0.8s
   if (menu && window.MutationObserver) new MutationObserver(function () {
     if (!menu.classList.contains("open")) menuUntil = performance.now() + 800;

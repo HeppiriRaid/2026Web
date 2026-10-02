@@ -62,6 +62,24 @@ main{flex:1;padding:28px 24px 40px}
 .login code{font:12px ui-monospace,Menlo,monospace;background:var(--band);padding:1px 4px}
 .login a{color:var(--ink)}
 
+/* ---- the front page's photos ---- */
+#front{margin-bottom:44px}
+.slots{display:flex;flex-wrap:wrap;align-items:flex-end;gap:22px 20px;padding:18px 16px 20px;background:var(--band)}
+.slot{display:flex;flex-direction:column;gap:8px;padding:0;border:0;background:none;color:var(--ink);text-align:left;cursor:pointer}
+.slot .pic{position:relative;display:block;height:var(--sh,150px);overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
+.slot .pic img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.slot .name{font:400 12px/1.3 var(--label);text-transform:uppercase;letter-spacing:.05em}
+.slot.is-sel .pic{box-shadow:0 0 0 3px var(--ink)}
+.slot:focus-visible{outline:none}
+.slot:focus-visible .pic{box-shadow:0 0 0 3px var(--ink),0 0 0 6px var(--paper)}
+.slot.is-drop .pic{outline:2px dashed var(--ink);outline-offset:3px}
+.slot.is-busy .pic::after{content:"Preparing…";position:absolute;inset:0;display:grid;place-items:center;color:var(--paper);font-size:12px;background:rgba(0,0,0,.3)}
+.slot .tag{left:6px;top:6px}
+.pv .frame{position:relative;overflow:hidden}
+.pv .frame img{display:block;width:100%;height:100%;max-height:none;object-fit:cover}
+.slot-name{font:400 20px/1.2 var(--label);margin-bottom:16px}
+.fields input:disabled{opacity:.5}
+
 /* ---- editor ---- */
 .head{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px}
 .head h1{font:400 30px/1 var(--label);letter-spacing:-.01em}
@@ -119,5 +137,5 @@ footer button{background:none;border:0;color:var(--ink);text-decoration:underlin
   .panel{grid-template-columns:1fr}
   .bar{flex-wrap:wrap;gap:10px}
   .status{order:5;flex-basis:100%;text-align:left}
-  :root{--h:150px}
+  :root{--h:150px;--sh:110px}
 }

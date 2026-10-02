@@ -4,7 +4,14 @@ Static site, no build step: plain HTML / CSS / JS, with GSAP 3.12.5 and Lenis 1.
 Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Main`** branch (capital M).
 
 - `index.html` front page · `illustration.html` the row of works + zoom · `console.html` the owner's editor
-  (it commits `data/illustration.json` and `assets/img/illustration/` straight to `Main` through the GitHub API).
+  (it commits `data/illustration.json` and `assets/img/illustration/` — the works — and `data/front.json` and
+  `assets/img/front/` — the front page's photos — straight to `Main` through the GitHub API).
+- The front page's photo holders are its `figure[data-slot]` (name in `data-slot-name`, shape from `--w`/`--h`).
+  The console reads them from the page itself; `data/front.json` lists only the photos set there (a holder it
+  doesn't name keeps what `index.html` gives it); `js/photos.js` puts them in, and `js/anim.js` waits for that
+  before the curtain lifts. Keep those attributes when changing the layout; a new `data-slot` is a new holder.
+- Page changes (`js/wipe.js`, a white sheet): the cursor's square springs out as the sheet rises and back in, where
+  the pointer is, as it lifts (`kt:leave` / `kt:arrive`, `js/cursor.js`).
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
   Never force-push `Main`.
 - Pages caches for 10 minutes: after a deploy, check with a hard refresh.
@@ -40,6 +47,9 @@ How the site avoids it:
   device pixels (`crispPlus()` in `js/illustration.js`); the zoom picture is placed on device pixels (`fit()`).
 - **Moving edges too**: every wipe's moving edge is snapped to a device pixel (`wipeClip()` in `js/anim.js` and
   `js/illustration.js`; never a percentage `inset()`), and pictures sliding sideways use the `slideX()` modifiers.
+- **No layer of its own for a photo** (`will-change`): the browser draws a layer at its exact, fractional place, so
+  its edges come out soft, and a bright photo's soft edge folds. Drawn in place, a photo rests and wipes in on whole
+  device pixels (the front page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth).
 - Focus rings too: the browser's own ring has a white halo and round corners, so the site draws its own plain,
   square ring for every keyboard focus (`:focus-visible` in `css/style.css`: ink; the menu button and labels in
   `css/anim.css`; a work and the zoom's buttons, red and unmoved, in `css/illustration.css`).
@@ -54,8 +64,8 @@ How the site avoids it:
 
 ## The hamburger over the BACK GROUND picture
 
-`js/menu-shade.js` (front page only): while the hamburger is over the picture marked `data-menu-shade` (today
-a grey placeholder box; when "My House" goes in, put the `<img>` inside that figure and it is picked up),
+`js/menu-shade.js` (front page only): while the hamburger is over the picture marked `data-menu-shade` (the BACK
+GROUND holder: a grey box until the owner gives it a photo in the console, which is then picked up),
 the bars take colours from the picture beneath them through Chinese colour harmony: seven variations
 (`VARIATIONS`: 阴阳, 相生, 相克, 间色, 墨分五色, 紫气, 青花). **The owner chose 墨分五色, five tones of ink**
 (`DEFAULT`): every visitor gets it, and the cursor stays Maison's inverse. Only inline `background-image`s on the
@@ -91,8 +101,10 @@ Three layers, so an outline can't ship again:
    twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook in
    `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
    known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit),
-   `shader` (the test panel, and the harmony cursor in every variation, both ways it is drawn), `focus` (each
-   kind of keyboard focus ring).
+   `shader` (the test panel, and the harmony cursor in every variation, both ways it is drawn), `photos` (a photo
+   in every front-page holder, wiping in and at rest), `focus` (each kind of keyboard focus ring). The owner's
+   `data/front.json` is replaced per flow by a fixed list, so the check never depends on what was uploaded.
+   (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)
 3. **The push guard**, a Claude Code hook (`.claude/settings.json` → `.claude/hooks/push-guard.mjs`). A clean
    full run leaves a stamp for exactly the code it checked (`tests/code-stamp.mjs`: the pages, `css/`, `js/`,
    `vendor/`, `tests/`; not `data/` or `assets/`), kept in `.git`. `git push` is stopped unless the code it

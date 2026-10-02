@@ -32,15 +32,15 @@
     if (window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
     var ST = window.ScrollTrigger;
 
-    /* Pre-decode the photos and rasterise their compositing layer up front
-       (this happens during the preloader, behind the overlay). Otherwise the
-       large source image decodes + paints synchronously on the first frame of
-       its wipe, dropping one long frame — the stutter at the start of the
-       reveal. will-change is stripped again on completion (see strip()), so the
-       resting layout stays pixel-identical. */
+    /* Pre-decode the photos up front (this happens during the preloader, behind
+       the overlay). Otherwise the large source image decodes on the first frame of
+       its wipe, dropping one long frame — the stutter at the start of the reveal.
+       (No layer of their own: a layer is drawn at the photo's exact, fractional
+       place with soft edges, and a soft edge between a bright photo and the paper
+       folds inside the cursor's square — CLAUDE.md. Drawn in place, a photo wipes
+       in on the very pixels it rests on; measured, it wipes no less smoothly.) */
     gsap.utils.toArray(".ph img").forEach(function (im) {
       if (im.decode) { try { im.decode().catch(function () {}); } catch (e) {} }
-      im.style.willChange = "transform";
     });
 
     /* ---------- smooth scroll (Lenis), wired to ScrollTrigger ---------- */
@@ -332,9 +332,13 @@
       if (lenis) lenis.stop();
 
       // The hero photo must be painted before the curtain lifts. Otherwise the
-      // wipe plays over an empty frame and the image pops in mid-animation.
-      var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
-      var heroReady = withTimeout(whenReady(hero), 6000);
+      // wipe plays over an empty frame and the image pops in mid-animation. First the
+      // photos the owner set in the console go in (js/photos.js), so the one waited
+      // for is the one shown.
+      var heroReady = withTimeout(window.__photos || Promise.resolve(), 2500).then(function () {
+        var hero = document.querySelector(".ph img[data-noscale]") || document.querySelector(".ph img");
+        return withTimeout(whenReady(hero), 6000);
+      });
 
       if (window.__arrive && window.__wipe) {
         // From another page of the site (js/wipe.js): no name — the white sheet that
