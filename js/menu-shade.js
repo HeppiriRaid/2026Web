@@ -28,8 +28,9 @@
    (for the rest of that visit, on the works' page too), the cursor's square
    is a harmony lens: it recolours what is beneath it through the variation
    shown (below; the panel's "Cursor" switches back to Maison's inverse). A
-   choice made there is remembered in that browser only; everyone else sees
-   DEFAULT on the hamburger, and Maison's inverse on the cursor.
+   choice made there holds only while testing (the panel's ✕ ends the test);
+   everyone sees DEFAULT on the hamburger — 墨分五色, five tones of ink — and
+   Maison's inverse on the cursor.
    ============================================================ */
 (function () {
   "use strict";
@@ -167,10 +168,10 @@
     { zh: "青花", py: "qīnghuā", en: "Blue and white", note: "porcelain: cobalt on light colours, glaze white on dark",
       map: function (g, x) { return x.deep ? QH[0] : QH[1]; } }
   ];
-  var DEFAULT = 2;                                       // 相生 (provisional, until one is chosen)
-  var KEY = "kt-shade";
+  var DEFAULT = 5;                                       // 墨分五色 five tones of ink: the owner's choice, for everyone
+  var KEY = "kt-shade";                                  // (a choice made while testing: that visit only)
   var mode = DEFAULT;
-  try { var saved = localStorage.getItem(KEY); if (saved !== null && VARIATIONS[+saved]) mode = +saved; } catch (e) {}
+  try { localStorage.removeItem(KEY); } catch (e) {}     // (once kept for good, so one browser saw another colour)
 
   // the hamburger's state, from the mean lightness of the picture under it; a little
   // hysteresis so it doesn't flicker while the page scrolls over mid tones
@@ -364,6 +365,7 @@
   // testing (index.html?shader, then for the rest of the visit, on both pages)
   var wantLab = /[?&]shader\b/.test(location.search);
   try { if (wantLab) sessionStorage.setItem("kt-shade-lab", "1"); else wantLab = sessionStorage.getItem("kt-shade-lab") === "1"; } catch (e) {}
+  if (wantLab) try { var saved = sessionStorage.getItem(KEY); if (saved !== null && VARIATIONS[+saved]) mode = +saved; } catch (e) {}
 
   var lab_ = null, chosen = mode;
   // what the bars (and, while testing, the cursor) show: the chosen variation, or one being
@@ -377,7 +379,7 @@
   function setMode(n, keep) {
     if (!VARIATIONS[n]) return;
     chosen = n; show(n);
-    if (keep) try { localStorage.setItem(KEY, String(n)); } catch (e) {}
+    if (keep) try { sessionStorage.setItem(KEY, String(n)); } catch (e) {}
     if (lab_) lab_.update();
   }
 
@@ -571,9 +573,12 @@
       var y = fig.getBoundingClientRect().top + window.pageYOffset - 6;
       if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.2 }); else window.scrollTo({ top: y, behavior: "smooth" });
     });
-    box.querySelector(".x").addEventListener("click", function () {
+    box.querySelector(".x").addEventListener("click", function () {     // the test ends: all back as visitors see it
       box.style.display = "none";
-      try { sessionStorage.removeItem("kt-shade-lab"); } catch (e) {}
+      wantLab = false;
+      try { ["kt-shade-lab", KEY, "kt-shade-cursor"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
+      setMode(DEFAULT, false);
+      lens();
     });
     document.addEventListener("keydown", function (e) {
       if (e.metaKey || e.ctrlKey || e.altKey || box.style.display === "none" || /input|textarea/i.test(e.target.tagName)) return;

@@ -35,8 +35,9 @@ export function codeHere(root) {
   }));
 }
 
-// kept inside .git (never committed): each clone, each session, has to earn its own
-export const stampFile = (root) => path.resolve(root, git(root, "rev-parse", "--git-path", "fold-check-pass").trim());
+// kept inside .git (never committed), one for the clone and all its worktrees (a check can run in
+// a worktree while work goes on): each clone, each session, has to earn its own
+export const stampFile = (root) => path.resolve(root, git(root, "rev-parse", "--git-common-dir").trim(), "fold-check-pass");
 export function readStamp(root) {
   try { return JSON.parse(fs.readFileSync(stampFile(root), "utf8")); } catch (e) { return null; }
 }

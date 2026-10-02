@@ -545,6 +545,14 @@ const FLOWS = {
       await lensAt(m, "harmony");
       await check(p, `harmony cursor, ${names[m]}: the works' page`, dpr);
     }
+
+    // -- the test ended (the panel's ✕): the panel gone, the usual square back
+    await click(p, ".shade-lab .x");
+    await expect(p, () => getComputedStyle(document.querySelector(".shade-lab")).display === "none" &&
+      !document.documentElement.classList.contains("cursor-harmony"), null, "the test ended, the usual square back");
+    await p.mouse.move(720, 300, { steps: 2 });
+    await p.waitForTimeout(600);
+    await check(p, "test ended (✕): the usual square back, works' page", dpr);
   },
 
   // keyboard focus: each kind of focus ring the cursor pages draw (the browser's own has a

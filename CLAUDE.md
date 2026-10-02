@@ -57,11 +57,13 @@ How the site avoids it:
 `js/menu-shade.js` (front page only): while the hamburger is over the picture marked `data-menu-shade` (today
 a grey placeholder box; when "My House" goes in, put the `<img>` inside that figure and it is picked up),
 the bars take colours from the picture beneath them through Chinese colour harmony: seven variations
-(`VARIATIONS`: 阴阳, 相生 the default, 相克, 间色, 墨分五色, 紫气, 青花). Only inline `background-image`s on the
+(`VARIATIONS`: 阴阳, 相生, 相克, 间色, 墨分五色, 紫气, 青花). **The owner chose 墨分五色, five tones of ink**
+(`DEFAULT`): every visitor gets it, and the cursor stays Maison's inverse. Only inline `background-image`s on the
 bars, the panel's `background-color` and two `--nav-hover` variables are set, and cleared off the picture.
 Bar colours are capped at #DCCBC3 per channel (the rule above). `index.html?shader` opens a test panel: point
 at a variation to try it on the hamburger, click to keep it (or keys 0–7); P tries a real painting in the
-picture's place; a choice there is saved in that browser only.
+picture's place. A choice there holds only while testing (that visit); the panel's ✕ ends the test and puts the
+hamburger and the cursor back as every visitor sees them.
 
 While testing (the rest of that visit, on the works' page too), **the cursor's square is a harmony lens**: it
 recolours what is beneath it through the variation shown, as the bars would take each colour. In Chromium
