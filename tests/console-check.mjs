@@ -349,7 +349,8 @@ async function front(env) {
     await ip.waitForTimeout(900);
     await ip.click("#menuNav a[href='index.html#about']");
     await ip.waitForURL(/index\.html/);
-    await ip.waitForFunction(() => getComputedStyle(document.getElementById("preloader")).display === "none", null, { timeout: 30000 });
+    // (the page comes into the same window, js/wipe.js: the address moves on before its body is in)
+    await ip.waitForFunction(() => { const e = document.getElementById("preloader"); return !!e && getComputedStyle(e).display === "none"; }, null, { timeout: 30000 });
     const info = await ip.evaluate((id) => { const i = document.querySelector(`[data-slot="${id}"] img`);
       return { src: i && i.getAttribute("src"), ok: !!i && i.complete && i.naturalWidth > 0, fetched: performance.getEntriesByType("resource").filter((e) => /front\.json/.test(e.name)).length }; }, G);
     check(info.src === env.RAW + g1.image && info.ok && info.fetched === 0 && ierr.length === 0, "from the works' page menu: the same, from the photos fetched on the way", info);
@@ -591,7 +592,7 @@ async function works(env) {
     await ip.waitForTimeout(900);
     await ip.click("#menuNav a[href*='illustration']");
     await ip.waitForURL(/illustration\.html/);
-    await ip.waitForFunction(() => getComputedStyle(document.getElementById("preloader")).display === "none", null, { timeout: 30000 });
+    await ip.waitForFunction(() => { const e = document.getElementById("preloader"); return !!e && getComputedStyle(e).display === "none"; }, null, { timeout: 30000 });
     const info = await ip.evaluate((raw) => ({ n: document.querySelectorAll(".work").length,
       repo: [...document.querySelectorAll(".work-btn img")].filter((i) => (i.getAttribute("data-src") || "").startsWith(raw)).length,
       fetched: performance.getEntriesByType("resource").filter((e) => /illustration\.json/.test(e.name)).length }), env.RAW);

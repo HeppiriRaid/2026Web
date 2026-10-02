@@ -404,13 +404,35 @@ function stepping() {
     },
   };
   const hold = (w) => () => { try { if (sessionStorage.getItem("fold-hold-" + w) && window.gsap) { sessionStorage.removeItem("fold-hold-" + w); window.gsap.globalTimeline.pause(); } } catch (e) {} };
-  document.addEventListener("kt:leave", hold("leave"));
-  document.addEventListener("kt:arrive", hold("arrive"));
+  const listen = () => {
+    document.addEventListener("kt:leave", hold("leave"));
+    document.addEventListener("kt:arrive", hold("arrive"));
+  };
+  listen();
+  // A page change brings the next page into this same window (js/wipe.js): document.open() takes
+  // the page's listeners with it, and no init script runs again. So: listen again, and what is
+  // noted per page starts afresh (arrowHidden()). This window's own mark stays: it shows that the
+  // page changed in this window.
+  window.__foldWindow = Math.random();
+  const open = Document.prototype.open;
+  Document.prototype.open = function () {
+    const r = open.apply(this, arguments);
+    listen();
+    window.__arrowHidden = undefined;
+    window.__quiet = window.__foldStep = window.__foldCss = null;
+    delete window.__cursorProbe;
+    return r;
+  };
 }
 // arriving from another page with the cursor's square out, the plain arrow must not show under the
-// white sheet: the page's head hides it before js/cursor.js runs (the init script in the main loop
-// notes when it was hidden)
-async function arrowHidden(p, page) {
+// white sheet. The page came into the same window (js/wipe.js; `win`, this window's mark from before
+// the change): a page opened the usual way gets a new surface from the browser, and that shows the
+// system's own arrow until the page has drawn and seen the mouse move — nothing in a page can hide
+// it. And the page's head hid the arrow before js/cursor.js ran (the init script in the main loop
+// notes when it was hidden).
+async function arrowHidden(p, page, win) {
+  if ((await p.evaluate(() => window.__foldWindow)) !== win)
+    throw new Error(`the ${page} page was opened the usual way, not brought into the same window: the browser's plain arrow shows on its new surface (js/wipe.js)`);
   await expect(p, () => window.__arrowHidden !== undefined, null, `the plain arrow hidden, arriving at the ${page} page`);
   const when = await p.evaluate(() => window.__arrowHidden);
   if (when !== "before js/cursor.js ran") throw new Error(`the plain arrow showed while arriving at the ${page} page: it was hidden only ${when}`);
@@ -514,6 +536,7 @@ const FLOWS = {
     // -- leaving: the sheet half-way up over the page
     const il = await menuLink(p, "ILLUSTRATION");
     await p.mouse.move(il.x, il.y, { steps: 2 });
+    let win = await p.evaluate(() => window.__foldWindow);
     await holdNext(p, "leave", "arrive");
     await p.mouse.down(); await p.mouse.up();
     await sheetAt(p, 60, 30);
@@ -523,7 +546,7 @@ const FLOWS = {
     await p.waitForURL(/illustration\.html/, { waitUntil: "commit" });
     await sheetAt(p, -35, -70);
     await check(p, "page change: the sheet lifting, the intro rising (illustration)", dpr);
-    await arrowHidden(p, "illustration");
+    await arrowHidden(p, "illustration", win);
     await wipeAt(p, ".work-btn");
     await check(p, "illustration page: a work wiping in", dpr);
     await settled(p);
@@ -556,17 +579,38 @@ const FLOWS = {
     // -- back to the front page: arriving there
     const ab = await menuLink(p, "ABOUT");
     await p.mouse.move(ab.x, ab.y, { steps: 2 });
+    win = await p.evaluate(() => window.__foldWindow);
     await holdNext(p, "arrive");
     await p.mouse.down(); await p.mouse.up();
     await p.waitForURL(/index\.html/, { waitUntil: "commit" });
     await sheetAt(p, -35, -70);
     await check(p, "page change: the sheet lifting, the intro rising (front page)", dpr);
-    await arrowHidden(p, "front");
+    await arrowHidden(p, "front", win);
     await settled(p);
     await quiet(p);
     await scrollHeld(p, 2000);
     await wipeAt(p, ".ph img");
     await check(p, "front page: a photo wiping in", dpr);
+
+    // -- the browser's Back: the illustration page comes in the same way, the row where it was
+    // left; and Back again, the front page where it was left (900px down, js/wipe.js noted both)
+    for (const [page, at, there, where] of [
+      ["illustration", /illustration\.html$/, () => { const x = history.state && history.state.kt && history.state.kt.x; return x > 0 && Math.abs(document.getElementById("strip").scrollLeft - x) < 2; }, "the row where it was left"],
+      ["front", /index\.html$/, () => Math.abs(scrollY - 900) < 2, "900px down, where it was left"],
+    ]) {
+      await p.mouse.move(700, 450, { steps: 2 });
+      win = await p.evaluate(() => window.__foldWindow);
+      await holdNext(p, "arrive");
+      await p.evaluate(() => history.back());
+      await p.waitForURL((u) => at.test(u.pathname));
+      await sheetAt(p, -35, -70);
+      await check(p, `page change, Back: the sheet lifting (${page} page)`, dpr);
+      await arrowHidden(p, page, win);
+      await settled(p);
+      await quiet(p);
+      await expect(p, there, null, `Back at the ${page} page: ${where}`);
+      await check(p, `${page} page, Back: ${where}`, dpr);
+    }
   },
 
   // the colour test panel (index.html?shader, js/menu-shade.js): a panel above the

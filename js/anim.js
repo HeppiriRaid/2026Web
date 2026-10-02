@@ -296,7 +296,14 @@
     // the section's heading up with the top of the window. Land where the nav links
     // here land instead — ABOUT ME at the very top of the page (name and corner marks
     // showing), the others 48px above their heading. Done behind the curtain.
+    // Stepping back / forward to the page: where it was left (js/wipe.js noted it).
     function landOnSection() {
+      var was = window.__arriveAt;
+      if (was && was.y > 0) {
+        if (lenis) lenis.scrollTo(was.y, { immediate: true, force: true });
+        window.scrollTo(0, was.y);
+        return;
+      }
       var h = location.hash, t = /^#(about|works|contact)$/.test(h) && document.querySelector(h);
       if (!t) return;
       // its place in the layout (its reveal may already be sliding it in from 42px below)

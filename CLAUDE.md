@@ -22,6 +22,17 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - Page changes (`js/wipe.js`, a white sheet): the cursor's square springs out as the sheet rises and back in, where
   the pointer is, as it lifts (`kt:leave` / `kt:arrive`, `js/cursor.js`). The plain arrow stays hidden throughout:
   the arriving page sets `cursor-ready` from its head, before its stylesheets, when `js/cursor.js` left a note.
+- **A page change never opens the next page the usual way.** A page opened the usual way gets a new surface
+  from the browser (Chrome gives every page its own), and until that page has drawn its first frame and seen
+  the mouse move, the surface shows the system's plain arrow over the sheet (measured 50–130 ms on a fast
+  machine; nothing in a page can hide it). So `js/wipe.js` fetches the next page while the sheet rises and
+  writes it into the same window (`document.open()` / `write()`; `history.pushState`); Back / Forward between
+  the site's pages do the same (`popstate`), and the page comes back where it was left (`history.state.kt`:
+  the scroll, the works' row; `js/anim.js`, `js/illustration.js`). Each page's scripts run as on any load, so
+  they must be fine run again in one window: no top-level `let`/`const`/`class`; whatever outlives the
+  document (a media query's listener, an observer, a smooth scroll, GSAP's ticker, ScrollTrigger) is let go on
+  `kt:gone` or in `swap()`, or every page visited would live on. Anything that isn't one of the site's pages,
+  or a page that doesn't come, opens the usual way.
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
   Never force-push `Main`.
 - Pages caches the code for 10 minutes: after a deploy, check with a hard refresh.
@@ -110,8 +121,11 @@ Three layers, so an outline can't ship again — and the console's own check rid
 2. **The pixel check**, `tests/fold-check.mjs` (about 4 minutes on 4 cores; it runs the audit first). It shows
    every state twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook
    in `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
-   known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit, and the
-   plain arrow hidden through each page change), `shader` (the test panel, and the harmony cursor in every
+   known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit, the
+   page changes both ways and the browser's Back, and the plain arrow hidden through each: the next page came
+   into the same window, and its head hid the arrow before `js/cursor.js` ran — the init scripts don't run again
+   in a window a page was written into, so `stepping()` listens again after each `document.open()`), `shader`
+   (the test panel, and the harmony cursor in every
    variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre,
    wiping in and at rest, and the longest caption), `focus` (each kind of keyboard focus ring). The owner's
    `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are

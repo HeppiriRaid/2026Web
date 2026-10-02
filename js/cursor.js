@@ -205,6 +205,8 @@
   }
   apply();
   if (reduce.addEventListener) reduce.addEventListener("change", apply);
+  // (the next page coming into this window, js/wipe.js: the query outlives this page)
+  document.addEventListener("kt:gone", function () { if (reduce.removeEventListener) reduce.removeEventListener("change", apply); });
   // (arriving from another page with the square out, the plain arrow is already hidden: the page's
   // head reads the note above and sets cursor-ready before its first frame, under the white sheet)
   // the menu opening / closing: its labels slide in, or fade out over ~0.8s

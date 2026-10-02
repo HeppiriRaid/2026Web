@@ -141,6 +141,10 @@
                img: btn.querySelector("img"), title: title || "Work " + (i + 1), shown: false };
     });
     N = works.length;
+    // stepping back / forward to the page: the row where it was left (js/wipe.js noted it;
+    // the smooth scroll measures the row first, just filled: until it does, it holds it empty)
+    var was = window.__arriveAt;
+    if (was && was.x > 0) { if (lenis) lenis.resize(); setScroll(was.x, true); }
     if (io) works.forEach(function (w) { io.observe(w.el); });
     loadPictures();
   }
@@ -499,7 +503,9 @@
     if (Z.open && Z.fig && !Z.busy) place(Z.fig, fit(aspect(works[Z.i])));
   });
 
-  /* (leaving for another page — the white wipe — lives in js/wipe.js, shared with the front page) */
+  /* (leaving for another page — the white wipe — lives in js/wipe.js, shared with the front page;
+     as the next page comes into this window, what would outlive this one lets go) */
+  document.addEventListener("kt:gone", function () { if (io) io.disconnect(); if (lenis) lenis.destroy(); });
 
   /* (the custom cursor lives in js/cursor.js, shared with the front page) */
 
