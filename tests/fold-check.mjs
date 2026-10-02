@@ -19,14 +19,17 @@
    The states come in flows (FLOWS, at the bottom): the whole site in one
    visit, the colour test panel (index.html?shader), the front page's photos
    as the console sets them, keyboard focus. Anything new on screen — a page,
-   a panel, a ?switch, a test tool — gets its states here before it ships. A full run that is clean leaves a stamp for exactly
-   this code (tests/code-stamp.mjs); without it the push guard
+   a panel, a ?switch, a test tool — gets its states here before it ships.
+   Before them, once, the console's own check (tests/console-check.mjs: the
+   console end to end against a stand-in GitHub). A full run that is clean —
+   the audit, the console and every state — leaves a stamp for exactly this
+   code (tests/code-stamp.mjs); without it the push guard
    (.claude/hooks/push-guard.mjs) stops a `git push`.
 
-   Run (Node 18+ and Chromium), about 12 minutes:
+   Run (Node 18+ and Chromium), about 17 minutes:
      npm install --no-save playwright-core
-     node tests/fold-check.mjs            # exits 1 if any outline is found
-     node tests/fold-check.mjs shader     # only the flows named (quicker; no stamp)
+     node tests/fold-check.mjs            # exits 1 if any outline is found (or the console's check fails)
+     node tests/fold-check.mjs shader     # only the flows named — or "console" (quicker; no stamp)
    Options (environment): CHROMIUM=/path/to/chromium   PLAYWRIGHT_CORE=/path/to/playwright-core
                           FOLD_SHOTS=dir  (saves both screenshots of every state with an outline)
    ============================================================ */
@@ -36,6 +39,7 @@ import path from "node:path";
 import url from "node:url";
 import { audit, report, DIP } from "./colour-audit.mjs";
 import { codeHere, writeStamp } from "./code-stamp.mjs";
+import { consoleCheck } from "./console-check.mjs";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
 const ONLY = process.argv.slice(2);
@@ -264,6 +268,14 @@ function wipeAt(p, sel) {
     return false;
   }, sel, { polling: "raf", timeout: 20000 });
 }
+// arriving from another page with the cursor's square out, the plain arrow must not show under the
+// white sheet: the page's head hides it before js/cursor.js runs (the init script in the main loop
+// notes when it was hidden)
+async function arrowHidden(p, page) {
+  await expect(p, () => window.__arrowHidden !== undefined, null, `the plain arrow hidden, arriving at the ${page} page`);
+  const when = await p.evaluate(() => window.__arrowHidden);
+  if (when !== "before js/cursor.js ran") throw new Error(`the plain arrow showed while arriving at the ${page} page: it was hidden only ${when}`);
+}
 // hold the white sheet (and everything else) still once it is part-way across the screen
 function sheetAt(p, from, to) {
   return p.waitForFunction(([from, to]) => {
@@ -385,6 +397,7 @@ const FLOWS = {
     await p.waitForURL(/illustration\.html/, { waitUntil: "commit" });
     await sheetAt(p, -35, -70);
     await check(p, "page change: the sheet lifting, the intro rising (illustration)", dpr);
+    await arrowHidden(p, "illustration");
     await wipeAt(p, ".work-btn");
     await check(p, "illustration page: a work wiping in", dpr);
     await settled(p);
@@ -421,6 +434,7 @@ const FLOWS = {
     await p.waitForURL(/index\.html/, { waitUntil: "commit" });
     await sheetAt(p, -35, -70);
     await check(p, "page change: the sheet lifting, the intro rising (front page)", dpr);
+    await arrowHidden(p, "front");
     await settled(p);
     await p.waitForTimeout(1500);
     await p.evaluate(() => { window.__lenis.scrollTo(2000, { immediate: true, force: true }); });
@@ -591,27 +605,46 @@ const FLOWS = {
     await settled(p);
     await p.waitForTimeout(2600);
     await expect(p, () => {
-      const im = [...document.querySelectorAll("figure[data-slot] img")];
+      const im = [...document.querySelectorAll("figure[data-slot] img")], pos = (id) => getComputedStyle(document.querySelector(`[data-slot="${id}"] img`)).objectPosition;
       return im.length === 5 && im.every((i) => i.complete && i.naturalWidth > 0) &&
-        document.querySelector('[data-slot="about"] img').getAttribute("src") === "assets/img/calligraphy.webp";
-    }, null, "every holder with its photo");
+        document.querySelector('[data-slot="about"] img').getAttribute("src") === "assets/img/calligraphy.webp" &&
+        pos("background") === "50% 15%" && pos("about") === "50% 80%" && pos("calligraphy") === "25% 50%";
+    }, null, "every holder with its photo, three of them cropped off-centre");
     await check(p, "front page photos: the top", dpr);
     const known = (on) => p.evaluate((on) => {
       const b = document.getElementById("menuBtn");
       if (on) b.setAttribute("data-fold-known", "the hamburger over a painting"); else b.removeAttribute("data-fold-known");
     }, on);
+    // (whenever the hamburger lies over the BACK GROUND photo — not only when that holder is the one in
+    // the middle: a tall photo, or a crop showing its bright part, reaches up under it from below)
+    const underMenu = async () => known(await p.evaluate(() => {
+      const b = document.getElementById("menuBtn").getBoundingClientRect(), f = document.querySelector("[data-menu-shade]"), r = f.getBoundingClientRect();
+      return !!f.querySelector("img") && r.bottom > b.top && r.top < b.bottom && r.right > b.left && r.left < b.right;
+    }));
     // each holder brought to the middle of the window, so it wipes in on its own
     for (const [name, sel, wiping] of [["BACK GROUND", '[data-slot="background"]', '[data-slot="background"]'],
       ["Graphic Paint", '[data-slot="graphic"]', '[data-slot="graphic"]'], ["Resolve Steps", '[data-slot="resolve"]', '[data-slot="resolve"]'],
       ["Calligraphy", '[data-slot="calligraphy"]', '[data-slot="calligraphy"] img']]) {
       const y = await p.evaluate((sel) => Math.max(0, Math.round(document.querySelector(sel).getBoundingClientRect().top + scrollY - innerHeight * 0.45)), sel);
-      await known(name === "BACK GROUND");
       await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await underMenu();
       await wipeAt(p, wiping);
       await check(p, `front page photos: ${name} wiping in`, dpr);
       await p.waitForTimeout(2600);
       await check(p, `front page photos: ${name} at rest`, dpr);
     }
+    // the BACK GROUND caption, as long as the console lets it be: on screen, on two lines
+    const yCap = await p.evaluate(() => Math.max(0, Math.round(document.querySelector('[data-caption-for="background"]').getBoundingClientRect().top + scrollY - innerHeight * 0.6)));
+    await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yCap);
+    await p.waitForTimeout(2200);
+    await underMenu();
+    await expect(p, (want) => {
+      const c = document.querySelector('[data-caption-for="background"]'), r = document.createRange(), b = c.getBoundingClientRect();
+      r.selectNodeContents(c);
+      const tops = new Set([...r.getClientRects()].filter((x) => x.width > 0).map((x) => Math.round(x.top)));
+      return c.textContent === want && tops.size === 2 && getComputedStyle(c).opacity === "1" && b.top > 0 && b.bottom < innerHeight;
+    }, CAPTION, "the BACK GROUND caption rewritten, on screen, on two lines");
+    await check(p, "front page photos: the BACK GROUND caption, rewritten (two lines)", dpr);
     // the hamburger over the BACK GROUND photo, then the menu open over it
     const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
     await known(true);
@@ -658,22 +691,49 @@ const FLOWS = {
   },
 };
 
-// The front page's photos are the owner's (data/front.json, set in the console): every flow gets a
-// fixed list instead, so the check never depends on what was uploaded — none (the page's own),
-// or, in "photos", a photo in every holder.
+// The front page's photos and captions are the owner's (data/front.json, set in the console): every
+// flow gets a fixed list instead, so the check never depends on what was uploaded — none (the
+// page's own), or, in "photos", a photo in every holder, three cropped off-centre, and the
+// BACK GROUND caption rewritten, as long as the console lets it be (two lines).
+const CAPTION_PARTS = { title: "The house on the hill in the evening, after a day of rain", date: "June 15 to July 2, 2026, over three long weekends",
+  medium: "Graphic Paint: the Morph brush, GP-Mix, a scanned ink wash", location: "Redmond, Washington, the studio at the back of the house" };
+const CAPTION = `Title: “${CAPTION_PARTS.title}” | Date: ${CAPTION_PARTS.date} | Made with: ${CAPTION_PARTS.medium} | Location: ${CAPTION_PARTS.location}`;
 const FRONT = {
   photos: { saveId: "fold-check", photos: {
-    about: { image: "assets/img/calligraphy.webp", alt: "" }, background: { image: "assets/img/about-portrait.webp", alt: "" },
+    about: { image: "assets/img/calligraphy.webp", alt: "", focus: [50, 80] }, background: { image: "assets/img/about-portrait.webp", alt: "", focus: [50, 15] },
     graphic: { image: "assets/img/about-portrait.webp", alt: "" }, resolve: { image: "assets/img/calligraphy.webp", alt: "" },
-    calligraphy: { image: "assets/img/about-portrait.webp", alt: "" } } },
+    calligraphy: { image: "assets/img/about-portrait.webp", alt: "", focus: [25, 50] } },
+    captions: { background: CAPTION_PARTS } },
 };
-for (const f of ONLY) if (!FLOWS[f]) { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}).`); process.exit(2); }
+for (const f of ONLY) if (!FLOWS[f] && f !== "console") { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}, and console).`); process.exit(2); }
+
+// ---- the console, once (tests/console-check.mjs) ----------------------------------------------
+let consoleFails = [];
+if (!ONLY.length || ONLY.includes("console")) {
+  console.log("The console (tests/console-check.mjs):");
+  const r = await consoleCheck(browser, { root: ROOT });
+  consoleFails = r.fails;
+  console.log(r.fails.length ? `THE CONSOLE: ${r.fails.length} of ${r.passed + r.fails.length} checks failed.\n` : `The console: all ${r.passed} checks passed (${r.seconds} s).\n`);
+}
+
 const stopped = [];
 for (const dpr of [1, 2]) {
   for (const [name, flow] of Object.entries(FLOWS)) {
     if (ONLY.length && !ONLY.includes(name)) continue;
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: dpr });
     await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
+    // (the pages ask GitHub for their newest data too, js/fresh.js: never here — the check goes by the
+    // site's own copies, never by the network or what the owner has saved there. Last registered, so
+    // it wins for GitHub's own address of data/front.json.)
+    await ctx.route(/^https:\/\/(api\.github\.com|raw\.githubusercontent\.com)\//, (r) => r.abort());
+    // (arriving from another page: note when the plain arrow was hidden — before js/cursor.js ran, from
+    // the page's head, or only once it ran: arrowHidden())
+    await ctx.addInitScript(() => {
+      new MutationObserver(() => {
+        if (window.__arrowHidden === undefined && document.documentElement && document.documentElement.classList.contains("cursor-ready"))
+          window.__arrowHidden = window.__cursorProbe ? "once js/cursor.js ran" : "before js/cursor.js ran";
+      }).observe(document, { subtree: true, attributes: true, attributeFilter: ["class"] });
+    });
     try { await flow(await ctx.newPage(), dpr); }
     catch (e) { stopped.push(`${name} @${dpr}x: ${e.message.split("\n")[0]}`); console.log(`  STOPPED  ${name} @${dpr}x: ${e.message.split("\n")[0]}`); }
     await ctx.close();
@@ -692,7 +752,8 @@ if (bad.length) {
 } else console.log(`\nNo outlines: all ${results.length} states are clean.`);
 if (stopped.length) console.log(`\nNOT CHECKED — a flow stopped before its states:\n  ${stopped.join("\n  ")}`);
 if (colours.problems.length) console.log(`\nThe colour audit failed (at the top).`);
-process.exitCode = bad.length || stopped.length || colours.problems.length ? 1 : 0;
+if (consoleFails.length) console.log(`\nThe console's check failed (near the top): ${consoleFails.join("; ")}.`);
+process.exitCode = bad.length || stopped.length || colours.problems.length || consoleFails.length ? 1 : 0;
 if (ONLY.length) console.log(`(Only ${ONLY.join(", ")}: no stamp — the push guard wants a full run.)`);
 else if (!process.exitCode) {
   if (codeHere(ROOT) !== code) console.log("The code changed during the run: no stamp. Run it again.");

@@ -15,7 +15,7 @@ import url from "node:url";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "../..");
 const stop = (why) => { process.stderr.write(why.trim() + "\n"); process.exit(2); };
-const RUN = "Run `node tests/fold-check.mjs` (about 15 minutes; it must end \"No outlines\", and then leaves a stamp for this code), then push again.";
+const RUN = "Run `node tests/fold-check.mjs` (about 17 minutes; it must end \"No outlines\", and then leaves a stamp for this code), then push again.";
 
 let hook;
 try { let s = ""; for await (const c of process.stdin) s += c; hook = JSON.parse(s); }

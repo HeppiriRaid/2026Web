@@ -76,6 +76,9 @@ img{display:block;width:100%;height:100%;object-fit:cover}
    top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
 .cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
    font-size:calc(3 * var(--k));white-space:nowrap;top:calc((var(--y) + .5) * var(--k))}
+/* a caption the owner can rewrite (data-caption-for): it ends where its box does (the picture's
+   right edge), so a longer one grows to the left, then wraps onto a second line */
+.cap-r{white-space:normal;text-align:right}
 
 /* "+" mark — exact 4.5x4.5pt cross, ~0.6pt stroke, centred on --x,--y */
 .plus{width:calc(4.5 * var(--k));height:calc(4.5 * var(--k));transform:translate(-50%,-50%);z-index:5}

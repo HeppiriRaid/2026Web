@@ -1,12 +1,14 @@
 /* ============================================================
    KOKI TAKAMATSU — console (console.html)
-   Edits the front page's photos (data/front.json, read by js/photos.js; the
-   holders themselves are the front page's figure[data-slot]), data/illustration.json
-   (the list the illustration page builds its row from) and their images, then
-   saves everything as ONE commit to Main through GitHub's API, with the owner's
-   own fine-grained token (Contents: read and write). GitHub Pages publishes it
-   about a minute later; the console watches the live file and says when the
-   Save is on the site.
+   Edits the front page's photos — each one's picture, description and crop —
+   and captions (data/front.json, read by js/photos.js; the holders themselves
+   are the front page's figure[data-slot], a caption its [data-caption-for]),
+   data/illustration.json (the list the illustration page builds its row from)
+   and their images, then saves everything as ONE commit to Main through
+   GitHub's API, with the owner's own fine-grained token (Contents: read and
+   write). The site shows a Save at once: its pages read their data straight
+   from GitHub (js/fresh.js), while GitHub Pages publishes its own copy a minute
+   or two later. Its check: tests/console-check.mjs (CLAUDE.md, "Check it").
    ============================================================ */
 (function () {
   "use strict";
@@ -31,15 +33,20 @@
     panel: $("panel"), pv: $("pv"), title: $("fTitle"), date: $("fDate"), medium: $("fMedium"), meta: $("fMeta"),
     replace: $("replaceBtn"), left: $("leftBtn"), right: $("rightBtn"), del: $("deleteBtn"), foot: $("foot"), signOut: $("signOut"),
     front: $("front"), slots: $("slots"), pickSlot: $("pickSlot"), slotPanel: $("slotPanel"), slotPv: $("slotPv"), slotName: $("slotName"),
-    alt: $("fAlt"), slotMeta: $("slotMeta"), slotReplace: $("slotReplace"), slotReset: $("slotReset")
+    alt: $("fAlt"), slotMeta: $("slotMeta"), slotReplace: $("slotReplace"), slotCentre: $("slotCentre"), slotReset: $("slotReset"),
+    capFields: $("capFields"), capPv: $("capPv"), capReset: $("capReset"),
+    cap: { title: $("cTitle"), date: $("cDate"), medium: $("cMedium"), location: $("cLocation") }
   };
   // works: [{ id, title, date, medium, width, height, image?, full?   (saved)
   //           _pend? (a new picture, uploaded on Save), _url? (its preview), _busy? }]
-  var S = { token: "", works: [], sha: null, removed: [], dirty: false, saving: false, busy: 0, sel: -1, at: -1, watch: "" };
+  var S = { token: "", works: [], sha: null, removed: [], dirty: false, saving: false, busy: 0, sel: -1, at: -1 };
   // the front page's holders: [{ id, name, w, h (its shape), grey, def / defAlt (the page's own photo, if any),
-  //   image?, width?, height? (a photo set here and saved), alt, _pend? (a new photo, uploaded on Save),
-  //   _url? (a just-saved photo's preview), _reset? (back to the page's own on Save), _busy? }]
+  //   image?, width?, height? (a photo set here and saved), alt, focus ([x, y]: the part the holder shows,
+  //   object-position in %), defCap / cap (its caption's parts as the page gives them / as set here; none
+  //   without a caption), _pend? (a new photo, uploaded on Save), _url? (a just-saved photo's preview),
+  //   _reset? (back to the page's own on Save), _busy? }]
   var F = { slots: [], sha: null, dirty: false, sel: -1, err: "" };
+  var CAP = ["title", "date", "medium", "location"];
 
   function mk(tag, cls, text) {
     var e = document.createElement(tag);
@@ -102,35 +109,44 @@
     S.removed = []; S.dirty = false; S.sel = -1;
   }
   // The front page's holders, read from the page itself (its figure[data-slot]: name, shape,
-  // its own photo or its grey), so the console always matches the page. Then the photos set
-  // here before (data/front.json). A problem here shows in its own section, it never stops
-  // the sign-in.
+  // its own photo or its grey; a caption marked data-caption-for, with its parts), so the
+  // console always matches the page. Then what was set here before (data/front.json). A
+  // problem here shows in its own section, it never stops the sign-in.
   async function loadFront() {
     F.slots = []; F.sha = null; F.dirty = false; F.sel = -1; F.err = "";
     try {
       var r = await fetch("index.html?t=" + Date.now(), { cache: "no-store" });
       if (!r.ok) throw new Error("the front page answered " + r.status);
-      var doc = new DOMParser().parseFromString(await r.text(), "text/html");
+      var doc = new DOMParser().parseFromString(await r.text(), "text/html"), caps = {};
+      [].forEach.call(doc.querySelectorAll("[data-caption-for]"), function (c) {
+        caps[c.getAttribute("data-caption-for")] = capOf(function (k) { return c.getAttribute("data-" + k); });
+      });
       F.slots = [].map.call(doc.querySelectorAll("figure[data-slot]"), function (f) {
         var st = f.getAttribute("style") || "", img = f.querySelector("img"), c = /--c:\s*(#[0-9a-f]{3,8})/i.exec(st);
         var num = function (k) { var m = new RegExp("--" + k + ":\\s*([\\d.]+)").exec(st); return m ? +m[1] : 1; };
-        return { id: f.getAttribute("data-slot"), name: f.getAttribute("data-slot-name") || f.getAttribute("data-slot"),
-                 w: num("w"), h: num("h"), grey: c ? c[1] : "#b3b1b1",
-                 def: img ? img.getAttribute("src") || "" : "", defAlt: img ? img.getAttribute("alt") || "" : "" };
+        var id = f.getAttribute("data-slot");
+        return { id: id, name: f.getAttribute("data-slot-name") || id, w: num("w"), h: num("h"), grey: c ? c[1] : "#b3b1b1",
+                 def: img ? img.getAttribute("src") || "" : "", defAlt: img ? img.getAttribute("alt") || "" : "",
+                 defCap: caps[id] || null };
       });
-      var photos = {};
+      var photos = {}, captions = {};
       try {
         var j = await gh("GET", REPO + "/contents/" + FRONT + "?ref=" + BRANCH);
         var d = JSON.parse(b64Text(j.content));
         F.sha = j.sha;
         photos = (d && d.photos) || {};
+        captions = (d && d.captions) || {};
       } catch (e) { if (e.status !== 404) throw e; }            // none set yet
       F.slots.forEach(function (s) {
-        var p = photos[s.id];
+        var p = photos[s.id], c = captions[s.id];
+        s.alt = s.defAlt; s.focus = [50, 50];
         if (p && typeof p.image === "string") {
-          s.image = p.image; s.width = +p.width || 0; s.height = +p.height || 0;
-          s.alt = typeof p.alt === "string" ? p.alt : s.defAlt;
-        } else s.alt = s.defAlt;
+          // (the page's own photo listed again: only described or cropped anew)
+          if (p.image !== s.def) { s.image = p.image; s.width = +p.width || 0; s.height = +p.height || 0; }
+          if (typeof p.alt === "string") s.alt = p.alt;
+          if (Array.isArray(p.focus) && pc(p.focus[0]) && pc(p.focus[1])) s.focus = [p.focus[0], p.focus[1]];
+        }
+        if (s.defCap) s.cap = capOf(function (k) { return c && typeof c === "object" ? c[k] : s.defCap[k]; });
       });
     } catch (e) {
       F.slots = []; F.err = "Couldn't read the front page's photos (" + why(e) + "). Reload the console to try again.";
@@ -180,6 +196,20 @@
   });
 
   /* ---------- the front page's photos -------------------------------------------- */
+  function pc(v) { return typeof v === "number" && v >= 0 && v <= 100; }
+  function centred(f) { return f[0] === 50 && f[1] === 50; }
+  // the part of the photo the holder shows (the page crops it the same way: object-fit cover, in the
+  // holder's own shape, at this object-position — js/photos.js)
+  function place(im, s) { im.style.objectPosition = s.focus[0] + "% " + s.focus[1] + "%"; }
+  // a caption: its parts, and its words as the page writes them (js/photos.js writes the same)
+  function capOf(get) { var o = {}; CAP.forEach(function (k) { var v = get(k); o[k] = typeof v === "string" ? v : ""; }); return o; }
+  function capPart(v) { return String(v || "").replace(/\s+/g, " ").trim().slice(0, 60); }
+  function capText(c) {
+    return [["Title: \u201c", capPart(c.title), "\u201d"], ["Date: ", capPart(c.date), ""], ["Made with: ", capPart(c.medium), ""], ["Location: ", capPart(c.location), ""]]
+      .filter(function (p) { return p[1]; })
+      .map(function (p) { return p.join(""); }).join(" | ");
+  }
+  function capSame(a, b) { return CAP.every(function (k) { return capPart(a[k]) === capPart(b[k]); }); }
   // what a holder shows: a new photo, one just saved, one set here before, or the page's own
   function shownSrc(s) { return s._pend ? s._pend.url : s._reset ? s.def : (s._url || s.image || s.def); }
   function setSlotSrc(im, s) {
@@ -197,12 +227,13 @@
     var c = mk("button", "slot" + (i === F.sel ? " is-sel" : "") + (s._busy ? " is-busy" : ""));
     c.type = "button";
     c.setAttribute("data-i", i);
+    c.setAttribute("data-slot", s.id);
     var src = shownSrc(s);
     c.setAttribute("aria-label", s.name + (src ? "" : ", no photo"));
     var pic = mk("span", "pic");
     pic.style.aspectRatio = s.w + " / " + s.h;
     pic.style.background = s.grey;
-    if (src && !s._busy) { var im = mk("img"); im.alt = ""; im.draggable = false; setSlotSrc(im, s); pic.appendChild(im); }
+    if (src && !s._busy) { var im = mk("img"); im.alt = ""; im.draggable = false; place(im, s); setSlotSrc(im, s); pic.appendChild(im); }
     if (s._pend) pic.appendChild(mk("span", "tag", "New photo"));
     else if (s._reset) pic.appendChild(mk("span", "tag", s.def ? "Original" : "Removed"));
     c.appendChild(pic);
@@ -215,7 +246,8 @@
     F.slots.forEach(function (s, i) { ui.slots.appendChild(slotCard(s, i)); });
   }
   function slotEl(i) { return ui.slots.querySelector('.slot[data-i="' + i + '"]'); }
-  // the selected holder, larger: exactly its shape, the photo cropped as the page crops it
+  // the selected holder, larger: exactly its shape, the photo cropped as the page crops it; drag
+  // the photo (or move it with the arrow keys) to choose the part that shows
   function renderSlotPanel() {
     var s = F.slots[F.sel];
     if (!s) { ui.slotPanel.hidden = true; return; }
@@ -224,18 +256,50 @@
     ui.slotPv.textContent = "";
     var frame = mk("div", "frame"), src = shownSrc(s);
     frame.style.background = s.grey;
-    if (src && !s._busy) { var im = mk("img"); im.alt = ""; setSlotSrc(im, s); frame.appendChild(im); }
     ui.slotPv.appendChild(frame);
     sizeFrame();
+    if (src && !s._busy) {
+      var im = mk("img"); im.alt = ""; im.draggable = false; place(im, s);
+      // (once it is in: a photo exactly the holder's shape has nothing to crop)
+      im.addEventListener("load", function () { if (F.slots[F.sel] === s) slotMeta(s, roomIn(frame, im)); });
+      setSlotSrc(im, s); frame.appendChild(im);
+      frame.setAttribute("role", "group");
+      frame.setAttribute("aria-label", "The part of the photo the holder shows. Drag the photo, or move it with the arrow keys, to choose it.");
+    }
     ui.alt.value = s.alt || "";
     ui.alt.disabled = !src || !!s._busy;
-    ui.slotMeta.textContent = s._busy ? "Preparing the photo…" :
-      s._pend ? "New photo, " + s._pend.width + " × " + s._pend.height + " px, uploaded when you Save. The holder shows the part above; the rest is cropped." :
-      !src ? "No photo: a grey holder. Replace photo gives it one." :
-      (s._reset || !s.image || s.image === s.def ? "The page's own photo." : "Set here.") + " The holder shows the part above; the rest is cropped.";
+    slotMeta(s, null);
     ui.slotReset.textContent = s.def ? "Use the original" : "Remove photo";
-    ui.slotReset.disabled = !!s._busy || !(s._pend || (s.image && !s._reset) || (s.alt || "") !== s.defAlt);
     ui.slotReplace.disabled = !!s._busy;
+    syncSlot(s);
+    ui.capFields.hidden = !s.defCap;
+    if (s.defCap) { CAP.forEach(function (k) { ui.cap[k].value = s.cap[k]; }); showCap(s); }
+  }
+  // how far the photo can move in its holder (px, across and down): what object-fit cover crops off
+  function roomIn(fr, im) {
+    if (!im.naturalWidth || !im.naturalHeight || !fr.clientWidth || !fr.clientHeight) return null;
+    var k = Math.max(fr.clientWidth / im.naturalWidth, fr.clientHeight / im.naturalHeight);
+    return [im.naturalWidth * k - fr.clientWidth, im.naturalHeight * k - fr.clientHeight];
+  }
+  function slotMeta(s, room) {                                // (room: null until the photo is in)
+    var src = shownSrc(s), fits = !!room && room[0] < 0.5 && room[1] < 0.5, fr = ui.slotPv.querySelector(".frame");
+    if (fr) { fr.classList.toggle("can-crop", !!room && !fits); if (room && !fits) fr.tabIndex = 0; else fr.removeAttribute("tabindex"); }
+    ui.slotMeta.textContent = s._busy ? "Preparing the photo…" :
+      !src ? "No photo: a grey holder. Replace photo gives it one." :
+      (s._pend ? "New photo, " + s._pend.width + " × " + s._pend.height + " px, uploaded when you Save. " :
+        s._reset || !s.image ? "The page's own photo. " : "Set here. ") +
+      (fits ? "It has its holder's own shape, so all of it shows." : "Drag it to choose the part the holder shows; the rest is cropped.");
+  }
+  // the buttons that undo something: only when there is something to undo
+  function syncSlot(s) {
+    var src = shownSrc(s);
+    ui.slotCentre.disabled = !src || !!s._busy || centred(s.focus);
+    ui.slotReset.disabled = !!s._busy || !(s._pend || (s.image && !s._reset) || (s.alt || "") !== s.defAlt || !centred(s.focus));
+  }
+  function showCap(s) {
+    var t = capText(s.cap);
+    ui.capPv.textContent = t ? "On the page: " + t : "No caption: the line under the photo stays empty.";
+    ui.capReset.disabled = capSame(s.cap, s.defCap);
   }
   function sizeFrame() {                                     // as big as fits, in the holder's own shape
     var s = F.slots[F.sel], f = ui.slotPv.querySelector(".frame");
@@ -265,23 +329,94 @@
     if (!s || s._busy) return;
     if (s._pend) { URL.revokeObjectURL(s._pend.url); delete s._pend; }
     if (s.image) s._reset = true;
-    s.alt = s.defAlt;
+    s.alt = s.defAlt; s.focus = [50, 50];
     touchFront(); renderSlots(); renderSlotPanel();
   });
   ui.alt.addEventListener("input", function () {
     var s = F.slots[F.sel];
     if (!s) return;
     s.alt = ui.alt.value;
-    touchFront();
-    ui.slotReset.disabled = !!s._busy || !(s._pend || (s.image && !s._reset) || s.alt !== s.defAlt);
+    touchFront(); syncSlot(s);
   });
+
+  // the crop: drag the photo in the large view, or move it with the arrow keys (Shift: ten
+  // times as far). It moves only where it is bigger than its holder; the cards follow.
+  function cropAt(e) {                                       // the frame and its photo, once loaded
+    var s = F.slots[F.sel], fr = e.target.closest && e.target.closest(".frame.can-crop"), im = fr && fr.querySelector("img");
+    var room = im && roomIn(fr, im);
+    return s && !s._busy && room ? { s: s, fr: fr, im: im, over: room } : null;
+  }
+  // the photo moved by dx, dy pixels from where focus f put it: the crop moves the other way
+  function moved(f, dx, dy, over) {
+    var at = function (v, d, o) { return o < 0.5 ? v : Math.round(Math.max(0, Math.min(100, v - d / o * 100)) * 10) / 10; };
+    return [at(f[0], dx, over[0]), at(f[1], dy, over[1])];
+  }
+  function cropTo(c, f) {
+    if (f[0] === c.s.focus[0] && f[1] === c.s.focus[1]) return;
+    c.s.focus = f;
+    place(c.im, c.s);
+    var card = slotEl(F.sel), ci = card && card.querySelector("img");
+    if (ci) place(ci, c.s);
+    touchFront(); syncSlot(c.s);
+  }
+  var crop = null;
+  ui.slotPv.addEventListener("pointerdown", function (e) {
+    var c = e.button === 0 && cropAt(e);
+    if (!c) return;
+    e.preventDefault();
+    c.fr.focus({ preventScroll: true });
+    try { c.fr.setPointerCapture(e.pointerId); } catch (err) {}
+    c.id = e.pointerId; c.x = e.clientX; c.y = e.clientY; c.from = c.s.focus.slice();
+    c.fr.classList.add("is-moving");
+    crop = c;
+  });
+  ui.slotPv.addEventListener("pointermove", function (e) {
+    if (crop && e.pointerId === crop.id) cropTo(crop, moved(crop.from, e.clientX - crop.x, e.clientY - crop.y, crop.over));
+  });
+  function cropEnd(e) {
+    if (!crop || e.pointerId !== crop.id) return;
+    crop.fr.classList.remove("is-moving");
+    crop = null;
+  }
+  ui.slotPv.addEventListener("pointerup", cropEnd);
+  ui.slotPv.addEventListener("pointercancel", cropEnd);
+  ui.slotPv.addEventListener("keydown", function (e) {
+    var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key], c = d && cropAt(e);
+    if (!c) return;
+    e.preventDefault();
+    var n = e.shiftKey ? 10 : 1;                               // per cent of the room it has to move
+    cropTo(c, moved(c.s.focus, d[0] * n * c.over[0] / 100, d[1] * n * c.over[1] / 100, c.over));
+  });
+  ui.slotCentre.addEventListener("click", function () {
+    var s = F.slots[F.sel], im = ui.slotPv.querySelector(".frame img");
+    if (!s || !im) return;
+    cropTo({ s: s, im: im }, [50, 50]);
+  });
+
+  // the caption under the photo, where the holder has one
+  CAP.forEach(function (k) {
+    ui.cap[k].addEventListener("input", function () {
+      var s = F.slots[F.sel];
+      if (!s || !s.cap) return;
+      s.cap[k] = ui.cap[k].value;
+      touchFront(); showCap(s);
+    });
+  });
+  ui.capReset.addEventListener("click", function () {
+    var s = F.slots[F.sel];
+    if (!s || !s.defCap) return;
+    s.cap = capOf(function (k) { return s.defCap[k]; });
+    CAP.forEach(function (k) { ui.cap[k].value = s.cap[k]; });
+    touchFront(); showCap(s);
+  });
+
   async function prepareSlot(s, file) {
     s._busy = true; S.busy++; updateSave(); say("Preparing the photo…");
     renderSlots(); renderSlotPanel();
     try {
       var out = await processPhoto(file, s.w, s.h);
       if (s._pend) URL.revokeObjectURL(s._pend.url);
-      s._pend = out; s._reset = false;
+      s._pend = out; s._reset = false; s.focus = [50, 50];       // (a new photo starts in the middle)
       touchFront();
     } catch (e) {
       say("Couldn't read " + file.name + " (" + ((e && e.message) || e) + ")", "err");
@@ -662,7 +797,7 @@
       say("Checking the repository…");
       var elsewhere = [];
       if (works && (await shaOf(DATA)) !== S.sha) elsewhere.push("The works");
-      if (front && (await shaOf(FRONT)) !== F.sha) elsewhere.push(works ? "the front page photos" : "The front page photos");
+      if (front && (await shaOf(FRONT)) !== F.sha) elsewhere.push(works ? "the front page's photos and captions" : "The front page's photos and captions");
       if (elsewhere.length && !confirm(elsewhere.join(" and ") + " were changed somewhere else after you opened the console (another tab or device).\n\nSave anyway, replacing that version with this one?")) {
         say("Not saved. Reload the console to get the other version.", "err");
         return;
@@ -696,13 +831,13 @@
         entries.push({ path: DATA, mode: "100644", type: "blob", sha: dataSha });
         what.push("the illustration works" + (count ? " (" + plural(count, "new image", "new images") + ")" : ""));
       }
-      // the front page's photos: only those set here are listed; a holder left out keeps the
-      // page's own. Only photos the console put in assets/img/front/ are ever deleted.
-      var photos = {}, freshF = [], frontSha = null, mine = function (path) { return !!path && path.indexOf(FDIR) === 0; };
+      // the front page: only the photos and captions set here are listed; a holder (or caption) left
+      // out keeps the page's own. Only photos the console put in assets/img/front/ are ever deleted.
+      var photos = {}, captions = {}, freshF = [], frontSha = null, mine = function (path) { return !!path && path.indexOf(FDIR) === 0; };
       if (front) {
         var fcount = F.slots.filter(function (s) { return s._pend; }).length, fn = 0;
         for (var k = 0; k < F.slots.length; k++) {
-          var s = F.slots[k], alt = (s.alt || "").trim(), entry = null;
+          var s = F.slots[k], alt = (s.alt || "").trim(), focus = centred(s.focus) ? null : s.focus.slice(), entry = null;
           if (s._pend) {
             say("Uploading photo " + (++fn) + " of " + fcount + "…");
             var path = FDIR + s.id + "-" + newId().slice(1) + "." + s._pend.ext;
@@ -710,19 +845,21 @@
             entry = { image: path, width: s._pend.width, height: s._pend.height, alt: alt };
             if (mine(s.image)) gone.push(s.image);
             freshF.push([s, entry]);
-          } else if (s._reset) {
-            if (mine(s.image)) gone.push(s.image);
-          } else if (s.image) {
-            entry = { image: s.image, width: s.width, height: s.height, alt: alt };
-          } else if (s.def && alt !== s.defAlt) {
-            entry = { image: s.def, alt: alt };                    // the page's own photo, described anew
+          } else {
+            if (s._reset && mine(s.image)) gone.push(s.image);
+            if (s.image && !s._reset) entry = { image: s.image, width: s.width, height: s.height, alt: alt };
+            else if (s.def && (alt !== s.defAlt || focus)) entry = { image: s.def, alt: alt };   // the page's own, described or cropped anew
           }
+          if (entry && focus) entry.focus = focus;
           if (entry) photos[s.id] = entry;
+          if (s.defCap && !capSame(s.cap, s.defCap)) captions[s.id] = capOf(function (key) { return capPart(s.cap[key]); });
         }
-        var fjson = JSON.stringify({ saveId: saveId, photos: photos }, null, 2) + "\n";
+        var fdata = { saveId: saveId, photos: photos };
+        if (Object.keys(captions).length) fdata.captions = captions;
+        var fjson = JSON.stringify(fdata, null, 2) + "\n";
         frontSha = (await gh("POST", REPO + "/git/blobs", { content: fjson, encoding: "utf-8" })).sha;
         entries.push({ path: FRONT, mode: "100644", type: "blob", sha: frontSha });
-        what.unshift("the front page photos" + (fcount ? " (" + plural(fcount, "new photo", "new photos") + ")" : ""));
+        what.unshift("the front page" + (fcount ? " (" + plural(fcount, "new photo", "new photos") + ")" : ""));
       }
       gone.forEach(function (path) { entries.push({ path: path, mode: "100644", type: "blob", sha: null }); });
       say("Saving…");
@@ -744,12 +881,15 @@
           if (s._reset) { delete s.image; delete s.width; delete s.height; delete s._url; delete s._reset; }
           else if (s.image && !photos[s.id]) { delete s.image; delete s.width; delete s.height; }
           s.alt = (s.alt || "").trim();
+          if (s.cap) s.cap = capOf(function (key) { return capPart(s.cap[key]); });
         });
         F.sha = frontSha; F.dirty = false;
         renderSlots(); renderSlotPanel();
       }
-      say("Saved. Publishing to the site (about a minute)…");
-      watchLive(saveId, front ? FRONT : DATA, front ? "index.html" : "illustration.html");
+      // live at once: the pages read the newest copy straight from GitHub (js/fresh.js), with any new
+      // picture from the repository, while GitHub Pages publishes its own a minute or two later
+      ui.view.href = (front ? "index.html" : "illustration.html") + "?t=" + Date.now();
+      say("Live on the site ✓", "ok");
     } catch (e) {
       say("Not saved. " + why(e), "err");
     } finally {
@@ -757,24 +897,6 @@
     }
   }
   ui.save.addEventListener("click", save);
-  // the Save is live once the site serves the file it wrote
-  function watchLive(id, file, page) {
-    S.watch = id;
-    var t0 = Date.now();
-    (function poll() {
-      if (S.watch !== id) return;
-      fetch(file + "?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-        if (S.watch !== id) return;
-        if (d && d.saveId === id) {
-          ui.view.href = page + "?t=" + Date.now();
-          say("Live on the site ✓", "ok");
-          return;
-        }
-        if (Date.now() - t0 > 6 * 60 * 1000) { say("Saved. GitHub is still publishing it; check the page again in a few minutes."); return; }
-        setTimeout(poll, 4000);
-      }, function () { setTimeout(poll, 6000); });
-    })();
-  }
 
   window.addEventListener("beforeunload", function (e) {
     if (S.dirty || F.dirty || S.saving || S.busy) { e.preventDefault(); e.returnValue = ""; }

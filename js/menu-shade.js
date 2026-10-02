@@ -201,7 +201,11 @@
   function sourceOf(fig, r) {
     var img = fig.querySelector("img[data-shade-preview]") || fig.querySelector("img");   // (the test panel's preview lies on top)
     if (img && img.complete && img.naturalWidth) {
-      var key = (img.currentSrc || img.src) + "|" + Math.round(r.width) + "x" + Math.round(r.height);
+      // the part the holder shows: object-position (the crop the owner chose in the console, js/photos.js)
+      var at = (getComputedStyle(img).objectPosition + " 50%").split(" ").slice(0, 2).map(function (v) {
+        var x = parseFloat(v) / 100; return /%$/.test(v) && x >= 0 && x <= 1 ? x : 0.5;
+      });
+      var key = (img.currentSrc || img.src) + "|" + Math.round(r.width) + "x" + Math.round(r.height) + "|" + at.join();
       if (fig.__shade && fig.__shade.key === key) return fig.__shade;
       var W = 96, H = Math.max(1, Math.round(W * r.height / r.width));
       var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
@@ -209,7 +213,7 @@
       var nw = img.naturalWidth, nh = img.naturalHeight, k = Math.max(W / nw, H / nh);   // as object-fit: cover
       cx.imageSmoothingQuality = "high";
       cx.filter = "blur(1px)";
-      cx.drawImage(img, (W - nw * k) / 2, (H - nh * k) / 2, nw * k, nh * k);
+      cx.drawImage(img, (W - nw * k) * at[0], (H - nh * k) * at[1], nw * k, nh * k);
       try { return (fig.__shade = { key: key, w: W, h: H, data: cx.getImageData(0, 0, W, H).data }); } catch (e) {}
     }
     var m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(fig).backgroundColor), c = m ? m[1].split(",").map(parseFloat) : [179, 179, 179];

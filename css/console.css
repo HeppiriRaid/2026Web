@@ -76,9 +76,16 @@ main{flex:1;padding:28px 24px 40px}
 .slot.is-busy .pic::after{content:"Preparing…";position:absolute;inset:0;display:grid;place-items:center;color:var(--paper);font-size:12px;background:rgba(0,0,0,.3)}
 .slot .tag{left:6px;top:6px}
 .pv .frame{position:relative;overflow:hidden}
-.pv .frame img{display:block;width:100%;height:100%;max-height:none;object-fit:cover}
+.pv .frame img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;-webkit-user-drag:none;user-select:none}
+.pv .frame.can-crop{cursor:grab;touch-action:none}
+.pv .frame.is-moving{cursor:grabbing}
+.pv .frame:focus-visible{outline-offset:3px}
 .slot-name{font:400 20px/1.2 var(--label);margin-bottom:16px}
 .fields input:disabled{opacity:.5}
+.caption{margin-top:26px;padding-top:18px;border:0;border-top:1px solid var(--line)}
+.caption legend{float:left;width:100%;margin-bottom:14px;font:400 13px/1.2 var(--label);text-transform:uppercase;letter-spacing:.06em}
+.caption label{clear:both}
+.cap-pv{clear:both;color:var(--soft);font-size:12px;margin:2px 0 14px;overflow-wrap:anywhere}
 
 /* ---- editor ---- */
 .head{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:18px}

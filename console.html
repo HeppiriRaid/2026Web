@@ -10,10 +10,11 @@
 </head>
 <body>
 <!-- ============================================================================
-     The site's console: change the front page's photos and the illustration works,
-     and Save. A Save is one commit to the repository's Main branch (through GitHub's
-     API, with your own access token), and GitHub Pages publishes it about a minute
-     later.
+     The site's console: change the front page's photos and caption and the illustration
+     works, and Save. A Save is one commit to the repository's Main branch (through
+     GitHub's API, with your own access token). The site shows it at once: its pages read
+     their data straight from GitHub (js/fresh.js); GitHub Pages' own copy follows a minute
+     or two later.
      ============================================================================ -->
 
 <header class="bar">
@@ -51,7 +52,7 @@
   <section id="front" hidden>
     <div class="head">
       <h1>Front page</h1>
-      <p class="hint">The photos on the front page, each cropped as the page shows it. Click one to change it, or drop an image on it.</p>
+      <p class="hint">The photos on the front page, each cropped as the page shows it. Click one to change it, or drop an image on it. Drag a photo in the large view to choose the part that shows.</p>
     </div>
     <div class="slots" id="slots" role="group" aria-label="Front page photos"></div>
     <input id="pickSlot" type="file" accept="image/*" hidden />
@@ -64,8 +65,21 @@
         <p class="meta" id="slotMeta"></p>
         <div class="actions">
           <button class="btn ghost" id="slotReplace" type="button">Replace photo…</button>
+          <button class="btn ghost" id="slotCentre" type="button">Centre the crop</button>
           <button class="btn ghost" id="slotReset" type="button">Remove photo</button>
         </div>
+        <!-- the holder's caption on the page, where it has one (data-caption-for) -->
+        <fieldset class="caption" id="capFields" hidden>
+          <legend>Caption under the photo</legend>
+          <label>Title<input id="cTitle" type="text" autocomplete="off" maxlength="60" /></label>
+          <label>Date<input id="cDate" type="text" autocomplete="off" maxlength="60" /></label>
+          <label>Made with<input id="cMedium" type="text" autocomplete="off" maxlength="60" /></label>
+          <label>Location<input id="cLocation" type="text" autocomplete="off" maxlength="60" /></label>
+          <p class="cap-pv" id="capPv"></p>
+          <div class="actions">
+            <button class="btn ghost" id="capReset" type="button">Original caption</button>
+          </div>
+        </fieldset>
       </div>
     </div>
   </section>
@@ -100,7 +114,7 @@
 </main>
 
 <footer id="foot" hidden>
-  <span>Saves go live on the site about a minute after you press Save.</span>
+  <span>Saves are live on the site as soon as they are saved.</span>
   <button id="signOut" type="button">Sign out</button>
 </footer>
 

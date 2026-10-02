@@ -205,11 +205,8 @@
   }
   apply();
   if (reduce.addEventListener) reduce.addEventListener("change", apply);
-  // (arriving from another page, the plain arrow stays hidden while the sheet still covers this one)
-  try {
-    var waiting = window.__arrive && JSON.parse(sessionStorage.getItem(SPOT) || "null");
-    if (live && waiting && Date.now() - waiting.t < 15000) root.classList.add("cursor-ready");
-  } catch (e) {}
+  // (arriving from another page with the square out, the plain arrow is already hidden: the page's
+  // head reads the note above and sets cursor-ready before its first frame, under the white sheet)
   // the menu opening / closing: its labels slide in, or fade out over ~0.8s
   if (menu && window.MutationObserver) new MutationObserver(function () {
     if (!menu.classList.contains("open")) menuUntil = performance.now() + 800;

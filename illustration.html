@@ -6,10 +6,17 @@
 <title>Koki Takamatsu — Illustration</title>
 <meta name="description" content="Illustration works by Koki Takamatsu." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='28' y='28' width='44' height='44' fill='%23f20000'/%3E%3C/svg%3E" />
+<!-- arriving with the cursor's square out: the plain arrow stays hidden from the first frame (as index.html) -->
+<style>@media (pointer:fine){html.cursor-ready,html.cursor-ready *{cursor:none!important}}</style>
+<script>
+  try { (function (s, m) { if (s && Date.now() - s.t < 15000 && m && m("(pointer:fine)").matches && !m("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("cursor-ready"); })(JSON.parse(sessionStorage.getItem("kt-cursor") || "null"), window.matchMedia); } catch (e) {}
+</script>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/urwgothic-book.woff2" crossorigin />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/anim.css" />
 <link rel="stylesheet" href="css/illustration.css" />
+<!-- the works as new as they are: GitHub's copy the moment the console saves (js/illustration.js) -->
+<script src="js/fresh.js"></script>
 <script>
   /* Same scale + zoom driver as the front page (kept in sync): --k is px per artboard
      point, fitted to the window's width but never letting the 16:9 screen
@@ -28,6 +35,9 @@
       if (z !== lastDPR) { lastDPR = z; return; }
       fitK();
     });
+    // the works (data/illustration.json): asked for at once, the newest copy there is (js/fresh.js),
+    // built into the row by js/illustration.js
+    window.__works = window.__fresh ? window.__fresh.get("data/illustration.json") : null;
     if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       d.classList.add("anim");
       window.__revealFailsafe = setTimeout(function () {

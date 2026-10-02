@@ -64,25 +64,24 @@
   window.addEventListener("resize", crispPlus);
 
   /* ---------- the works: data/illustration.json (edited in console.html) -------
-     Fetched fresh on every visit, so a Save in the console shows as soon as its
-     deploy lands. Every text goes in as text (never as markup). */
-  var works = [], N = 0;
+     Fetched on every visit, the newest copy there is (js/fresh.js): GitHub's the
+     moment the console saves, with its new pictures straight from the repository
+     until the site has them. Every text goes in as text (never as markup). */
+  var works = [], N = 0, site = null;
   function loadWorks() {
-    // the list the last page fetched a moment ago, on the way here (js/wipe.js)
-    try {
-      var s = JSON.parse(sessionStorage.getItem("kt-works") || "null");
-      sessionStorage.removeItem("kt-works");
-      if (s && Date.now() - s.t < 15000 && s.d && Array.isArray(s.d.works)) return Promise.resolve(s.d.works);
-    } catch (e) {}
-    if (!window.fetch) return Promise.resolve([]);
-    var ctl = window.AbortController ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
-    return fetch("data/illustration.json?t=" + Date.now(), { cache: "no-store", signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-      .then(function (d) { return d && Array.isArray(d.works) ? d.works : []; })
-      .catch(function (err) { if (window.console) console.error("illustration: could not load the works", err); return []; })
-      .then(function (list) { clearTimeout(timer); return list; });
+    // (asked for in the page's head: window.__works — or the list the last page fetched a moment
+    // ago, on the way here: js/wipe.js)
+    var asked = window.__works || (window.__fresh && window.__fresh.get("data/illustration.json"));
+    if (!asked) return Promise.resolve([]);
+    return asked.then(function (r) {
+      site = r.site;
+      if (r.data && Array.isArray(r.data.works)) return r.data.works;
+      if (window.console) console.error("illustration: could not load the works");
+      return [];
+    });
   }
+  // a picture's address (on the site, or in the repository until the site has it)
+  function at(path) { return window.__fresh ? window.__fresh.url(path, site) : path; }
   function make(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -97,9 +96,9 @@
     if (d.image) {                                  // its pixel size, so the row knows its shape before it loads
       var im = document.createElement("img");
       // the address waits in data-src: loadPictures() lets the ones on screen load first
-      im.setAttribute("data-src", d.image);
+      im.setAttribute("data-src", at(d.image));
       im.width = w; im.height = h; im.alt = d.title || ""; im.decoding = "async";
-      if (d.full) im.setAttribute("data-full", d.full);
+      if (d.full) im.setAttribute("data-full", at(d.full));
       btn.appendChild(im);
     } else {                                        // no picture yet: the grey holder, in its proportion
       var ph = make("span", "work-media");

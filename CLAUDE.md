@@ -5,16 +5,26 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 
 - `index.html` front page · `illustration.html` the row of works + zoom · `console.html` the owner's editor
   (it commits `data/illustration.json` and `assets/img/illustration/` — the works — and `data/front.json` and
-  `assets/img/front/` — the front page's photos — straight to `Main` through the GitHub API).
-- The front page's photo holders are its `figure[data-slot]` (name in `data-slot-name`, shape from `--w`/`--h`).
-  The console reads them from the page itself; `data/front.json` lists only the photos set there (a holder it
-  doesn't name keeps what `index.html` gives it); `js/photos.js` puts them in, and `js/anim.js` waits for that
-  before the curtain lifts. Keep those attributes when changing the layout; a new `data-slot` is a new holder.
+  `assets/img/front/` — the front page's photos and caption — straight to `Main` through the GitHub API).
+- The front page's photo holders are its `figure[data-slot]` (name in `data-slot-name`, shape from `--w`/`--h`);
+  a caption the owner can rewrite is marked `data-caption-for="<holder>"`, its parts in `data-title`, `-date`,
+  `-medium`, `-location` (the text in the page must read as they say; it is right-aligned, `.cap-r`, so a longer
+  one grows left, then onto a second line). The console reads them from the page itself. `data/front.json` lists
+  only what was set there — `photos` (a picture, its description, its crop as `focus`: object-position in %) and
+  `captions` — and whatever it doesn't name keeps what `index.html` gives it; `js/photos.js` puts them in, and
+  `js/anim.js` waits for that before the curtain lifts. Keep those attributes when changing the layout; a new
+  `data-slot` is a new holder.
+- A Save is on the site at once: the pages read their data file from GitHub's API as well as from the site
+  (`js/fresh.js`, Main the moment it is saved, raced against 1.5 s; the site's copy when GitHub can't answer),
+  and a picture the site's copy doesn't name yet comes from raw.githubusercontent.com (with CORS, so the
+  hamburger can read it) until Pages has published it. On 127.0.0.1 a `window.__CONSOLE_TEST_API__` stands in
+  for GitHub, for the console and the pages alike.
 - Page changes (`js/wipe.js`, a white sheet): the cursor's square springs out as the sheet rises and back in, where
-  the pointer is, as it lifts (`kt:leave` / `kt:arrive`, `js/cursor.js`).
+  the pointer is, as it lifts (`kt:leave` / `kt:arrive`, `js/cursor.js`). The plain arrow stays hidden throughout:
+  the arriving page sets `cursor-ready` from its head, before its stylesheets, when `js/cursor.js` left a note.
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
   Never force-push `Main`.
-- Pages caches for 10 minutes: after a deploy, check with a hard refresh.
+- Pages caches the code for 10 minutes: after a deploy, check with a hard refresh.
 - **Nothing ships without the outline check** ("Check it", below). Anything new on screen — a page, a panel, a
   test or debug tool, a `?switch`, a hover, focus or error state — gets its states in `tests/fold-check.mjs`
   *before* it is pushed. A push hook enforces the run: `git push` is stopped until a full clean run has passed
@@ -88,7 +98,7 @@ fixed panel): the lens splits their coloured fringes. So such text gets a layer 
 
 ## Check it
 
-Three layers, so an outline can't ship again:
+Three layers, so an outline can't ship again — and the console's own check rides in the second:
 
 1. **The colour audit**, `tests/colour-audit.mjs` (a second). It reads every colour the cursor pages paint
    (their HTML, CSS and scripts, custom properties followed) and fails on any colour 12 or more levels lighter
@@ -97,14 +107,22 @@ Three layers, so an outline can't ship again:
    `REVIEWED`, and a state in the pixel check that shows the reason true. It also fails when the pixel check
    misses a page with the cursor, or a `?switch` the scripts read. It can't see colours scripts compute (the
    hamburger's): cap those where they are made, and check their states.
-2. **The pixel check**, `tests/fold-check.mjs` (about 15 minutes; it runs the audit first). It shows every state
+2. **The pixel check**, `tests/fold-check.mjs` (about 17 minutes; it runs the audit first, then the console's
+   check once). It shows every state
    twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook in
    `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
-   known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit),
-   `shader` (the test panel, and the harmony cursor in every variation, both ways it is drawn), `photos` (a photo
-   in every front-page holder, wiping in and at rest), `focus` (each kind of keyboard focus ring). The owner's
-   `data/front.json` is replaced per flow by a fixed list, so the check never depends on what was uploaded.
+   known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit, and the
+   plain arrow hidden through each page change), `shader` (the test panel, and the harmony cursor in every
+   variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre,
+   wiping in and at rest, and the longest caption), `focus` (each kind of keyboard focus ring). The owner's
+   `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are
+   used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)
+   **The console's check**, `tests/console-check.mjs` (about a minute, on its own or as part of the full run): the
+   console end to end in Chromium against a stand-in GitHub API and Pages, in memory, seeded with this checkout's
+   site and fixed data — signing in, every front-page edit (photo, description, crop, caption, back to the
+   originals), every works edit, saving (one commit; Main moving before and during a Save; edits elsewhere), and
+   the pages after each Save, before Pages has published it and after. Change the console, change it too.
 3. **The push guard**, a Claude Code hook (`.claude/settings.json` → `.claude/hooks/push-guard.mjs`). A clean
    full run leaves a stamp for exactly the code it checked (`tests/code-stamp.mjs`: the pages, `css/`, `js/`,
    `vendor/`, `tests/`; not `data/` or `assets/`), kept in `.git`. `git push` is stopped unless the code it
@@ -115,6 +133,7 @@ Three layers, so an outline can't ship again:
 npm install --no-save playwright-core
 node tests/fold-check.mjs            # must end with "No outlines" and "Stamp: …"
 node tests/fold-check.mjs shader     # one flow, while working on it (no stamp)
+node tests/console-check.mjs         # the console's check alone (or: node tests/fold-check.mjs console)
 node tests/colour-audit.mjs          # the audit alone
 ```
 

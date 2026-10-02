@@ -74,9 +74,11 @@
     }
   };
 
-  // ---- leaving: start loading the next page under the sheet — the page itself and, for
-  // the illustration page, its list of works and first pictures. Prefetches carry on
-  // across the page change; the list is handed over in sessionStorage (illustration.js).
+  // ---- leaving: start loading the next page under the sheet — the page itself, its data
+  // (the newest copy there is, js/fresh.js: the front page's photos, or the list of works)
+  // and, for the illustration page, its first pictures. Prefetches carry on across the
+  // page change; the data is handed over in sessionStorage, so the next page doesn't wait
+  // for GitHub again.
   function prefetch(href) {
     var l = document.createElement("link");
     l.rel = "prefetch"; l.href = href;
@@ -84,14 +86,12 @@
   }
   function warm(url) {
     prefetch(url.href);
-    if (!/illustration\.html$/.test(url.pathname) || !window.fetch) return;
-    fetch(new URL("data/illustration.json?t=" + Date.now(), url).href, { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        if (!d || !Array.isArray(d.works)) return;
-        try { sessionStorage.setItem("kt-works", JSON.stringify({ t: Date.now(), d: d })); } catch (e) {}
-        d.works.slice(0, 4).forEach(function (w) { if (w && w.image) prefetch(new URL(w.image, url).href); });
-      }, function () {});
+    var fresh = window.__fresh, works = /illustration\.html$/.test(url.pathname);
+    if (!fresh || !(works || /(\/|index\.html)$/.test(url.pathname))) return;
+    fresh.hand(works ? "data/illustration.json" : "data/front.json").then(function (r) {
+      var d = r.data;
+      if (works && d && Array.isArray(d.works)) d.works.slice(0, 4).forEach(function (w) { if (w && w.image) prefetch(new URL(fresh.url(w.image, r.site), url).href); });
+    });
   }
 
   // the paper rises over the page (no name, speeding up), then the next page opens
