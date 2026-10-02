@@ -97,7 +97,7 @@ Three layers, so an outline can't ship again:
    `REVIEWED`, and a state in the pixel check that shows the reason true. It also fails when the pixel check
    misses a page with the cursor, or a `?switch` the scripts read. It can't see colours scripts compute (the
    hamburger's): cap those where they are made, and check their states.
-2. **The pixel check**, `tests/fold-check.mjs` (about 12 minutes; it runs the audit first). It shows every state
+2. **The pixel check**, `tests/fold-check.mjs` (about 15 minutes; it runs the audit first). It shows every state
    twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook in
    `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
    known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit),
