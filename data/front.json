@@ -1,10 +1,26 @@
 {
-  "saveId": "muqiybcsx5a9",
+  "saveId": "mur2kgy117ab",
   "photos": {
     "background": {
-      "image": "assets/img/front/background-muqiybcsazbf.webp",
-      "width": 2354,
-      "height": 1324,
+      "image": "assets/img/front/background-mur2kgy1ntsm.webp",
+      "width": 1200,
+      "height": 1697,
+      "alt": "",
+      "focus": [
+        50,
+        19.6
+      ]
+    },
+    "graphic": {
+      "image": "assets/img/front/graphic-mur2khf0nl23.webp",
+      "width": 1920,
+      "height": 1081,
+      "alt": ""
+    },
+    "resolve": {
+      "image": "assets/img/front/resolve-mur2khun7uyn.webp",
+      "width": 1920,
+      "height": 1012,
       "alt": ""
     }
   }
