@@ -63,6 +63,17 @@ Bar colours are capped at #DCCBC3 per channel (the rule above). `index.html?shad
 at a variation to try it on the hamburger, click to keep it (or keys 0–7); P tries a real painting in the
 picture's place; a choice there is saved in that browser only.
 
+While testing (the rest of that visit, on the works' page too), **the cursor's square is a harmony lens**: it
+recolours what is beneath it through the variation shown, as the bars would take each colour. In Chromium
+browsers it is an SVG `backdrop-filter`: the variation read at the colour cube's eight corners, tetrahedral
+interpolation in between (`lensFilter()`). Safari and Firefox can't use SVG backdrop filters, so there four
+blended squares (`.cursor-tone`) make the harmony's two-colour tone, exact on the paper, text and greys; 阴阳
+uses CSS filters. The panel's "Cursor" row switches back to Maison's inverse; visitors only ever get Maison's.
+A lens works on finished pixels, so nothing folds under it, from any colour to any grey it is a straight line,
+and the under-squares rest (hidden). The one catch is letters smoothed *in colour* (subpixel, on an opaque
+fixed panel): the lens splits their coloured fringes. So such text gets a layer of its own (`.shade-lab .in`,
+`.zoom-ui`).
+
 ## Check it
 
 Three layers, so an outline can't ship again:
@@ -78,7 +89,8 @@ Three layers, so an outline can't ship again:
    twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook in
    `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
    known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit),
-   `shader` (the test panel), `focus` (each kind of keyboard focus ring).
+   `shader` (the test panel, and the harmony cursor in every variation, both ways it is drawn), `focus` (each
+   kind of keyboard focus ring).
 3. **The push guard**, a Claude Code hook (`.claude/settings.json` → `.claude/hooks/push-guard.mjs`). A clean
    full run leaves a stamp for exactly the code it checked (`tests/code-stamp.mjs`: the pages, `css/`, `js/`,
    `vendor/`, `tests/`; not `data/` or `assets/`), kept in `.git`. `git push` is stopped unless the code it

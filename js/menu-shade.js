@@ -24,14 +24,18 @@
 
    index.html?shader opens a small test panel: point at a variation to try
    it on the hamburger, click to keep it (or keys 0-7); try them over a real
-   painting in the picture's place (P); jump to the picture. A choice made
-   there is remembered in that browser only; everyone else sees DEFAULT.
+   painting in the picture's place (P); jump to the picture. While testing
+   (for the rest of that visit, on the works' page too), the cursor's square
+   is a harmony lens: it recolours what is beneath it through the variation
+   shown (below; the panel's "Cursor" switches back to Maison's inverse). A
+   choice made there is remembered in that browser only; everyone else sees
+   DEFAULT on the hamburger, and Maison's inverse on the cursor.
    ============================================================ */
 (function () {
   "use strict";
   var btn = document.getElementById("menuBtn"), nav = document.getElementById("menuNav");
-  var pics = [].slice.call(document.querySelectorAll("[data-menu-shade]"));
-  if (!btn || !nav || !pics.length || !window.getComputedStyle || !Math.cbrt) return;
+  var pics = [].slice.call(document.querySelectorAll("[data-menu-shade]"));   // (none on the illustration page: only the test's cursor there)
+  if (!btn || !nav || !window.getComputedStyle || !Math.cbrt) return;
   var bars = [].slice.call(btn.children);
   var panel = nav.querySelector(".menu-bg");          // made by menu.js (loaded first)
 
@@ -352,14 +356,22 @@
     bars.forEach(function (b, k) { paintBar(b, geo[k], s, W, vr); });
     paintPanel(pr, vr, src);
   }
-  if (window.gsap && window.gsap.ticker) window.gsap.ticker.add(frame);
-  else (function loop() { frame(); requestAnimationFrame(loop); })();
+  if (pics.length) {
+    if (window.gsap && window.gsap.ticker) window.gsap.ticker.add(frame);
+    else (function loop() { frame(); requestAnimationFrame(loop); })();
+  }
+
+  // testing (index.html?shader, then for the rest of the visit, on both pages)
+  var wantLab = /[?&]shader\b/.test(location.search);
+  try { if (wantLab) sessionStorage.setItem("kt-shade-lab", "1"); else wantLab = sessionStorage.getItem("kt-shade-lab") === "1"; } catch (e) {}
 
   var lab_ = null, chosen = mode;
-  // what the bars show: the chosen variation, or one being tried for a moment (the test panel)
+  // what the bars (and, while testing, the cursor) show: the chosen variation, or one being
+  // tried for a moment (the test panel)
   function show(n) {
     if (!VARIATIONS[n] || n === mode) return;
     mode = n; lastSig = "";
+    lens();
     if (lab_) lab_.update();
   }
   function setMode(n, keep) {
@@ -368,14 +380,101 @@
     if (keep) try { localStorage.setItem(KEY, String(n)); } catch (e) {}
     if (lab_) lab_.update();
   }
+
+  /* ---------- the cursor as a harmony lens (while testing) ------------------------------------
+     Instead of inverting what is beneath it, the cursor's square recolours it through the
+     variation shown: each colour as the bars would take it over a ground of that colour. The
+     variation is read at the colour cube's eight corners (black, white, the three primaries,
+     the three secondaries) and filled in between by tetrahedral interpolation: an SVG filter
+     on the finished pixels (backdrop-filter), so nothing is mixed after it and nothing can
+     fold; from any colour to any grey (the paper, the text) it runs in a straight line. Its
+     colours are the harmony's own, not held under #DCCBC3 (that limit is for what lies under
+     the inverting square). Browsers without SVG backdrop filters (Safari, Firefox) get the same
+     map on the paper, the text and the greys: the harmony's two-colour tone, from four blended
+     squares (css/anim.css, .cursor-tone); 阴阳 keeps each colour's hue there with CSS filters. */
+  var root = document.documentElement, SVGNS = "http://www.w3.org/2000/svg";
+  var blink = !!navigator.userAgentData, lensKind = "harmony", lensSvg = null;
+  try { lensKind = sessionStorage.getItem("kt-shade-cursor") || "harmony"; } catch (e) {}
+  var CUBE = { K: [0, 0, 0], R: [255, 0, 0], G: [0, 255, 0], B: [0, 0, 255], Y: [255, 255, 0], C: [0, 255, 255], M: [255, 0, 255], W: [255, 255, 255] };
+  function cornerOf(rgb, m) { return rgbOf(shadeLab(rgb, stateFor(lab(rgb)[0], null), m)).map(function (v) { return v / 255; }); }
+  function lensFilter(m) {                                   // the filter for variation m, made once
+    var id = "kt-lens-" + m;
+    if (document.getElementById(id)) return id;
+    if (!lensSvg) {
+      lensSvg = document.createElementNS(SVGNS, "svg");
+      lensSvg.setAttribute("aria-hidden", "true");
+      lensSvg.setAttribute("style", "position:absolute;width:0;height:0;overflow:hidden");
+      document.body.appendChild(lensSvg);
+    }
+    var T = {}, k;
+    for (k in CUBE) T[k] = cornerOf(CUBE[k], m);
+    var A1 = [0, 0, 0, 1, 0], ROT = [[0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [1, 0, 0, 0, 0], A1];
+    function cm(out, from, rows) { return '<feColorMatrix in="' + from + '" result="' + out + '" type="matrix" values="' + rows.map(function (r) { return r.map(function (v) { return +v.toFixed(5); }).join(" "); }).join("  ") + '"/>'; }
+    function ar(out, a, b, k2, k3, k4) { return '<feComposite in="' + a + '" in2="' + b + '" operator="arithmetic" k1="0" k2="' + k2 + '" k3="' + k3 + '" k4="' + k4 + '" result="' + out + '"/>'; }
+    // (min(p, q) = p - relu(p - q): x = clamp(q - p + 1) = 1 - relu(p - q), then p + x - 1)
+    function min(out, p, q) { return ar(out + "x", q, p, 1, -1, 1) + ar(out, p, out + "x", 1, 1, -1); }
+    function mix(out, from, cols) { return cm(out, from, [0, 1, 2].map(function (c) { return [T[cols[0]][c], T[cols[1]][c], cols[2] ? T[cols[2]][c] : 0, 0, 0]; }).concat([A1])); }
+    var f = document.createElementNS(SVGNS, "filter");
+    f.setAttribute("id", id);
+    f.setAttribute("x", "0"); f.setAttribute("y", "0"); f.setAttribute("width", "1"); f.setAttribute("height", "1");
+    f.setAttribute("color-interpolation-filters", "sRGB");
+    f.innerHTML =
+      cm("a", "SourceGraphic", [[1, -1, 0, 0, 0], [0, 1, -1, 0, 0], [-1, 0, 1, 0, 0], A1]) +   // (r-g, g-b, b-r), below 0 cut off
+      cm("b", "SourceGraphic", [[1, 0, -1, 0, 0], [-1, 1, 0, 0, 0], [0, -1, 1, 0, 0], A1]) +   // (r-b, g-r, b-g)
+      min("wp", "a", "b") +                                                                    // weights of red, green, blue
+      cm("ar", "a", ROT) + min("ws", "b", "ar") +                                              // of yellow, cyan, magenta
+      cm("sr", "SourceGraphic", ROT) + min("m1", "SourceGraphic", "sr") +
+      cm("m1r", "m1", ROT) + min("m2", "m1", "m1r") +                                          // min(r, g, b): white's weight
+      cm("pp", "wp", [[0, 0, 0, 0, 0], [1, 1, 1, 0, 0], [0, 0, 0, 0, 0], A1]) +
+      cm("ss", "ws", [[0, 0, 0, 0, 0], [1, 1, 1, 0, 0], [0, 0, 0, 0, 0], A1]) +
+      ar("t", "pp", "ss", 1, 1, 0) + ar("mx", "m2", "t", 1, 1, 0) +                            // max(r, g, b)
+      cm("n", "mx", [[1, 0, 0, 0, 0], [0, -1, 0, 0, 1], [0, 0, 0, 0, 0], A1]) +                // (white's weight, black's)
+      mix("on", "n", ["W", "K"]) + mix("op", "wp", ["R", "G", "B"]) + mix("os", "ws", ["Y", "C", "M"]) +
+      ar("o1", "on", "op", 1, 1, 0) + ar("out", "o1", "os", 1, 1, 0);
+    lensSvg.appendChild(f);
+    return id;
+  }
+  function lens() {
+    var v = VARIATIONS[mode], on = wantLab && lensKind !== "maison" && !!v.map;
+    var toned = on && !v.local && (!blink || lensKind === "fallback");
+    root.classList.toggle("cursor-harmony", on);
+    root.classList.toggle("cursor-tones", toned);
+    if (!on) { root.style.removeProperty("--cursor-lens"); return; }
+    if (toned) {                                              // black's colour to white's, by luminosity
+      var k = cornerOf(CUBE.K, mode), w = cornerOf(CUBE.W, mode), mul = [], lift = [], flip = [];
+      for (var c = 0; c < 3; c++) {
+        var d = w[c] - k[c];
+        if (d >= 0) { mul.push(k[c] < 1 ? d / (1 - k[c]) : 0); lift.push(k[c]); flip.push(0); }   // k + d·Y, as a screen over the scaled grey
+        else { mul.push(-d); lift.push(0); flip.push(k[c]); }                                       // k − |d|·Y, as a difference
+      }
+      root.style.setProperty("--cursor-lens", "none");
+      root.style.setProperty("--tone-mul", css(mul.map(function (x) { return 255 * x; })));
+      root.style.setProperty("--tone-lift", css(lift.map(function (x) { return 255 * x; })));
+      root.style.setProperty("--tone-flip", css(flip.map(function (x) { return 255 * x; })));
+    } else if (!blink || lensKind === "fallback") root.style.setProperty("--cursor-lens", "invert(1) hue-rotate(180deg) contrast(.68) saturate(1.15)");
+    else root.style.setProperty("--cursor-lens", "url(#" + lensFilter(mode) + ")");
+  }
+  if (wantLab) {                                              // the tone's squares, for cursor.js to move with the square
+    for (var t = 1; t <= 4; t++) {
+      var sq = document.createElement("div");
+      sq.className = "cursor-tone t" + t;
+      sq.setAttribute("aria-hidden", "true");
+      document.body.appendChild(sq);
+    }
+  }
+  function setLens(kind) {
+    lensKind = kind;
+    try { sessionStorage.setItem("kt-shade-cursor", kind); } catch (e) {}
+    lens();
+    if (lab_) lab_.update();
+  }
+
   // for automated checks (tests/fold-check.mjs) and the test panel
   window.__menuShade = { set: function (n) { setMode(n, false); }, get: function () { return mode; },
-    names: VARIATIONS.map(function (v) { return v.zh + " " + v.en; }) };
+    cursor: setLens, names: VARIATIONS.map(function (v) { return v.zh + " " + v.en; }) };
 
   /* ---------- the test panel (index.html?shader) ----------------------------------------- */
-  var wantLab = /[?&]shader\b/.test(location.search);
-  try { if (wantLab) sessionStorage.setItem("kt-shade-lab", "1"); else wantLab = sessionStorage.getItem("kt-shade-lab") === "1"; } catch (e) {}
-  if (wantLab) lab_ = testPanel();
+  if (wantLab) { lab_ = testPanel(); lens(); }
 
   function testPanel() {
     var fig = pics[0], previews = [{ name: "Grey box", src: "" }], pick = 0;
@@ -387,7 +486,7 @@
     style.textContent =
       ".shade-lab{position:fixed;left:12px;bottom:12px;z-index:96;box-sizing:border-box;width:min(330px,calc(100vw - 24px));" +
       "background:#434343;color:#d2c8c0;font:12px/1.4 'Gothic','Century Gothic',system-ui,sans-serif}" +
-      ".shade-lab .in{padding:12px 12px 10px}.shade-lab.small .in{padding:8px 10px}" +
+      ".shade-lab .in{padding:12px 12px 10px;will-change:transform}.shade-lab.small .in{padding:8px 10px}" +   /* (its own layer: letters smoothed in grey, not in colour, which the harmony lens would split) */
       ".shade-lab b{font-weight:400;letter-spacing:.06em}.shade-lab .hd{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px}" +
       ".shade-lab button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}" +
       ".shade-lab :focus-visible{outline:1px solid #d2c8c0;outline-offset:1px}" +                     /* (not the browser's white-haloed ring) */
@@ -408,10 +507,13 @@
     box.setAttribute("role", "region");
     box.setAttribute("aria-label", "Menu colour test");
     box.innerHTML = '<div class="in"><div class="hd"><b role="button" tabindex="0" title="Show or hide the descriptions">MENU COLOURS · 菜单色</b><button class="x" aria-label="Close the test panel">✕</button></div>' +
-      '<ol></ol><div class="row pics"><span>Picture:</span></div>' +
-      '<button class="go">Go to the picture ↓</button><p class="st"></p><p class="keys">Keys: 0–7 colours · P next picture</p></div>';
+      '<ol></ol><div class="row cur"><span>Cursor:</span><button data-lens="harmony">Harmony</button><button data-lens="maison">Maison inverse</button></div>' +
+      (fig ? '<div class="row pics"><span>Picture:</span></div><button class="go">Go to the picture ↓</button>' : "") +
+      '<p class="st"></p><p class="keys">Keys: 0–7 colours' + (fig ? " · P next picture" : "") + '</p></div>';
     var inner = box.firstChild, list = box.querySelector("ol"), picRow = box.querySelector(".pics"), head = box.querySelector(".hd b"), st = box.querySelector(".st");
-    if (window.innerWidth < 640) box.classList.add("small");             // a phone: one compact row (and a short window, below)
+    var curRow = box.querySelector(".cur");
+    [].forEach.call(curRow.querySelectorAll("button"), function (b) { b.addEventListener("click", function () { setLens(b.getAttribute("data-lens")); }); });
+    if (window.innerWidth < 640 || !fig) box.classList.add("small");     // a phone, or the works' page: compact (and a short window, below)
     function fold() { box.classList.toggle("small"); }
     head.addEventListener("click", fold);
     head.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fold(); } });
@@ -439,9 +541,9 @@
       b.addEventListener("click", function () { showPic(i); });
       picRow.appendChild(b);
     }
-    previews.forEach(addPic);
+    if (fig) previews.forEach(addPic);
     // a few of the illustration works, to try the colours over a real painting
-    if (window.fetch) fetch("data/illustration.json?t=" + Date.now(), { cache: "no-store" })
+    if (fig && window.fetch) fetch("data/illustration.json?t=" + Date.now(), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         (d && d.works || []).filter(function (w) { return w && w.image; }).slice(0, 4).forEach(function (w, i) {
@@ -452,6 +554,7 @@
       }, function () {});
     // (a painting tried here only goes into this page, for this visit: nothing is saved)
     function showPic(i) {
+      if (!fig) return;
       pick = i;
       var old = fig.querySelector("img[data-shade-preview]");
       if (old) old.parentNode.removeChild(old);
@@ -464,7 +567,7 @@
       }
       lastSig = ""; update();
     }
-    box.querySelector(".go").addEventListener("click", function () {
+    if (fig) box.querySelector(".go").addEventListener("click", function () {
       var y = fig.getBoundingClientRect().top + window.pageYOffset - 6;
       if (window.__lenis) window.__lenis.scrollTo(y, { duration: 1.2 }); else window.scrollTo({ top: y, behavior: "smooth" });
     });
@@ -496,7 +599,7 @@
     // each swatch: three bars in that variation's colour, over the picture's mean colour (held
     // under #DCCBC3 like everything in the panel: a bright painting's mean would fold)
     function update() {
-      var r = fig.getBoundingClientRect(), avg = mean(sourceOf(fig, r), r, r.left, r.top, r.width, r.height);
+      var r = fig && fig.getBoundingClientRect(), avg = fig ? mean(sourceOf(fig, r), r, r.left, r.top, r.width, r.height) : [179, 179, 179];
       var x = stateFor(lab(avg)[0], null), ground = css(fit(lab(avg)));
       [].forEach.call(list.children, function (li, i) {
         var b = li.firstChild;
@@ -504,15 +607,18 @@
         b.style.setProperty("--sw-ground", ground);
         b.style.setProperty("--sw-bar", VARIATIONS[i].map ? shade(avg, x, i) : getComputedStyle(bars[0]).backgroundColor);
       });
-      [].forEach.call(picRow.querySelectorAll("button"), function (b, i) { b.setAttribute("aria-pressed", i === pick ? "true" : "false"); });
+      if (picRow) [].forEach.call(picRow.querySelectorAll("button"), function (b, i) { b.setAttribute("aria-pressed", i === pick ? "true" : "false"); });
+      [].forEach.call(curRow.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-lens") === (lensKind === "maison" ? "maison" : "harmony") ? "true" : "false"); });
     }
-    // whether the hamburger is over the picture right now (only there does it take the colours)
+    // what takes the colours right now: the cursor (always, unless set to Maison's inverse) and
+    // the hamburger (only while it is over the picture)
     var wasOver = null;
     function over(on) {
       if (on === wasOver) return;
       wasOver = on;
-      st.textContent = on ? "The hamburger is over the picture: point at a colour to try it, click to keep it."
-        : "The hamburger is not over the picture: go to the picture, then point at a colour to try it.";
+      st.textContent = !fig ? "Here only the cursor takes the colours: click one, then move the cursor over the works."
+        : on ? "The hamburger is over the picture. Point at a colour to try it on the hamburger and the cursor; click to keep it."
+        : "Click a colour to keep it, then move the cursor over the page. Go to the picture to see the hamburger take it too.";
     }
     over(false);
     update();

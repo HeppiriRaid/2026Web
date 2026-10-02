@@ -139,7 +139,7 @@ async function check(p, state, dpr) {
   const px = await folds(plain, inverse, bare, black);
   // what is on top at each of those pixels (everything made hit-testable for the moment,
   // pictures included; the cursor's own squares excluded)
-  const probe = await p.addStyleTag({ content: "*{pointer-events:auto!important}.cursor-lens,.cursor-dot,.cursor-fold{pointer-events:none!important}" });
+  const probe = await p.addStyleTag({ content: "*{pointer-events:auto!important}.cursor-lens,.cursor-dot,.cursor-fold,.cursor-tone{pointer-events:none!important}" });
   const { who, kinds } = await p.evaluate(([px, dpr]) => {
     const by = {}, kinds = [], at = (x, y) => document.elementFromPoint((x + 0.5) / dpr, (y + 0.5) / dpr);
     for (const [x, y, d, dx, dy, own] of px) {
@@ -409,6 +409,9 @@ const FLOWS = {
     await settled(p);
     await p.waitForTimeout(2600);
     await expect(p, () => { const b = document.querySelector(".shade-lab"); return !!b && b.getBoundingClientRect().height > 100; }, null, "the test panel open");
+    // (first with the usual inverting square: the panel lies above its under-squares)
+    await p.evaluate(() => { window.__menuShade.cursor("maison"); });
+    await expect(p, () => !document.documentElement.classList.contains("cursor-harmony"), null, "the usual square");
     await check(p, "test panel (?shader): open", dpr);
     await hover(p, ".shade-lab li button", 3);
     await expect(p, () => !!document.querySelector(".shade-lab li button:hover"), null, "the pointer on a colour");
@@ -480,6 +483,68 @@ const FLOWS = {
       if (++overPhoto === 2) break;
     }
     if (!overPhoto) throw new Error("could not reach the state: the test panel over a photo");
+
+    // -- the cursor as a harmony lens (the panel's "Cursor: Harmony"), in every variation: over
+    // the top of the page (text, the portrait, the panel), then over a painting in the picture's
+    // place; and as Safari and Firefox draw it (four blended squares; 阴阳 by CSS filters)
+    const names = await p.evaluate(() => window.__menuShade.names);
+    const lensAt = async (m, kind) => {
+      await p.evaluate(([m, kind]) => { window.__menuShade.set(m); window.__menuShade.cursor(kind); }, [m, kind]);
+      await expect(p, (kind) => document.documentElement.classList.contains("cursor-harmony") &&
+        document.documentElement.classList.contains("cursor-tones") === (kind === "fallback" && window.__menuShade.get() !== 1), kind, `the cursor a harmony lens (${kind})`);
+    };
+    await p.evaluate(() => { window.__lenis.scrollTo(0, { immediate: true, force: true }); });
+    await p.mouse.move(720, 300, { steps: 2 });
+    await p.waitForTimeout(1500);
+    for (let m = 1; m < names.length; m++) {
+      await lensAt(m, "harmony");
+      await check(p, `harmony cursor, ${names[m]}: the page top`, dpr);
+    }
+    for (let m = 1; m < names.length; m++) {          // (every variation: each lifts or darkens other channels)
+      await lensAt(m, "fallback");
+      await check(p, `harmony cursor as Safari / Firefox draw it, ${names[m]}: the page top`, dpr);
+    }
+    await click(p, ".shade-lab .go");
+    await p.waitForTimeout(1600);
+    await click(p, ".shade-lab .pics button", 1);
+    await expect(p, () => { const i = document.querySelector("[data-menu-shade] img[data-shade-preview]"); return !!i && i.complete && i.naturalWidth > 0; }, null, "a painting in the picture's place");
+    await p.evaluate(() => { document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting"); });
+    await p.mouse.move(720, 300, { steps: 2 });
+    await p.waitForTimeout(1500);
+    for (let m = 1; m < names.length; m++) {
+      await lensAt(m, "harmony");
+      await check(p, `harmony cursor, ${names[m]}: over a painting in the picture's place`, dpr);
+    }
+    await p.evaluate(() => { document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
+    // the menu open under the lens, a label under the pointer
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await p.waitForTimeout(1600);
+    const lw = await menuLink(p, "WORK");
+    await p.mouse.move(lw.x, lw.y, { steps: 4 });
+    await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+    for (const m of [2, 7]) {
+      await lensAt(m, "harmony");
+      await p.waitForTimeout(600);
+      await check(p, `harmony cursor, ${names[m]}: the menu open, pointer on WORK`, dpr);
+    }
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
+    await p.mouse.move(720, 300, { steps: 2 });
+    await p.waitForTimeout(1300);
+
+    // -- the works' page while testing: the panel, small, with the usual square; then the
+    // harmony lens over the works, in every variation
+    await p.evaluate(() => { window.__menuShade.cursor("maison"); });
+    await p.goto(SITE + "/illustration.html");
+    await settled(p);
+    await p.waitForTimeout(2800);
+    await expect(p, () => !!document.querySelector(".shade-lab.small") && !document.documentElement.classList.contains("cursor-harmony"), null, "the test panel, small, on the works' page");
+    await check(p, "test panel on the works' page (the usual square)", dpr);
+    for (let m = 1; m < names.length; m++) {
+      await lensAt(m, "harmony");
+      await check(p, `harmony cursor, ${names[m]}: the works' page`, dpr);
+    }
   },
 
   // keyboard focus: each kind of focus ring the cursor pages draw (the browser's own has a

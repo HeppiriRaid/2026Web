@@ -61,8 +61,23 @@ html:not(.anim) .preloader{display:none}
 .cursor-lens,.cursor-fold{
   width:0;height:0;background:#dccbc3;mix-blend-mode:difference;will-change:transform;
 }
-.cursor-lens,.cursor-dot{z-index:10000}
+.cursor-lens{z-index:10000}
+.cursor-dot{z-index:10001}
 .cursor-fold{z-index:1}
+/* While testing colours (js/menu-shade.js, the ?shader panel) the square is a harmony lens
+   instead: it recolours what is beneath it through the chosen harmony, with a backdrop filter
+   on the finished pixels, so nothing can fold there and the under-squares rest. Where SVG
+   backdrop filters are missing (Safari, Firefox), four blended squares make that harmony's
+   two-colour tone instead: grey by luminosity, then scaled, lifted (screen) and flipped
+   (difference) channel by channel, from black's colour to white's. */
+html.cursor-harmony .cursor-lens{background:none;mix-blend-mode:normal;-webkit-backdrop-filter:var(--cursor-lens,none);backdrop-filter:var(--cursor-lens,none)}
+html.cursor-harmony .cursor-fold{visibility:hidden}
+.cursor-tone{position:fixed;top:0;left:0;width:0;height:0;pointer-events:none;z-index:10000;will-change:transform;display:none}
+html.cursor-harmony.cursor-tones .cursor-tone{display:block}
+.cursor-tone.t1{background:#808080;mix-blend-mode:color}
+.cursor-tone.t2{background:var(--tone-mul);mix-blend-mode:multiply}
+.cursor-tone.t3{background:var(--tone-lift);mix-blend-mode:screen}
+.cursor-tone.t4{background:var(--tone-flip);mix-blend-mode:difference}
 /* The white sheet (the preloader) covers the page and its under-squares, so it carries
    its own pair, beneath the name. While the sheet moves, js/wipe.js keeps it on whole
    device pixels and these ride back against it (--sheet-y), so they stay exactly under
@@ -99,7 +114,7 @@ html.cursor-live .stage{will-change:transform}
   html.cursor-on .cursor-dot{opacity:1}
 }
 @media (hover:none),(pointer:coarse){
-  .cursor-dot,.cursor-lens,.cursor-fold{display:none}
+  .cursor-dot,.cursor-lens,.cursor-fold,.cursor-tone{display:none}
 }
 
 /* ---- reduced motion: everything static, instantly ------------- */
@@ -111,7 +126,7 @@ html.cursor-live .stage{will-change:transform}
     clip-path:none !important;
   }
   .preloader{display:none !important}
-  .cursor-dot,.cursor-lens,.cursor-fold{display:none !important}
+  .cursor-dot,.cursor-lens,.cursor-fold,.cursor-tone{display:none !important}
 }
 
 /* ---- fixed top-right menu -------------------------------------- */

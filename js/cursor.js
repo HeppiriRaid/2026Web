@@ -24,8 +24,9 @@
   var mm = window.matchMedia;
   if (!lens || !dot || !mm || !mm("(pointer:fine)").matches) return;
   var root = document.documentElement, reduce = mm("(prefers-reduced-motion: reduce)");
-  // the square and every under-square / mirror patch (css/anim.css) always share one rectangle
-  var squares = [lens].concat([].slice.call(document.querySelectorAll(".cursor-fold")));
+  // the square and every under-square / mirror patch (css/anim.css) always share one rectangle;
+  // so do the colour test's tone squares (js/menu-shade.js, made before this runs)
+  var squares = [lens].concat([].slice.call(document.querySelectorAll(".cursor-fold, .cursor-tone")));
   var FIT = window.__fit || { dw: 460.807, clampPt: 259.2 };
 
   var HOT = "a, button, .plus", GROW = 1.5;      // over these the square grows 12pt -> 18pt
@@ -68,10 +69,11 @@
   function poly(pts) { return "polygon(" + pts.map(function (p) { return p[0] + "px " + p[1] + "px"; }).join(", ") + ")"; }
   function mirrorLabels(l, t, s) {
     var boxes = labels.map(function (b) { return [b.own.getBoundingClientRect(), b.a.getBoundingClientRect()]; });
+    var harmony = root.classList.contains("cursor-harmony");     // (the colour test's lens recolours, it doesn't invert: no copies)
     mirrored = false;
     labels.forEach(function (b, i) {
       var ro = boxes[i][0], ra = boxes[i][1], M = 6;              // letters can overhang their box a little
-      var hit = s > 0 && menuLive() && l < ro.right + M && l + s > ro.left - M && t < ro.bottom + M && t + s > ro.top - M;
+      var hit = !harmony && s > 0 && menuLive() && l < ro.right + M && l + s > ro.left - M && t < ro.bottom + M && t + s > ro.top - M;
       if (!hit) {
         if (b.on) { b.on = false; b.own.style.clipPath = ""; b.a.style.removeProperty("--cursor-copy"); }
         return;
