@@ -26,26 +26,40 @@
    code (tests/code-stamp.mjs); without it the push guard
    (.claude/hooks/push-guard.mjs) stops a `git push`.
 
-   Run (Node 18+ and Chromium), about 17 minutes:
+   Fast, without testing less: each flow at each pixel ratio, and the
+   console's check, is a job of its own, run side by side (as many at once as
+   the machine has cores); the screenshots are Chromium's own, encoded for
+   speed (the very same pixels); the pixel test runs in worker threads
+   (tests/fold-scan.mjs), and the two shots that tell picture pixels apart are
+   only taken when a state has anything to tell apart.
+
+   Run (Node 18+ and Chromium), a few minutes:
      npm install --no-save playwright-core
      node tests/fold-check.mjs            # exits 1 if any outline is found (or the console's check fails)
      node tests/fold-check.mjs shader     # only the flows named — or "console" (quicker; no stamp)
    Options (environment): CHROMIUM=/path/to/chromium   PLAYWRIGHT_CORE=/path/to/playwright-core
                           FOLD_SHOTS=dir  (saves both screenshots of every state with an outline)
+                          FOLD_JOBS=n     (jobs at once; the number of cores by default)
    ============================================================ */
 import http from "node:http";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import url from "node:url";
+import { Worker } from "node:worker_threads";
 import { audit, report, DIP } from "./colour-audit.mjs";
 import { codeHere, writeStamp } from "./code-stamp.mjs";
 import { consoleCheck } from "./console-check.mjs";
+import { decode } from "./fold-scan.mjs";
 
 const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
 const ONLY = process.argv.slice(2);
 const MIN_PX = 3;    // an outline: at least this many pixels on one element, each DIP (0-255) darker than both sides of its edge
 const SHOTS = process.env.FOLD_SHOTS;
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
+const CORES = Math.max(1, os.availableParallelism ? os.availableParallelism() : os.cpus().length);
+const JOBS = Math.max(1, Math.round(+process.env.FOLD_JOBS) || CORES);
+const T0 = Date.now();
 
 // ---- the colours, read from the code --------------------------------------------------------
 const colours = audit(ROOT);
@@ -67,44 +81,66 @@ await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const SITE = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 
-// ---- the pixel test (run in a blank page, on the two screenshots) -----------------
-const lab = await (await browser.newContext()).newPage();
-// (bare: the same page with its pictures hidden; black: with them painted black — together
-// they tell, per pixel, how much of it is a picture's own: 1 = all of it, 0 = none)
-function folds(plain, inverse, bare, black) {
-  return lab.evaluate(async ([a, b, c0, c1, DIP]) => {
-    const load = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = "data:image/png;base64," + s; });
-    const [ia, ib, ic, id] = await Promise.all([load(a), load(b), load(c0), load(c1)]);
-    const W = ia.width, H = ia.height, c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    const g = c.getContext("2d", { willReadFrequently: true });
-    const read = (i) => { g.drawImage(i, 0, 0); return g.getImageData(0, 0, W, H).data; };
-    const P = read(ia), L = read(ib), B = read(ic), K = read(id);
-    const own = (q) => { let m = 0; for (let k = 0; k < 3; k++) if (B[q + k] > 16) m = Math.max(m, (B[q + k] - K[q + k]) / B[q + k]); return m; };
-    // across and down only: a blurred edge blurs along both, while diagonals would mistake the
-    // corner where three flat colours meet for one
-    const out = [], dirs = [[1, 0], [0, 1], [2, 0], [0, 2]];
-    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
-      const q = (y * W + x) * 4;
-      let worst = 0, wx = 0, wy = 0;
-      for (const [dx, dy] of dirs) {
-        const s = ((y - dy) * W + x - dx) * 4, e = ((y + dy) * W + x + dx) * 4;
-        for (let k = 0; k < 3; k++) {
-          const pa = P[s + k], pb = P[e + k], pq = P[q + k];
-          if (Math.abs(pa - pb) < 24) continue;                                  // no edge across this pixel
-          if (pq < Math.min(pa, pb) - 2 || pq > Math.max(pa, pb) + 2) continue;  // not a smooth edge (a thin line, say)
-          const d = Math.min(L[s + k], L[e + k]) - L[q + k];                     // the inverse dips below both sides
-          if (d > worst) { worst = d; wx = dx; wy = dy; }
-        }
-      }
-      if (worst >= DIP) out.push([x, y, worst, wx, wy, Math.round(own(q) * 100) / 100]);   // (the edge it lies across; how much is picture)
-    }
-    return out;
-  }, [plain, inverse, bare, black].map((x) => x.toString("base64")).concat(DIP));
+// ---- the pixel test, in worker threads (tests/fold-scan.mjs) ------------------------
+// folds(plain, inverse): the fold pixels [x, y, how much darker, the edge's dx, dy];
+// own(bare, black, px): how much of each is a picture's own (bare: the same state with its
+// pictures hidden; black: with them painted black — 1 = all of it, 0 = none)
+const scan = (() => {
+  const all = [], idle = [], queue = [], open = new Map();
+  let id = 0;
+  for (let i = 0; i < CORES; i++) {
+    const w = new Worker(new URL("./fold-scan.mjs", import.meta.url));
+    w.on("message", (m) => {
+      const t = open.get(m.id); open.delete(m.id);
+      idle.push(w); pump();
+      if (m.error) t.reject(new Error(m.error)); else t.resolve(m.result);
+    });
+    w.on("error", (e) => { for (const t of open.values()) t.reject(e); open.clear(); });
+    all.push(w); idle.push(w);
+  }
+  function pump() {
+    while (idle.length && queue.length) { const t = queue.shift(), w = idle.pop(); open.set(t.msg.id, t); w.postMessage(t.msg); }
+  }
+  const run = (msg) => new Promise((resolve, reject) => { msg.id = ++id; queue.push({ msg, resolve, reject }); pump(); });
+  return {
+    folds: (plain, inverse) => run({ op: "folds", plain, inverse, DIP }),
+    own: (bare, black, px) => run({ op: "own", bare, black, px }),
+    close: () => Promise.all(all.map((w) => w.terminate())),
+  };
+})();
+
+// Chromium's own screenshot, encoded for speed: the very same pixels as page.screenshot()
+// (checked once per job, against it) in about a third of the time. Its session is given the
+// same screen as Playwright gives the page; if anything differs, page.screenshot() it is.
+async function shooter(ctx, p, viewport, dpr) {
+  const slow = () => p.screenshot();
+  let cdp;
+  try {
+    cdp = await ctx.newCDPSession(p);
+    await cdp.send("Emulation.setDeviceMetricsOverride", { mobile: false, width: viewport.width, height: viewport.height,
+      screenWidth: viewport.width, screenHeight: viewport.height, deviceScaleFactor: dpr, screenOrientation: { angle: 0, type: "landscapePrimary" } });
+  } catch (e) { return { shot: slow, verify: async () => {} }; }
+  let fast = async () => Buffer.from((await cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true })).data, "base64");
+  return {
+    shot: () => fast(),
+    // (on the first state, held still: both ways, decoded, must be the same pixels)
+    async verify() {
+      if (this.verified) return;
+      this.verified = true;
+      const a = await fast().catch(() => null), b = await slow();
+      if (!a || !pixelsEqual(a, b)) { fast = slow; console.log("  (the fast screenshots differ from page.screenshot() here: using page.screenshot())"); }
+    },
+  };
+}
+function pixelsEqual(a, b) {
+  const x = decode(a), y = decode(b);
+  return x.w === y.w && x.h === y.h && Buffer.compare(Buffer.from(x.data.buffer), Buffer.from(y.data.buffer)) === 0;
 }
 
 // the plain shot, faded, with each outline pixel in red (ours), blue (inside a picture) or amber (a known limit)
+let lab = null;
 async function marks(plain, px, kinds) {
+  lab = lab || await (await browser.newContext()).newPage();
   const url = await lab.evaluate(async ([a, px, kinds]) => {
     const i = new Image();
     await new Promise((r) => { i.onload = r; i.src = "data:image/png;base64," + a; });
@@ -119,7 +155,10 @@ async function marks(plain, px, kinds) {
 
 // ---- one state: hold everything still, shoot it plain and inverted, name the culprits --
 const results = [];
+// (a frame drawn since whatever was just changed: a screenshot now shows it)
+const frame = (p) => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 async function check(p, state, dpr) {
+  const job = p.__job, c0 = Date.now();
   await p.evaluate(() => {
     window.__held = document.getAnimations().filter((a) => a.playState === "running");
     window.__held.forEach((a) => a.pause());                     // CSS transitions / animations
@@ -129,95 +168,146 @@ async function check(p, state, dpr) {
   const dot = await p.addStyleTag({ content: ".cursor-dot{visibility:hidden!important}" });
   const S = await p.evaluate(() => Math.max(innerWidth, innerHeight) + 4);
   await p.evaluate(() => { window.__cursorProbe(0, 0, 0); });
-  await p.waitForTimeout(100);
-  const plain = await p.screenshot();
+  await frame(p);
+  await job.verify();                                             // (once a job: the fast shots are the same pixels)
+  const plain = await job.shot();
   await p.evaluate((S) => { window.__cursorProbe(-2, -2, S); }, S);  // the square over the whole window
-  await p.waitForTimeout(100);
-  const inverse = await p.screenshot();
+  await frame(p);
+  const inverse = await job.shot();
   await p.evaluate(() => { window.__cursorProbe(0, 0, 0); });
-  const shoot = async (css) => { const t = await p.addStyleTag({ content: css }); await p.waitForTimeout(100); const b = await p.screenshot(); await t.evaluate((e) => e.remove()); return b; };
-  // (these two only tell which pixels are a picture's: a picture part-way through a fade is all
-  // picture still, so whatever holds a visible picture is shown opaque for them)
-  await p.evaluate(() => {
-    for (const im of document.images) {
-      const chain = [];
-      let e = im;
-      for (; e && e.nodeType === 1; e = e.parentElement) {
-        const o = +getComputedStyle(e).opacity;
-        if (o < 0.01) break;
-        if (o < 1) chain.push(e);
+  let px = await scan.folds(plain, inverse);
+  // Which of those pixels are a picture's own: the same state with its pictures hidden, then painted
+  // black (only when there are any to tell). A picture part-way through a fade is all picture still,
+  // so whatever holds a visible picture is shown opaque for these two.
+  if (px.length) {
+    await p.evaluate(() => {
+      for (const im of document.images) {
+        const chain = [];
+        let e = im;
+        for (; e && e.nodeType === 1; e = e.parentElement) {
+          const o = +getComputedStyle(e).opacity;
+          if (o < 0.01) break;
+          if (o < 1) chain.push(e);
+        }
+        if (!e || e.nodeType !== 1) chain.forEach((c) => {
+          if (c.hasAttribute("data-fold-lift")) return;
+          c.setAttribute("data-fold-lift", c.style.getPropertyValue("opacity") + "|" + c.style.getPropertyPriority("opacity"));
+          c.style.setProperty("opacity", "1", "important");
+        });
       }
-      if (!e || e.nodeType !== 1) chain.forEach((c) => {
-        if (c.hasAttribute("data-fold-lift")) return;
-        c.setAttribute("data-fold-lift", c.style.getPropertyValue("opacity") + "|" + c.style.getPropertyPriority("opacity"));
-        c.style.setProperty("opacity", "1", "important");
-      });
-    }
-  });
-  const bare = await shoot("img{opacity:0!important}");
-  const black = await shoot("img{filter:brightness(0)!important}");
-  await p.evaluate(() => {
-    for (const c of document.querySelectorAll("[data-fold-lift]")) {
-      const [v, pr] = c.getAttribute("data-fold-lift").split("|");
-      if (v) c.style.setProperty("opacity", v, pr); else c.style.removeProperty("opacity");
-      c.removeAttribute("data-fold-lift");
-    }
-  });
+    });
+    const shoot = async (css) => { const t = await p.addStyleTag({ content: css }); await frame(p); const b = await job.shot(); await t.evaluate((e) => e.remove()); return b; };
+    const bare = await shoot("img{opacity:0!important}");
+    const black = await shoot("img{filter:brightness(0)!important}");
+    await p.evaluate(() => {
+      for (const c of document.querySelectorAll("[data-fold-lift]")) {
+        const [v, pr] = c.getAttribute("data-fold-lift").split("|");
+        if (v) c.style.setProperty("opacity", v, pr); else c.style.removeProperty("opacity");
+        c.removeAttribute("data-fold-lift");
+      }
+    });
+    const own = await scan.own(bare, black, px);
+    px = px.map((v, i) => v.concat(own[i]));
+  }
   await p.evaluate(() => { window.__cursorProbe(null); });
   await dot.evaluate((e) => e.remove());
-  const px = await folds(plain, inverse, bare, black);
-  // what is on top at each of those pixels (everything made hit-testable for the moment,
-  // pictures included; the cursor's own squares excluded)
-  const probe = await p.addStyleTag({ content: "*{pointer-events:auto!important}.cursor-lens,.cursor-dot,.cursor-fold,.cursor-tone{pointer-events:none!important}" });
-  const { who, kinds } = await p.evaluate(([px, dpr]) => {
-    const by = {}, kinds = [], at = (x, y) => document.elementFromPoint((x + 0.5) / dpr, (y + 0.5) / dpr);
-    for (const [x, y, d, dx, dy, own] of px) {
-      const el = at(x, y), cx = Math.round(x / dpr), cy = Math.round(y / dpr);
-      // a pixel that is wholly a picture's own is the picture's detail, inverted (the effect
-      // itself); anything else — a picture's blurred border, or anything over or beside it —
-      // is ours, unless the page marks it a known limit (data-fold-known)
-      let kind = own >= 0.97 ? "picture" : "ui";
-      // (by what is under the pixel, or by place: something see-through can lie on top of it)
-      const known = (el && el.closest && el.closest("[data-fold-known]")) || [...document.querySelectorAll("[data-fold-known]")].find((k) => {
-        const r = k.getBoundingClientRect();
-        return cx >= r.left - 2 && cx <= r.right + 2 && cy >= r.top - 2 && cy <= r.bottom + 2;
-      });
-      if (kind === "ui" && known) kind = "known";
-      kinds.push(kind === "ui" ? 1 : kind === "picture" ? 2 : 3);
-      const e = el;
-      if (!e) continue;
-      let key = e.tagName.toLowerCase() + (typeof e.className === "string" && e.className.trim() ? "." + e.className.trim().split(/\s+/).join(".") : "");
-      const t = (e.textContent || "").replace(/\s+/g, " ").trim();
-      if (t && !e.children.length) key += ` "${t.slice(0, 24)}"`;
-      if (kind === "known") key += ` (${known.getAttribute("data-fold-known")})`;
-      key = kind + ":" + key;
-      const b = by[key] || (by[key] = { key, kind, n: 0, max: 0, at: [cx, cy] });
-      b.n++; if (d > b.max) b.max = d;
-    }
-    return { who: Object.values(by), kinds };
-  }, [px, dpr]);
-  await probe.evaluate((e) => e.remove());
+  // A pixel that is wholly a picture's own is the picture's detail, inverted (the effect itself): it is
+  // counted, not looked into. Anything else — a picture's blurred border, or anything over or beside
+  // it — is ours, unless the page marks it a known limit (data-fold-known): what is on top there is
+  // looked up (everything made hit-testable for the moment, pictures included; the cursor's own
+  // squares excluded).
+  const rest = px.filter((v) => v[5] < 0.97), inPictures = px.length - rest.length;
+  let who = [], restKinds = [];
+  if (rest.length) {
+    const probe = await p.addStyleTag({ content: "*{pointer-events:auto!important}.cursor-lens,.cursor-dot,.cursor-fold,.cursor-tone{pointer-events:none!important}" });
+    ({ who, kinds: restKinds } = await p.evaluate(([px, dpr]) => {
+      const by = {}, kinds = [], at = (x, y) => document.elementFromPoint((x + 0.5) / dpr, (y + 0.5) / dpr);
+      const marked = [...document.querySelectorAll("[data-fold-known]")].map((k) => [k, k.getBoundingClientRect()]);
+      for (const [x, y, d] of px) {
+        const el = at(x, y), cx = Math.round(x / dpr), cy = Math.round(y / dpr);
+        // (by what is under the pixel, or by place: something see-through can lie on top of it)
+        const near = marked.find(([, r]) => cx >= r.left - 2 && cx <= r.right + 2 && cy >= r.top - 2 && cy <= r.bottom + 2);
+        const known = (el && el.closest && el.closest("[data-fold-known]")) || (near && near[0]);
+        kinds.push(known ? 3 : 1);
+        if (!el) continue;
+        let key = el.tagName.toLowerCase() + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).join(".") : "");
+        const t = (el.textContent || "").replace(/\s+/g, " ").trim();
+        if (t && !el.children.length) key += ` "${t.slice(0, 24)}"`;
+        if (known) key += ` (${known.getAttribute("data-fold-known")})`;
+        key = (known ? "known:" : "ui:") + key;
+        const b = by[key] || (by[key] = { key, kind: known ? "known" : "ui", n: 0, max: 0, at: [cx, cy] });
+        b.n++; if (d > b.max) b.max = d;
+      }
+      return { who: Object.values(by), kinds };
+    }, [rest, dpr]));
+    await probe.evaluate((e) => e.remove());
+  }
   const bad = who.filter((w) => w.kind === "ui" && w.n >= MIN_PX);
-  const inPictures = who.filter((w) => w.kind === "picture").reduce((s, w) => s + w.n, 0);
   const known = who.filter((w) => w.kind === "known");
   results.push({ state: `${state} @${dpr}x`, bad, inPictures, known });
-  console.log(`  ${bad.length ? "OUTLINE" : "clean  "}  ${state} @${dpr}x` + (inPictures ? `   (inside pictures: ${inPictures} px)` : "") +
+  job.log(`  ${bad.length ? "OUTLINE" : "clean  "}  ${state} @${dpr}x` + (inPictures ? `   (inside pictures: ${inPictures} px)` : "") +
     (known.length ? `   (known limit: ${known.reduce((s, w) => s + w.n, 0)} px)` : ""));
   if (bad.length && SHOTS) {
     const f = `${state} ${dpr}x`.replace(/[^a-z0-9]+/gi, "-");
+    let r = 0;
+    const kinds = px.map((v) => (v[5] >= 0.97 ? 2 : restKinds[r++]));
     fs.writeFileSync(path.join(SHOTS, f + "-plain.png"), plain);
     fs.writeFileSync(path.join(SHOTS, f + "-inverse.png"), inverse);
     fs.writeFileSync(path.join(SHOTS, f + "-marks.png"), await marks(plain, px, kinds));
   }
   await p.evaluate(() => {
     (window.__held || []).forEach((a) => { try { a.play(); } catch (e) {} });
+    (window.__foldCss || []).forEach((a) => { try { a.play(); } catch (e) {} });   // (those stepTo() held)
+    window.__foldCss = null;
     if (window.gsap) window.gsap.globalTimeline.resume();
     if (window.__lenis) window.__lenis.start();
   });
+  job.states++; job.checks += Date.now() - c0;
 }
 
 // ---- getting the pages into each state ----------------------------------------------------
+// Every state is reached by what is on the page, never by the clock: a slow or busy machine (or
+// the jobs running beside this one) only makes it take longer, never changes what is checked.
 const settled = (p) => p.waitForFunction(() => { const e = document.getElementById("preloader"); return e && getComputedStyle(e).display === "none"; }, null, { timeout: 30000 });
+// The page at rest: nothing moving or about to — no GSAP tween playing or waiting to, no CSS
+// transition or animation running, the smooth scroll still, the scrollbar's thumb and rail away,
+// the hamburger where it stays (menu.js eases it by hand, frame by frame), no work on screen still
+// to wipe in, the pictures on screen and the fonts in — for 120 ms and 3 frames running (on a busy
+// machine frames come slowly: 8 of them could take seconds). GSAP's tweens are
+// hurried there (100 ms further on each frame): where they end is the same, only sooner. CSS
+// transitions keep their own pace — the menu's morph is a chain of them, each started by a timer,
+// and hurried, its pauses would pass for rest — as does whatever runs on timers or eases by hand.
+// If it never gets there, the job says what was still moving (and the state is checked as it is).
+async function quiet(p) {
+  const t0 = Date.now();
+  const why = await p.waitForFunction(() => {
+    const s = window.__quiet || (window.__quiet = { n: 0, sig: "", why: "" });
+    const g = window.gsap, W = innerWidth, H = innerHeight;
+    const seen = (r) => Math.max(0, Math.min(r.right, W) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0)) / Math.max(1, r.width * r.height);
+    const tweens = g ? g.globalTimeline.getChildren(true, true, false).filter((t) => !t.paused() && t.progress() < 1) : [];
+    if (tweens.length && !g.globalTimeline.paused()) g.globalTimeline.time(g.globalTimeline.time() + 0.1);
+    let why = "";
+    if (tweens.length) why = "a GSAP tween";
+    else if (document.getAnimations().some((a) => a.playState === "running")) why = "a CSS transition or animation";
+    else if (window.__lenis && window.__lenis.isScrolling) why = "the smooth scroll";
+    else if (document.querySelector(".cscroll-thumb.show, .cscroll-rail.show")) why = "the scrollbar";
+    else if ([...document.querySelectorAll(".work-btn")].some((b) => seen(b.getBoundingClientRect()) > 0.15 && getComputedStyle(b).clipPath !== "none")) why = "a work still to wipe in";
+    else if ([...document.images].some((i) => (i.getAttribute("src") ? !i.complete : i.hasAttribute("data-src")) && seen(i.getBoundingClientRect()) > 0)) why = "a picture loading";   // (or still to: data-src)
+    else if (document.fonts && document.fonts.status !== "loaded") why = "the fonts";
+    // (what moves by hand or by its own smooth scroll: the hamburger, the page, the works' row)
+    const b = document.getElementById("menuBtn"), r = b && b.getBoundingClientRect(), row = document.getElementById("strip");
+    const sig = [r ? [r.left, r.top, r.width, r.height, getComputedStyle(b).transform].join() : "", row ? row.scrollLeft : "", scrollX, scrollY].join("|");
+    if (!why && sig !== s.sig) why = "the hamburger, the page or the row moving";
+    s.sig = sig; s.why = why; s.n = why ? 0 : s.n + 1;
+    if (why || s.n === 1) s.since = performance.now();
+    if (s.n < 3 || performance.now() - s.since < 120) return false;
+    window.__quiet = null;
+    return true;
+  }, null, { polling: "raf", timeout: 25000 }).then(() => "", () => p.evaluate(() => (window.__quiet && window.__quiet.why) || "?").catch(() => "?"));
+  await p.evaluate(() => { window.__quiet = null; }).catch(() => {});
+  p.__job.rest += Date.now() - t0;
+  if (why) p.__job.log(`  (not at rest after 25 s — ${why} — checked as it was)`);
+}
 // the middle of the i-th match whose middle is on screen
 async function center(p, sel, i = 0) {
   return p.evaluate(([sel, i]) => {
@@ -229,7 +319,7 @@ async function hover(p, sel, i = 0) {
   const r = await center(p, sel, i);
   if (!r) throw new Error("nothing on screen matches " + sel);
   await p.mouse.move(r.x, r.y, { steps: 4 });
-  await p.waitForTimeout(900);
+  await quiet(p);
   return r;
 }
 async function click(p, sel, i = 0) { await hover(p, sel, i); await p.mouse.down(); await p.mouse.up(); }
@@ -238,35 +328,84 @@ async function menuLink(p, text) {
 }
 // a state the check needs, reached (or the run stops here: a skipped state would pass for the wrong reason)
 async function expect(p, fn, arg, what) {
-  try { await p.waitForFunction(fn, arg, { timeout: 8000 }); }
+  try { await p.waitForFunction(fn, arg, { timeout: 20000 }); }
   catch (e) { throw new Error("could not reach the state: " + what); }
 }
 // Tab (as a keyboard visitor does) until something matching `sel` has the keyboard's focus ring
 async function tabTo(p, sel) {
   for (let i = 0; i < 80; i++) {
     if (await p.evaluate((sel) => { const a = document.activeElement; return !!a && a.matches(sel) && a.matches(":focus-visible"); }, sel)) {
-      await p.waitForTimeout(700);
+      await quiet(p);
       return;
     }
     await p.keyboard.press("Tab");
   }
   throw new Error("could not reach the state: keyboard focus on " + sel);
 }
-// hold everything still once something matching `sel` is half-way through wiping in
-function wipeAt(p, sel) {
-  return p.waitForFunction((sel) => {
-    const mid = [...document.querySelectorAll(sel)].some((e) => {
-      const m = /inset\(([^)]*)\)/.exec(e.style.clipPath || "");
-      if (!m) return false;
-      const v = m[1].trim().split(/\s+/), side = [v[0], v[1] || v[0], v[2] || v[0], v[3] || v[1] || v[0]];
-      return side.some((x, k) => {                    // how far in that side is cut, as a share of the box
-        const f = /%$/.test(x) ? parseFloat(x) / 100 : parseFloat(x) / (k % 2 ? e.offsetWidth : e.offsetHeight);
-        return f > 0.3 && f < 0.7;
-      });
-    });
-    if (mid) { window.gsap.globalTimeline.pause(); return true; }
+
+// Part-way through an animation, exactly: GSAP's clock is stopped and moved on by hand, 8 ms at a
+// time (25 steps a drawn frame, and only while a tween is under way or waiting, so whatever the page
+// starts on a frame — a scroll's reveals, the next page's intro — still starts), until the moment
+// holds. No frame, however slow, can skip it. The clock is stopped where the animation begins when
+// the flow can say so — at a page change (holdNext()), with a scroll (scrollHeld()) — or else now;
+// check() lets it run on. (The moments themselves, TESTS, live in the page: the init script below.)
+async function stepTo(p, test, arg, what) {
+  const r = await p.waitForFunction(([test, arg]) => {
+    const g = window.gsap, t = window.__foldTests && window.__foldTests[test];
+    if (!g || !t) return false;
+    const tl = g.globalTimeline, s = window.__foldStep || (window.__foldStep = { n: 0 });
+    // (CSS transitions and animations keep in step with it: held, and moved on with each step — a menu
+    // fading out as the sheet rises is as far out as it would be)
+    const css = window.__foldCss || (window.__foldCss = new Set());
+    const hold = () => { for (const a of document.getAnimations()) if (a.playState === "running") { a.pause(); css.add(a); } };
+    tl.pause(); hold();
+    const under = () => tl.getChildren(true, true, false).some((x) => !x.paused() && x.progress() < 1);
+    for (let i = 0; i < 25; i++) {
+      if (t(arg)) { window.__foldStep = null; return "ok"; }
+      if (!under()) return false;                       // (nothing to move on yet: wait for the page)
+      if (++s.n > 2500) return "stepped through 20 s of animation";
+      tl.time(tl.time() + 0.008);
+      hold();
+      for (const a of css) if (a.playState === "paused") a.currentTime = (a.currentTime || 0) + 8;
+    }
+    if (t(arg)) { window.__foldStep = null; return "ok"; }
     return false;
-  }, sel, { polling: "raf", timeout: 20000 });
+  }, [test, arg], { polling: "raf", timeout: 45000 }).then((h) => h.jsonValue(), () => "45 s passed");
+  if (r !== "ok") throw new Error(`could not reach the state: ${what} (${r})`);
+}
+// the white sheet part-way across the screen (yPercent between a and b)
+const sheetAt = (p, a, b) => stepTo(p, "sheet", [a, b], `the white sheet between ${a}% and ${b}%`);
+// something matching `sel` part-way through wiping in
+const wipeAt = (p, sel) => stepTo(p, "wipe", sel, `${sel} wiping in`);
+// stop GSAP's clock as the next page change starts: as the sheet starts to rise ("leave"), and/or
+// as it starts to lift off the next page ("arrive") — js/wipe.js's kt:leave / kt:arrive
+const holdNext = (p, ...what) => p.evaluate((what) => { for (const w of what) sessionStorage.setItem("fold-hold-" + w, "1"); }, what);
+// scroll there with GSAP's clock stopped, so what the scroll sets off waits at its start for stepTo()
+const scrollHeld = (p, y) => p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); window.gsap.globalTimeline.pause(); }, y);
+// (in every page of every job, before its own scripts: the moments stepTo() can step to, and the holds)
+function stepping() {
+  const share = (e) => {                               // how far in each side of e's clip is, as a share of the box
+    const m = /inset\(([^)]*)\)/.exec(e.style.clipPath || "");
+    if (!m) return [];
+    const v = m[1].trim().split(/\s+/), side = [v[0], v[1] || v[0], v[2] || v[0], v[3] || v[1] || v[0]];
+    return side.map((x, k) => (/%$/.test(x) ? parseFloat(x) / 100 : parseFloat(x) / (k % 2 ? e.offsetWidth : e.offsetHeight)));
+  };
+  window.__foldTests = {
+    sheet: ([a, b]) => {
+      const e = document.getElementById("preloader");
+      if (!e || getComputedStyle(e).display === "none") return false;
+      const y = window.gsap.getProperty(e, "yPercent");
+      return y > Math.min(a, b) && y < Math.max(a, b);
+    },
+    wipe: (sel) => [...document.querySelectorAll(sel)].some((e) => share(e).some((f) => f > 0.3 && f < 0.7)),
+    name: () => {                                      // the name risen on the curtain, a first visit
+      const n = document.querySelector(".pl-name"), t = n && getComputedStyle(n).transform;
+      return !!t && (t === "none" || Math.abs(new DOMMatrix(t).m42) < 0.5);
+    },
+  };
+  const hold = (w) => () => { try { if (sessionStorage.getItem("fold-hold-" + w) && window.gsap) { sessionStorage.removeItem("fold-hold-" + w); window.gsap.globalTimeline.pause(); } } catch (e) {} };
+  document.addEventListener("kt:leave", hold("leave"));
+  document.addEventListener("kt:arrive", hold("arrive"));
 }
 // arriving from another page with the cursor's square out, the plain arrow must not show under the
 // white sheet: the page's head hides it before js/cursor.js runs (the init script in the main loop
@@ -276,16 +415,6 @@ async function arrowHidden(p, page) {
   const when = await p.evaluate(() => window.__arrowHidden);
   if (when !== "before js/cursor.js ran") throw new Error(`the plain arrow showed while arriving at the ${page} page: it was hidden only ${when}`);
 }
-// hold the white sheet (and everything else) still once it is part-way across the screen
-function sheetAt(p, from, to) {
-  return p.waitForFunction(([from, to]) => {
-    const e = document.getElementById("preloader");
-    if (!window.gsap || !e || getComputedStyle(e).display === "none") return false;
-    const y = window.gsap.getProperty(e, "yPercent");
-    if (y > Math.min(from, to) && y < Math.max(from, to)) { window.gsap.globalTimeline.pause(); return true; }
-    return false;
-  }, [from, to], { polling: "raf", timeout: 20000 });
-}
 
 // ---- the states ---------------------------------------------------------------------------
 const FLOWS = {
@@ -294,20 +423,16 @@ const FLOWS = {
   async site(p, dpr) {
     // -- the front page: a first visit, while the name is up
     await p.goto(SITE + "/index.html");
-    await p.waitForFunction(() => {
-      const n = document.querySelector(".pl-name"), t = n && getComputedStyle(n).transform;
-      return !!t && (t === "none" || Math.abs(new DOMMatrix(t).m42) < 0.5);
-    }, null, { polling: "raf", timeout: 15000 });
-    await p.evaluate(() => { window.gsap.globalTimeline.pause(); });
+    await stepTo(p, "name", null, "the name risen on a first visit");
     await check(p, "front page: first visit, the name", dpr);
     await settled(p);
-    await p.waitForTimeout(2600);
+    await quiet(p);
 
     // -- the front page, top to bottom
     const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight);
     for (let y = 0; ; y = Math.min(H, y + 700)) {
       await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
-      await p.waitForTimeout(2600);
+      await quiet(p);
       await check(p, `front page: scrolled to ${y}px`, dpr);
       if (y >= H) break;
     }
@@ -316,7 +441,7 @@ const FLOWS = {
     // highlight and the letters on it in one go, on both sides of #DCCBC3, and nothing can
     // mirror a text selection; only other highlight colours would avoid it.
     await p.evaluate(() => { window.__lenis.scrollTo(0, { immediate: true, force: true }); });
-    await p.waitForTimeout(1200);
+    await quiet(p);
     await p.evaluate(() => {
       const t = [...document.querySelectorAll("p")].find((e) => { const r = e.getBoundingClientRect(); return r.top > 0 && r.bottom < innerHeight && e.textContent.trim().length > 40; });
       if (!t) return;
@@ -338,21 +463,21 @@ const FLOWS = {
       for (let m = 1; m < shades.length; m++) {
         await p.evaluate((m) => { window.__menuShade.set(m); }, m);
         await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
-        await p.waitForTimeout(m === 1 ? 2200 : 700);   // (the first time, the hamburger catches the corner)
+        await quiet(p);                                  // (the first time, the hamburger catches the corner)
         await expect(p, coloured, null, `the hamburger coloured over the picture (${shades[m]})`);
         await check(p, `front page: hamburger over the picture, ${shades[m]}`, dpr);
         await click(p, "#menuBtn");
         await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-        await p.waitForTimeout(1600);
+        await quiet(p);
         const lw = await menuLink(p, "WORK");
         await p.mouse.move(lw.x, lw.y, { steps: 4 });
         await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
-        await p.waitForTimeout(900);
+        await quiet(p);
         await check(p, `front page: menu open over the picture, pointer on WORK, ${shades[m]}`, dpr);
         await p.keyboard.press("Escape");
         await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
         await p.mouse.move(700, 500);
-        await p.waitForTimeout(1300);
+        await quiet(p);
       }
       await p.evaluate((was) => { window.__menuShade.set(was); }, was);
       // A KNOWN LIMIT, reported but not failed: over a real painting, a deep bar's soft edge
@@ -367,7 +492,7 @@ const FLOWS = {
           document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
         }), src);
         await p.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
-        await p.waitForTimeout(1500);                        // (and the scrollbar's thumb fades)
+        await quiet(p);                        // (and the scrollbar's thumb fades)
         await check(p, "front page: hamburger over a painting in the picture's place", dpr);
         await p.evaluate(() => { document.getElementById("fold-check-picture").remove(); document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
       }
@@ -375,20 +500,21 @@ const FLOWS = {
 
     // -- the menu, open, and a label under the pointer
     await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
-    await p.waitForTimeout(1500);
+    await quiet(p);
     await click(p, "#menuBtn");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     await check(p, "front page: menu open", dpr);
     const work = await menuLink(p, "WORK");
     await p.mouse.move(work.x, work.y, { steps: 4 });
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
-    await p.waitForTimeout(900);
+    await quiet(p);
     await check(p, "front page: menu open, pointer on WORK", dpr);
 
     // -- leaving: the sheet half-way up over the page
     const il = await menuLink(p, "ILLUSTRATION");
     await p.mouse.move(il.x, il.y, { steps: 2 });
+    await holdNext(p, "leave", "arrive");
     await p.mouse.down(); await p.mouse.up();
     await sheetAt(p, 60, 30);
     await check(p, "page change: the sheet rising (front page)", dpr);
@@ -401,7 +527,7 @@ const FLOWS = {
     await wipeAt(p, ".work-btn");
     await check(p, "illustration page: a work wiping in", dpr);
     await settled(p);
-    await p.waitForTimeout(2800);
+    await quiet(p);
 
     // -- the illustration page
     await check(p, "illustration page", dpr);
@@ -409,35 +535,36 @@ const FLOWS = {
     await expect(p, () => !!document.querySelector(".work .plus:hover"), null, "the pointer on a +");
     await check(p, "illustration page: pointer on a +", dpr);
     for (const k of [3, 6]) {
-      await p.keyboard.press("Home"); await p.waitForTimeout(1500);
+      await p.keyboard.press("Home"); await quiet(p);
       for (let i = 0; i < k; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(60); }
-      await p.waitForTimeout(2600);
+      await quiet(p);
       await expect(p, (k) => { const w = document.querySelectorAll(".work")[k]; return w && Math.abs(w.getBoundingClientRect().left - parseFloat(getComputedStyle(document.getElementById("track")).paddingLeft)) < 2; }, k, `the row at work ${k + 1}`);
       await check(p, `illustration page: the row at work ${k + 1}`, dpr);
     }
     await click(p, ".work-btn", 0);
     await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
-    await p.waitForTimeout(2200);
+    await quiet(p);
     await check(p, "illustration page: a work zoomed", dpr);
     await p.keyboard.press("Escape");
     await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
-    await p.waitForTimeout(1200);
+    await quiet(p);
     await click(p, "#menuBtn");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     await check(p, "illustration page: menu open", dpr);
 
     // -- back to the front page: arriving there
     const ab = await menuLink(p, "ABOUT");
     await p.mouse.move(ab.x, ab.y, { steps: 2 });
+    await holdNext(p, "arrive");
     await p.mouse.down(); await p.mouse.up();
     await p.waitForURL(/index\.html/, { waitUntil: "commit" });
     await sheetAt(p, -35, -70);
     await check(p, "page change: the sheet lifting, the intro rising (front page)", dpr);
     await arrowHidden(p, "front");
     await settled(p);
-    await p.waitForTimeout(1500);
-    await p.evaluate(() => { window.__lenis.scrollTo(2000, { immediate: true, force: true }); });
+    await quiet(p);
+    await scrollHeld(p, 2000);
     await wipeAt(p, ".ph img");
     await check(p, "front page: a photo wiping in", dpr);
   },
@@ -447,7 +574,7 @@ const FLOWS = {
   async shader(p, dpr) {
     await p.goto(SITE + "/index.html?shader");
     await settled(p);
-    await p.waitForTimeout(2600);
+    await quiet(p);
     await expect(p, () => { const b = document.querySelector(".shade-lab"); return !!b && b.getBoundingClientRect().height > 100; }, null, "the test panel open");
     // (first with the usual inverting square: the panel lies above its under-squares)
     await p.evaluate(() => { window.__menuShade.cursor("maison"); });
@@ -459,7 +586,7 @@ const FLOWS = {
 
     // -- at the picture: a colour tried on the hamburger with the cursor, then kept with a click
     await click(p, ".shade-lab .go");
-    await p.waitForTimeout(1600);                                    // (the scroll there)
+    await quiet(p);                                    // (the scroll there)
     await expect(p, () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage), null, "the hamburger coloured over the picture");
     await check(p, "test panel: the hamburger over the picture", dpr);
     await hover(p, ".shade-lab li button", 5);
@@ -475,7 +602,7 @@ const FLOWS = {
     await expect(p, () => { const i = document.querySelector("[data-menu-shade] img[data-shade-preview]"); return !!i && i.complete && i.naturalWidth > 0; }, null, "a painting in the picture's place");
     await p.evaluate(() => { document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting"); });
     await p.mouse.move(720, 300, { steps: 4 });
-    await p.waitForTimeout(1500);
+    await quiet(p);
     await check(p, "test panel: a painting in the picture's place", dpr);
     await click(p, ".shade-lab .pics button", 0);
     await p.evaluate(() => { document.getElementById("menuBtn").removeAttribute("data-fold-known"); });
@@ -485,7 +612,7 @@ const FLOWS = {
     await p.keyboard.press("Tab");
     await expect(p, () => !!document.querySelector(".shade-lab li button:focus-visible"), null, "keyboard focus on a colour");
     await p.mouse.move(720, 300, { steps: 4 });
-    await p.waitForTimeout(700);
+    await quiet(p);
     await check(p, "test panel: keyboard focus on a colour", dpr);
     await p.evaluate(() => { document.activeElement.blur(); });
 
@@ -493,7 +620,7 @@ const FLOWS = {
     await click(p, ".shade-lab .hd b");
     await expect(p, () => document.querySelector(".shade-lab").classList.contains("small"), null, "the panel folded small");
     await p.mouse.move(720, 300, { steps: 4 });
-    await p.waitForTimeout(600);
+    await quiet(p);
     await check(p, "test panel: folded small", dpr);
     await click(p, ".shade-lab .hd b");
 
@@ -510,7 +637,7 @@ const FLOWS = {
     for (const y of [...new Set(spots)]) {
       await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
       await p.mouse.move(720, 300, { steps: 2 });
-      await p.waitForTimeout(2600);
+      await quiet(p);
       const on = await p.evaluate(() => {
         const b = document.querySelector(".shade-lab").getBoundingClientRect();
         return [...document.querySelectorAll(".stage img")].some((im) => {
@@ -535,7 +662,7 @@ const FLOWS = {
     };
     await p.evaluate(() => { window.__lenis.scrollTo(0, { immediate: true, force: true }); });
     await p.mouse.move(720, 300, { steps: 2 });
-    await p.waitForTimeout(1500);
+    await quiet(p);
     for (let m = 1; m < names.length; m++) {
       await lensAt(m, "harmony");
       await check(p, `harmony cursor, ${names[m]}: the page top`, dpr);
@@ -545,12 +672,12 @@ const FLOWS = {
       await check(p, `harmony cursor as Safari / Firefox draw it, ${names[m]}: the page top`, dpr);
     }
     await click(p, ".shade-lab .go");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     await click(p, ".shade-lab .pics button", 1);
     await expect(p, () => { const i = document.querySelector("[data-menu-shade] img[data-shade-preview]"); return !!i && i.complete && i.naturalWidth > 0; }, null, "a painting in the picture's place");
     await p.evaluate(() => { document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting"); });
     await p.mouse.move(720, 300, { steps: 2 });
-    await p.waitForTimeout(1500);
+    await quiet(p);
     for (let m = 1; m < names.length; m++) {
       await lensAt(m, "harmony");
       await check(p, `harmony cursor, ${names[m]}: over a painting in the picture's place`, dpr);
@@ -559,26 +686,26 @@ const FLOWS = {
     // the menu open under the lens, a label under the pointer
     await click(p, "#menuBtn");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     const lw = await menuLink(p, "WORK");
     await p.mouse.move(lw.x, lw.y, { steps: 4 });
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
     for (const m of [2, 7]) {
       await lensAt(m, "harmony");
-      await p.waitForTimeout(600);
+      await quiet(p);
       await check(p, `harmony cursor, ${names[m]}: the menu open, pointer on WORK`, dpr);
     }
     await p.keyboard.press("Escape");
     await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
     await p.mouse.move(720, 300, { steps: 2 });
-    await p.waitForTimeout(1300);
+    await quiet(p);
 
     // -- the works' page while testing: the panel, small, with the usual square; then the
     // harmony lens over the works, in every variation
     await p.evaluate(() => { window.__menuShade.cursor("maison"); });
     await p.goto(SITE + "/illustration.html");
     await settled(p);
-    await p.waitForTimeout(2800);
+    await quiet(p);
     await expect(p, () => !!document.querySelector(".shade-lab.small") && !document.documentElement.classList.contains("cursor-harmony"), null, "the test panel, small, on the works' page");
     await check(p, "test panel on the works' page (the usual square)", dpr);
     for (let m = 1; m < names.length; m++) {
@@ -591,7 +718,7 @@ const FLOWS = {
     await expect(p, () => getComputedStyle(document.querySelector(".shade-lab")).display === "none" &&
       !document.documentElement.classList.contains("cursor-harmony"), null, "the test ended, the usual square back");
     await p.mouse.move(720, 300, { steps: 2 });
-    await p.waitForTimeout(600);
+    await quiet(p);
     await check(p, "test ended (✕): the usual square back, works' page", dpr);
   },
 
@@ -603,7 +730,7 @@ const FLOWS = {
     await wipeAt(p, ".ph img");
     await check(p, "front page photos: the new portrait wiping in", dpr);
     await settled(p);
-    await p.waitForTimeout(2600);
+    await quiet(p);
     await expect(p, () => {
       const im = [...document.querySelectorAll("figure[data-slot] img")], pos = (id) => getComputedStyle(document.querySelector(`[data-slot="${id}"] img`)).objectPosition;
       return im.length === 5 && im.every((i) => i.complete && i.naturalWidth > 0) &&
@@ -626,17 +753,17 @@ const FLOWS = {
       ["Graphic Paint", '[data-slot="graphic"]', '[data-slot="graphic"]'], ["Resolve Steps", '[data-slot="resolve"]', '[data-slot="resolve"]'],
       ["Calligraphy", '[data-slot="calligraphy"]', '[data-slot="calligraphy"] img']]) {
       const y = await p.evaluate((sel) => Math.max(0, Math.round(document.querySelector(sel).getBoundingClientRect().top + scrollY - innerHeight * 0.45)), sel);
-      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await scrollHeld(p, y);
       await underMenu();
       await wipeAt(p, wiping);
       await check(p, `front page photos: ${name} wiping in`, dpr);
-      await p.waitForTimeout(2600);
+      await quiet(p);
       await check(p, `front page photos: ${name} at rest`, dpr);
     }
     // the BACK GROUND caption, as long as the console lets it be: on screen, on two lines
     const yCap = await p.evaluate(() => Math.max(0, Math.round(document.querySelector('[data-caption-for="background"]').getBoundingClientRect().top + scrollY - innerHeight * 0.6)));
     await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yCap);
-    await p.waitForTimeout(2200);
+    await quiet(p);
     await underMenu();
     await expect(p, (want) => {
       const c = document.querySelector('[data-caption-for="background"]'), r = document.createRange(), b = c.getBoundingClientRect();
@@ -649,15 +776,15 @@ const FLOWS = {
     const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
     await known(true);
     await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic);
-    await p.waitForTimeout(2200);
+    await quiet(p);
     await check(p, "front page photos: the hamburger over the BACK GROUND photo", dpr);
     await click(p, "#menuBtn");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     const lw = await menuLink(p, "WORK");
     await p.mouse.move(lw.x, lw.y, { steps: 4 });
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
-    await p.waitForTimeout(900);
+    await quiet(p);
     await check(p, "front page photos: the menu open over the BACK GROUND photo, pointer on WORK", dpr);
     await known(false);
   },
@@ -667,25 +794,25 @@ const FLOWS = {
   async focus(p, dpr) {
     await p.goto(SITE + "/index.html");
     await settled(p);
-    await p.waitForTimeout(2600);
+    await quiet(p);
     await tabTo(p, "#menuBtn");
     await p.keyboard.press("Enter");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
-    await p.waitForTimeout(1600);
+    await quiet(p);
     await tabTo(p, "#menuNav a");
     await check(p, "front page: keyboard focus on a menu label", dpr);
     await p.keyboard.press("Escape");
 
     await p.goto(SITE + "/illustration.html");
     await settled(p);
-    await p.waitForTimeout(2800);
+    await quiet(p);
     await tabTo(p, "a.brand");
     await check(p, "illustration page: keyboard focus on a link", dpr);
     await tabTo(p, ".work-btn");
     await check(p, "illustration page: keyboard focus on a work", dpr);
     await p.keyboard.press("Enter");
     await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed from the keyboard");
-    await p.waitForTimeout(2200);
+    await quiet(p);
     await tabTo(p, ".zoom-ui button");
     await check(p, "illustration page: keyboard focus on a zoom button", dpr);
   },
@@ -707,39 +834,70 @@ const FRONT = {
 };
 for (const f of ONLY) if (!FLOWS[f] && f !== "console") { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}, and console).`); process.exit(2); }
 
-// ---- the console, once (tests/console-check.mjs) ----------------------------------------------
-let consoleFails = [];
-if (!ONLY.length || ONLY.includes("console")) {
-  console.log("The console (tests/console-check.mjs):");
-  const r = await consoleCheck(browser, { root: ROOT });
-  consoleFails = r.fails;
-  console.log(r.fails.length ? `THE CONSOLE: ${r.fails.length} of ${r.passed + r.fails.length} checks failed.\n` : `The console: all ${r.passed} checks passed (${r.seconds} s).\n`);
-}
-
+// ---- the jobs, side by side: the console's check, and each flow at each pixel ratio ----------
+// (longest first, so the last to start isn't the last to finish; each job's lines are printed
+// together once it is done)
+const VIEW = { width: 1440, height: 810 };
+const LENGTH = { site: 4, shader: 4, photos: 2, focus: 1 };       // (roughly how long each flow takes)
 const stopped = [];
-for (const dpr of [1, 2]) {
-  for (const [name, flow] of Object.entries(FLOWS)) {
-    if (ONLY.length && !ONLY.includes(name)) continue;
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 810 }, deviceScaleFactor: dpr });
-    await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
-    // (the pages ask GitHub for their newest data too, js/fresh.js: never here — the check goes by the
-    // site's own copies, never by the network or what the owner has saved there. Last registered, so
-    // it wins for GitHub's own address of data/front.json.)
-    await ctx.route(/^https:\/\/(api\.github\.com|raw\.githubusercontent\.com)\//, (r) => r.abort());
-    // (arriving from another page: note when the plain arrow was hidden — before js/cursor.js ran, from
-    // the page's head, or only once it ran: arrowHidden())
-    await ctx.addInitScript(() => {
-      new MutationObserver(() => {
-        if (window.__arrowHidden === undefined && document.documentElement && document.documentElement.classList.contains("cursor-ready"))
-          window.__arrowHidden = window.__cursorProbe ? "once js/cursor.js ran" : "before js/cursor.js ran";
-      }).observe(document, { subtree: true, attributes: true, attributeFilter: ["class"] });
-    });
-    try { await flow(await ctx.newPage(), dpr); }
-    catch (e) { stopped.push(`${name} @${dpr}x: ${e.message.split("\n")[0]}`); console.log(`  STOPPED  ${name} @${dpr}x: ${e.message.split("\n")[0]}`); }
-    await ctx.close();
-  }
+let consoleFails = [];
+const jobs = [];
+// (the console's check mostly waits — on its stand-in GitHub, on the pages it opens — so it runs beside
+// the others rather than in one of their places)
+if (!ONLY.length || ONLY.includes("console")) jobs.push({ name: "the console (tests/console-check.mjs)", beside: true, run: async (log) => {
+  const r = await consoleCheck(browser, { root: ROOT, log });
+  consoleFails = r.fails;
+  log(r.fails.length ? `THE CONSOLE: ${r.fails.length} of ${r.passed + r.fails.length} checks failed.` : `The console: all ${r.passed} checks passed.`);
+} });
+for (const dpr of [1, 2]) for (const [name, flow] of Object.entries(FLOWS)) {
+  if (ONLY.length && !ONLY.includes(name)) continue;
+  jobs.push({ name: `${name} @${dpr}x`, size: (LENGTH[name] || 2) * (dpr === 2 ? 1.5 : 1), run: async (log, job) => {
+    const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: dpr });
+    try {
+      await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
+      // (the pages ask GitHub for their newest data too, js/fresh.js: never here — the check goes by the
+      // site's own copies, never by the network or what the owner has saved there. Last registered, so
+      // it wins for GitHub's own address of data/front.json.)
+      await ctx.route(/^https:\/\/(api\.github\.com|raw\.githubusercontent\.com)\//, (r) => r.abort());
+      await ctx.addInitScript(stepping);                        // (the moments stepTo() steps to, and the holds)
+      // (arriving from another page: note when the plain arrow was hidden — before js/cursor.js ran, from
+      // the page's head, or only once it ran: arrowHidden())
+      await ctx.addInitScript(() => {
+        new MutationObserver(() => {
+          if (window.__arrowHidden === undefined && document.documentElement && document.documentElement.classList.contains("cursor-ready"))
+            window.__arrowHidden = window.__cursorProbe ? "once js/cursor.js ran" : "before js/cursor.js ran";
+        }).observe(document, { subtree: true, attributes: true, attributeFilter: ["class"] });
+      });
+      const p = await ctx.newPage();
+      p.__job = Object.assign(job, { log }, await shooter(ctx, p, VIEW, dpr));
+      await flow(p, dpr);
+    } finally { await ctx.close().catch(() => {}); }
+  } });
 }
-
+jobs.sort((a, b) => (b.size || 0) - (a.size || 0));
+console.log(`${jobs.length} jobs, ${Math.min(JOBS, jobs.filter((j) => !j.beside).length)} at a time beside the console's (${CORES} cores): ${jobs.map((j) => j.name.replace(/ \(.*/, "")).join(", ")}\n`);
+const run = (job) => {
+  const lines = [], t = Date.now(), stats = { states: 0, rest: 0, checks: 0 };
+  return job.run((s) => lines.push(s), stats)
+    .catch((e) => { const why = `${job.name}: ${e.message.split("\n")[0]}`; stopped.push(why); lines.push(`  STOPPED  ${why}`); })
+    .then(() => {
+      const took = Math.round((Date.now() - t) / 1000), how = stats.states ? ` (${stats.states} states: ${Math.round(stats.rest / 1000)} s waiting for the page to rest, ${Math.round(stats.checks / 1000)} s checking)` : "";
+      console.log(`${job.name} — ${took} s${how}\n${lines.join("\n")}\n`);
+    });
+};
+await Promise.all([
+  ...jobs.filter((j) => j.beside).map(run),
+  new Promise((done) => {
+    const queue = jobs.filter((j) => !j.beside);
+    let running = 0;
+    const start = () => {
+      if (!queue.length && !running) return done();
+      while (running < JOBS && queue.length) { running++; run(queue.shift()).then(() => { running--; start(); }); }
+    };
+    start();
+  }),
+]);
+await scan.close();
 await browser.close();
 server.close();
 const bad = results.filter((r) => r.bad.length);
@@ -750,6 +908,7 @@ if (bad.length) {
   console.log(`\nOUTLINES in ${bad.length} of ${results.length} states:`);
   for (const r of bad) for (const w of r.bad) console.log(`  ${r.state} — ${w.key.slice(3)}: ${w.n} px, up to ${w.max} levels darker (near x ${w.at[0]}, y ${w.at[1]})`);
 } else console.log(`\nNo outlines: all ${results.length} states are clean.`);
+console.log(`(${Math.floor((Date.now() - T0) / 60000)} min ${Math.round((Date.now() - T0) / 1000) % 60} s)`);
 if (stopped.length) console.log(`\nNOT CHECKED — a flow stopped before its states:\n  ${stopped.join("\n  ")}`);
 if (colours.problems.length) console.log(`\nThe colour audit failed (at the top).`);
 if (consoleFails.length) console.log(`\nThe console's check failed (near the top): ${consoleFails.join("; ")}.`);

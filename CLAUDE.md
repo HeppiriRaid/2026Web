@@ -107,10 +107,9 @@ Three layers, so an outline can't ship again — and the console's own check rid
    `REVIEWED`, and a state in the pixel check that shows the reason true. It also fails when the pixel check
    misses a page with the cursor, or a `?switch` the scripts read. It can't see colours scripts compute (the
    hamburger's): cap those where they are made, and check their states.
-2. **The pixel check**, `tests/fold-check.mjs` (about 17 minutes; it runs the audit first, then the console's
-   check once). It shows every state
-   twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook in
-   `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
+2. **The pixel check**, `tests/fold-check.mjs` (about 4 minutes on 4 cores; it runs the audit first). It shows
+   every state twice (plain, and with the square stretched over the whole window: the `window.__cursorProbe` hook
+   in `js/cursor.js`, only there under automation) and fails on any outline pixel that isn't inside a picture or a
    known limit. The states come in flows, at the bottom of the file: `site` (the whole site in one visit, and the
    plain arrow hidden through each page change), `shader` (the test panel, and the harmony cursor in every
    variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre,
@@ -118,6 +117,17 @@ Three layers, so an outline can't ship again — and the console's own check rid
    `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)
+   How it stays fast without testing less: each flow at each pixel ratio is a job, run side by side (as many as
+   the machine has cores, `FOLD_JOBS`; the console's check beside them); screenshots are Chromium's own, encoded
+   for speed (the same pixels as `page.screenshot()`, checked once per job); the pixel test runs in worker
+   threads (`tests/fold-scan.mjs`). And no state is reached by the clock: `quiet()` waits until the page is at
+   rest (no GSAP tween or CSS transition under way, the smooth scrolls still, the scrollbar away, the hamburger
+   settled, pictures in — GSAP's tweens hurried there, never CSS: the menu's morph is a chain of transitions
+   started by timers), and `stepTo()` reaches a moment part-way through an animation by stopping GSAP's clock
+   (and the CSS ones with it) where it begins — at a page change (`holdNext()`: `kt:leave` / `kt:arrive`), with a
+   scroll (`scrollHeld()`) — and moving it on by hand, 8 ms at a time. So a slow or busy machine only makes the
+   run longer, never different. Never add a fixed pause to a flow: if `quiet()` misses something that moves,
+   teach it (the job then says "not at rest after 25 s — …").
    **The console's check**, `tests/console-check.mjs` (about a minute, on its own or as part of the full run): the
    console end to end in Chromium against a stand-in GitHub API and Pages, in memory, seeded with this checkout's
    site and fixed data — signing in, every front-page edit (photo, description, crop, caption, back to the
@@ -131,7 +141,7 @@ Three layers, so an outline can't ship again — and the console's own check rid
 
 ```
 npm install --no-save playwright-core
-node tests/fold-check.mjs            # must end with "No outlines" and "Stamp: …"
+node tests/fold-check.mjs            # must end with "No outlines" and "Stamp: …" (about 4 minutes)
 node tests/fold-check.mjs shader     # one flow, while working on it (no stamp)
 node tests/console-check.mjs         # the console's check alone (or: node tests/fold-check.mjs console)
 node tests/colour-audit.mjs          # the audit alone
