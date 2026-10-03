@@ -568,6 +568,11 @@ const FLOWS = {
     await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
     await quiet(p);
     await check(p, "illustration page: a work zoomed", dpr);
+    await p.keyboard.press("ArrowRight");
+    await wipeAt(p, ".zoom-fig");
+    await check(p, "illustration page: the zoom, half-way to the next work", dpr);
+    await expect(p, () => !!document.querySelector(".work.is-zoomed") && document.querySelectorAll(".zoom-fig:not(.is-warm)").length === 1, null, "the next work in the zoom");
+    await quiet(p);
     await p.keyboard.press("Escape");
     await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
     await quiet(p);
@@ -831,11 +836,14 @@ const FLOWS = {
     await known(false);
     await quiet(p);
     await expect(p, () => {
-      const f = document.querySelector(".zoom-fig"), im = f && f.querySelector("img"), r = f && f.getBoundingClientRect();
+      const f = document.querySelector(".zoom-fig:not(.is-warm)"), im = f && f.querySelector("img"), r = f && f.getBoundingClientRect();
       return !!im && Math.abs(r.width / r.height - im.naturalWidth / im.naturalHeight) < 0.01 && !f.style.clipPath;
     }, null, "the whole BACK GROUND picture in the zoom, not its crop");
     await check(p, "front page photos: a photo zoomed, whole", dpr);
+    // (half-way there: the wipe's edge on whole pixels, the photo gliding between them inside its still frame)
     await p.keyboard.press("ArrowRight");
+    await wipeAt(p, ".zoom-fig");
+    await check(p, "front page photos: the zoom, half-way to the next photo", dpr);
     await expect(p, () => document.querySelector('[data-slot="graphic"]').classList.contains("is-zoomed"), null, "the next photo in the zoom");
     await quiet(p);
     await check(p, "front page photos: the zoom, the next photo", dpr);

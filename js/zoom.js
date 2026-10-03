@@ -49,7 +49,8 @@
 
   /* ---------- whole device pixels for every moving edge ------------------------
      Inside the cursor's square a half-covered pixel on an edge folds through black
-     (css/anim.css), so a wipe's moving edge, and a sliding picture, land on whole pixels. */
+     (css/anim.css), so a wipe's moving edge, and a picture sliding with its edges in view
+     (the nudge at either end of the row), land on whole pixels. */
   function dp(v) { var d = window.devicePixelRatio || 1; return Math.round(v * d) / d; }
   // the clip for a wipe that has revealed p (0→1) of el, from its "left" or "right" edge;
   // the still sides lie a pixel outside the box
@@ -74,7 +75,7 @@
   window.__zoom = function (o) {
     var zoom = o.el, zoomBg = zoom.querySelector(".zoom-bg"), zoomUi = zoom.querySelector(".zoom-ui");
     var zoomTitle = document.getElementById("zoomTitle");
-    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
+    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
     /* the "+": it never moves, it only fades — out the moment its picture is opened, back in
        once the picture has returned to its place */
@@ -137,16 +138,50 @@
         var im = document.createElement("img");
         im.alt = it.img.alt || it.title;
         im.src = src;                                         // already decoded: no blank frame
-        if (it.full) {                                        // swap to the large file once it can paint
-          var full = it.full, hi = new Image(); hi.src = full;
-          (hi.decode ? hi.decode() : Promise.reject()).then(function () { im.src = full; }, function () {});
+        if (it.full) {                                        // the large file, decoded aside: upgrade()
+          var hi = new Image(), full = f.__full = { src: it.full, ready: false };
+          hi.src = it.full;
+          (hi.decode ? hi.decode() : Promise.reject()).then(function () { full.ready = true; if (!Z.busy) upgrade(f); }, function () {});
         }
         f.appendChild(im); f.classList.add("has-img");
       }
       zoom.insertBefore(f, zoomUi);
       return f;
     }
+    // a picture's large file in, once it can paint — and only while nothing moves: its first drawing
+    // takes long, and mid-motion it would hold up a frame (a visible jump)
+    function upgrade(f) {
+      var u = f && f.__full, im = u && u.ready && f.querySelector("img");
+      if (im && im.getAttribute("src") !== u.src) { im.src = u.src; return true; }
+      return false;
+    }
     function focusIn(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
+    function nextFrame() { return new Promise(function (r) { requestAnimationFrame(function () { r(); }); }); }
+    // The pictures either side of the one up, drawn in their places in the zoom, too faint to see
+    // (.is-warm), so a step finds its picture decoded at the size it is shown: its first drawing at that
+    // size decodes it (a photo the page shows small, the most), and mid-motion that would hold up a frame.
+    // (img.decode() doesn't do it: the browser keeps what that decodes apart from what it draws with.)
+    // Kept until a step takes one or the zoom closes.
+    function warm(i) {
+      var keep = {};
+      [i - 1, i + 1].forEach(function (k) {
+        var it = Z.list[k];
+        if (!it || !it.img) return;
+        var f = Z.warm[k];
+        if (!f) { f = Z.warm[k] = makeFig(it); f.classList.add("is-warm"); place(f, fit(aspect(it))); }
+        keep[k] = true;
+        upgrade(f);
+      });
+      unwarm(keep);
+    }
+    function unwarm(keep) {
+      Object.keys(Z.warm).forEach(function (k) {
+        if (keep && keep[k]) return;
+        var f = Z.warm[k];
+        delete Z.warm[k];
+        if (f.parentNode) f.parentNode.removeChild(f);
+      });
+    }
     // a big image painted for the first time is decoded on that very frame (a visible hitch);
     // decode it off the main thread first — capped, so a slow file never holds the motion
     function ready(f) {
@@ -166,7 +201,8 @@
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
       hidePlus(it);                                      // the "+" fades out the moment the picture is opened
-      if (!gsap || REDUCE) { it.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; return; }
+      if (!gsap || REDUCE) { it.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; warm(i); return; }
+      f.classList.add("flies");                          // (a layer of its own while it flies: css/zoom.css)
       gsap.set(f, cr ? cr.move : flip(r0, r1));          // sits exactly on its place (a crop: only that part)…
       if (cr) f.style.clipPath = inset(cr.clip);
       f.style.visibility = "hidden";
@@ -175,7 +211,7 @@
         f.style.visibility = "";
         it.el.classList.add("is-zoomed");
         gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: lift,
-          onComplete: function () { Z.busy = false; } });
+          onComplete: function () { f.classList.remove("flies"); Z.busy = false; upgrade(f); warm(Z.i); } });
         if (cr) gsap.to(cr.clip, { t: 0, r: 0, b: 0, l: 0, duration: 0.9, ease: lift,
           onUpdate: function () { f.style.clipPath = inset(cr.clip); }, onComplete: function () { f.style.clipPath = ""; } });
       });
@@ -200,9 +236,12 @@
         if (Z.kbd) focusIn(it.focus || it.box);
         else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       }
+      unwarm();
       if (!gsap || REDUCE) { zoomBg.style.opacity = 0; done(); return; }
       setPlus(it, 0);
-      gsap.to(f, Object.assign(cr ? cr.move : flip(r0, r1), { duration: 0.75, ease: lift, overwrite: true, onComplete: done }));
+      f.classList.add("flies");
+      // (xPercent: back from a nudge at either end, if one is under way)
+      gsap.to(f, Object.assign(cr ? cr.move : flip(r0, r1), { xPercent: 0, duration: 0.75, ease: lift, overwrite: true, onComplete: done }));
       if (cr) {                                          // (the crop closes back round what its place shows)
         var c = { t: 0, r: 0, b: 0, l: 0 };
         gsap.to(c, { t: cr.clip.t, r: cr.clip.r, b: cr.clip.b, l: cr.clip.l, duration: 0.75, ease: lift,
@@ -211,38 +250,60 @@
       gsap.to(zoomBg, { opacity: 0, duration: 0.5, delay: 0.1, ease: "power2.inOut" });
     }
 
-    // step to the next / previous picture inside the zoom: a sideways wipe in the
-    // direction of travel (the old picture sweeps off, the new one sweeps in)
+    // Step to the next / previous picture inside the zoom: a sideways wipe in the direction of
+    // travel (the old picture sweeps off, the new one sweeps in), each picture drifting a little the
+    // same way. The two are kept apart: the wipe cuts the picture's frame, which never moves, so its
+    // edge lands on whole device pixels (inside the cursor's square a soft edge folds through black);
+    // the picture drifts inside it between pixels — smooth at any speed, from a standstill to a
+    // standstill. (Snapped to whole pixels, a slow drift stood still, then hopped.) Drawn in place,
+    // as at rest: on a layer of its own it would look a little different while it moves (css/zoom.css).
+    // Wipe and drift share one clock and one easing, so the frame never opens past the picture's
+    // own edges.
+    // Nothing else happens while they move. Everything a step needs is done first — the new picture
+    // made, decoded and drawn at its size (warm()), a frame passed with nothing moving — so the motion
+    // starts on time from a standstill; and what is left (the page following underneath, the places
+    // swapping, all under the grey) waits until everything is still. (A long frame mid-motion is a
+    // visible jump.)
     function step(d) {
       if (!Z.open || Z.busy) return;
       var j = Z.i + d;
       if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, nothing more
-        if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1, modifiers: slideX(Z.fig) });
+        if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
         return;
       }
       Z.busy = true;
-      var ow = Z.list[Z.i], nw = Z.list[j], of = Z.fig;
-      if (o.follow) o.follow(j);                               // the page follows underneath, so closing lands home
-      ow.el.classList.remove("is-zoomed"); nw.el.classList.add("is-zoomed");
-      setPlus(ow, 1); setPlus(nw, gsap && !REDUCE ? 0 : 1);    // both under the grey: no motion needed
-      var nf = makeFig(nw); place(nf, fit(aspect(nw)));
+      var ow = Z.list[Z.i], nw = Z.list[j], of = Z.fig, nf = Z.warm[j];
+      if (nf) delete Z.warm[j];                                // (drawn already, faint: warm())
+      else { nf = makeFig(nw); nf.classList.add("is-warm"); }
+      place(nf, fit(aspect(nw)));
       Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
-      if (!gsap || REDUCE) { of.parentNode.removeChild(of); Z.busy = false; return; }
-      var a = { p: 0 }, b = { p: 0 };
+      // (under the grey: the page follows, so closing lands home; the places swap)
+      function settle() {
+        if (of.parentNode) of.parentNode.removeChild(of);
+        ow.el.classList.remove("is-zoomed"); nw.el.classList.add("is-zoomed");
+        setPlus(ow, 1); setPlus(nw, gsap && !REDUCE ? 0 : 1);
+        if (o.follow) o.follow(j);
+        Z.busy = false;
+        upgrade(nf);
+        warm(j);
+      }
+      if (!gsap || REDUCE) { nf.classList.remove("is-warm"); settle(); return; }
+      var a = { p: 0 }, b = { p: 0 }, oi = of.querySelector("img"), ni = nf.querySelector("img");
       var outFrom = d > 0 ? "left" : "right", inFrom = d > 0 ? "right" : "left";
-      nf.style.clipPath = wipeClip(nf, 0, inFrom);
-      gsap.to(a, { p: 1, duration: 0.7, ease: worksEase,
-        onUpdate: function () { of.style.clipPath = wipeClip(of, 1 - a.p, outFrom); },
-        onComplete: function () { if (of.parentNode) of.parentNode.removeChild(of); } });
-      gsap.to(of, { xPercent: -5 * d, duration: 0.7, ease: worksEase, modifiers: slideX(of) });
-      gsap.set(nf, { xPercent: 5 * d, modifiers: slideX(nf) });
-      var t0 = performance.now();
-      ready(nf).then(function () {                             // the new picture sweeps in once it can paint —
-        var delay = Math.max(0, 0.1 - (performance.now() - t0) / 1000);   // on the usual 0.1s cue when that is quick
-        gsap.to(b, { p: 1, duration: 0.8, delay: delay, ease: worksEase,
+      // (the new picture drawn, too faint to see, until it is decoded and a frame has passed. The drift
+      // in 2D, force3D: false — in 3D the picture would be put on a layer of its own for the motion)
+      if (ni) gsap.set(ni, { xPercent: 5 * d, force3D: false });
+      ready(nf).then(function () { return upgrade(nf) ? ready(nf) : null; })   // (its large file, if in already)
+        .then(nextFrame).then(nextFrame).then(function () {
+        nf.style.clipPath = wipeClip(nf, 0, inFrom);
+        nf.classList.remove("is-warm");
+        gsap.to(a, { p: 1, duration: 0.7, ease: worksEase,
+          onUpdate: function () { of.style.clipPath = wipeClip(of, 1 - a.p, outFrom); } });
+        if (oi) gsap.to(oi, { xPercent: -5 * d, duration: 0.7, ease: worksEase, force3D: false });
+        gsap.to(b, { p: 1, duration: 0.8, delay: 0.1, ease: worksEase,          // (the new one on a 0.1s cue)
           onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
-          onComplete: function () { nf.style.clipPath = ""; Z.busy = false; } });
-        gsap.to(nf, { xPercent: 0, duration: 0.8, delay: delay, ease: worksEase, modifiers: slideX(nf) });
+          onComplete: function () { nf.style.clipPath = ""; nextFrame().then(settle); } });
+        if (ni) gsap.to(ni, { xPercent: 0, duration: 0.8, delay: 0.1, ease: worksEase, force3D: false });
       });
     }
 
@@ -291,7 +352,9 @@
       e.preventDefault();
     });
     window.addEventListener("resize", function () {
-      if (Z.open && Z.fig && !Z.busy) place(Z.fig, fit(aspect(Z.list[Z.i])));
+      if (!Z.open || !Z.fig || Z.busy) return;
+      place(Z.fig, fit(aspect(Z.list[Z.i])));
+      Object.keys(Z.warm).forEach(function (k) { place(Z.warm[k], fit(aspect(Z.list[k]))); });
     });
 
     return { open: open, close: close, isOpen: function () { return Z.open; } };

@@ -74,11 +74,23 @@ How the site avoids it:
   **crisp edges**: on whole device pixels, no half-pixel transforms. Examples: the "+" is sized in device pixels
   and placed by layout, never by a transform (`crispPlus()` in `js/zoom.js`); the zoom picture is placed on
   device pixels (`fit()`).
-- **Moving edges too**: every wipe's moving edge is snapped to a device pixel (`wipeClip()` in `js/anim.js` and
-  `js/illustration.js`; never a percentage `inset()`), and pictures sliding sideways use the `slideX()` modifiers.
-- **No layer of its own for a photo** (`will-change`): the browser draws a layer at its exact, fractional place, so
-  its edges come out soft, and a bright photo's soft edge folds. Drawn in place, a photo rests and wipes in on whole
-  device pixels (the front page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth).
+- **Moving edges too**: every wipe's moving edge is snapped to a device pixel (`wipeClip()` in `js/anim.js`,
+  `js/illustration.js` and `js/zoom.js`; never a percentage `inset()`), and a picture sliding with its edges in
+  view uses the `slideX()` modifiers (the zoom's nudge at either end of the row). A picture moving slowly *inside*
+  a still frame is never snapped, though: snapped, it stands still, then hops (the zoom's step drifted like that).
+  So in the zoom's step the wipe cuts the picture's still frame, and the picture glides inside it between pixels,
+  drawn in place (no layer, below), the wipe hiding its edges (same clock, same easing). And nothing heavy happens
+  while anything moves: what a step needs is done before (the next picture drawn at its size, too faint to see,
+  while the one before rests: `warm()` — a picture's first drawing at a new size decodes it, and `img.decode()`
+  doesn't help: the browser keeps what that decodes apart from what it draws with), the rest after (the page
+  following, the large file swapped in: `upgrade()`) — a long frame mid-motion is a visible jump.
+- **No layer of its own for a picture at rest** (`will-change`, or a 3D transform): the browser draws a layer at its
+  exact, fractional place, resamples a picture on it a little differently, and a layer that has been scaled can stay
+  drawn at not quite its size once still — its edges soft (measured in the zoom: a soft bottom edge at 1x and 2x),
+  and a bright photo's soft edge folds. Drawn in place, a photo rests and wipes in on whole device pixels (the front
+  page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth). The zoom's frame takes a layer
+  only while it flies in or back (`.flies`); a picture moving in 2D is tweened with `force3D: false` (GSAP's default
+  puts anything it moves on a layer of its own for the motion, and the switch shows as it starts and stops).
 - Focus rings too: the browser's own ring has a white halo and round corners, so the site draws its own plain,
   square ring for every keyboard focus (`:focus-visible` in `css/style.css`: ink; the menu button and labels in
   `css/anim.css`; a work, red and unmoved, in `css/illustration.css`; a front-page photo (just inside it, where

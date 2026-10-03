@@ -59,9 +59,20 @@
    (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
    through #DCCBC3 and flash the square black (css/anim.css). */
 .zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
-.zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
+.zoom-fig{position:absolute;margin:0;transform-origin:0 0;background:var(--ph)}
 .zoom-fig.has-img{background:none}
-.zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}
+/* the picture in its frame, filling it exactly, so every edge of it lies on the frame's, on whole device
+   pixels (the frame has the picture's shape to within a pixel: fit(); "contain" would leave it up to a
+   pixel short, its edge soft between pixels — and a soft edge folds inside the cursor's square) */
+.zoom-fig img{display:block;width:100%;height:100%;object-fit:fill}
+/* A layer of its own (will-change) only while the frame flies in or back (.flies, js/zoom.js); at rest and
+   in a step the picture is drawn in place. On a layer the browser resamples a picture differently — a little
+   softer, its edges too — and a layer that has been scaled can stay drawn at not quite its size once still,
+   its edges soft between pixels (measured: a soft bottom edge, at 1x and 2x). Drawn in place it is crisp, and
+   a step's drift still glides between pixels, looking the same from a standstill to a standstill. */
+.zoom-fig.flies{will-change:transform}
+/* drawn too faint to see, ahead of time: a picture's first drawing at its size here decodes it (warm()) */
+.zoom-fig.is-warm{opacity:.004;pointer-events:none}
 /* keyboard / screen-reader controls: invisible until focused. In the middle of the top margin
    (6.4pt tall, the 12pt margin the picture always keeps clear): focused, a control never lies
    over the picture or its edge. On a layer of their own, so their letters are smoothed in grey
