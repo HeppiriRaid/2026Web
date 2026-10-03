@@ -53,11 +53,12 @@
      (the nudge at either end of the row), land on whole pixels. */
   function dp(v) { var d = window.devicePixelRatio || 1; return Math.round(v * d) / d; }
   // the clip for a wipe that has revealed p (0→1) of el, from its "left" or "right" edge;
-  // the still sides lie a pixel outside the box
+  // the still sides on the box's own edges (whole device pixels: fit()), so a picture drifting
+  // inside never shows past them — not even the pixel that would linger as the step ends
   function wipeClip(el, p, from) {
     var r = el.getBoundingClientRect();
-    return from === "left" ? "inset(-1px " + (r.right - dp(r.left + r.width * p)) + "px -1px -1px)"
-      : "inset(-1px -1px -1px " + (dp(r.right - r.width * p) - r.left) + "px)";
+    return from === "left" ? "inset(0px " + (r.right - dp(r.left + r.width * p)) + "px 0px 0px)"
+      : "inset(0px 0px 0px " + (dp(r.right - r.width * p) - r.left) + "px)";
   }
   // GSAP modifiers for a picture sliding sideways by xPercent
   function slideX(f) { return { xPercent: function (v) { var w = parseFloat(f.style.width) || f.offsetWidth || 1; return dp(v / 100 * w) / w * 100; } }; }
