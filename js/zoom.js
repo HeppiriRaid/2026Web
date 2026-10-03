@@ -32,7 +32,7 @@
       return bz(p, y1, y2);
     };
   }
-  var worksEase = cubicBezier(0.38, 0, 0.5, 1);   // the front page's panel wipe: slow → fast → slow
+  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // zoom step: sets off as the panel wipes do, lands long and soft
   var lift = cubicBezier(0.22, 1, 0.36, 1);       // zoom: answers at once, lands softly
 
   // the "+" in whole device pixels — its size and its bars' thickness, with the bars exactly
@@ -297,13 +297,13 @@
         .then(nextFrame).then(nextFrame).then(function () {
         nf.style.clipPath = wipeClip(nf, 0, inFrom);
         nf.classList.remove("is-warm");
-        gsap.to(a, { p: 1, duration: 0.7, ease: worksEase,
+        gsap.to(a, { p: 1, duration: 1, ease: stepEase,
           onUpdate: function () { of.style.clipPath = wipeClip(of, 1 - a.p, outFrom); } });
-        if (oi) gsap.to(oi, { xPercent: -5 * d, duration: 0.7, ease: worksEase, force3D: false });
-        gsap.to(b, { p: 1, duration: 0.8, delay: 0.1, ease: worksEase,          // (the new one on a 0.1s cue)
+        if (oi) gsap.to(oi, { xPercent: -5 * d, duration: 1, ease: stepEase, force3D: false });
+        gsap.to(b, { p: 1, duration: 1.1, delay: 0.1, ease: stepEase,          // (the new one on a 0.1s cue)
           onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
           onComplete: function () { nf.style.clipPath = ""; nextFrame().then(settle); } });
-        if (ni) gsap.to(ni, { xPercent: 0, duration: 0.8, delay: 0.1, ease: worksEase, force3D: false });
+        if (ni) gsap.to(ni, { xPercent: 0, duration: 1.1, delay: 0.1, ease: stepEase, force3D: false });
       });
     }
 
