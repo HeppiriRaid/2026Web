@@ -48,6 +48,34 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   *before* it is pushed. A push hook enforces the run: `git push` is stopped until a full clean run has passed
   for exactly the code being pushed.
 
+## The flow of motion — every new motion follows it
+
+The owner, on the zoom's step to the next picture as it is now: perfect, and the way every motion should move.
+
+- **From a standstill to a standstill.** A motion sets off gently, with no jump on its first frame. It lands long
+  and soft, slower and slower to the very end, so it never seems to stop at once. The zoom's step: `stepEase`,
+  `cubic-bezier(0.3, 0, 0.2, 1)` over 1 s (the picture leaving) and 1.1 s (the one arriving, on a 0.1 s cue).
+  Its first frames and top speed match the panel wipes'; only the landing is longer: 300 ms before the end,
+  under 5% of the way is left, and the last frames creep. The curve it replaced, `(0.38, 0, 0.5, 1)` over
+  0.8 s, braked hard over its last 200 ms and read as "suddenly stopped".
+- **Nothing outside the flow.** When a motion ends, no pixel lingers, pops in or out, or moves on its own.
+  Whatever moves together shares one clock and one easing (the step's wipe and drift), and nothing shows past
+  where the motion puts it. The step's clip stops exactly at the frame's edges; letting one more pixel through
+  left a 1-px strip of the old picture for 0.2 s after its wipe had ended.
+- **Smooth between pixels.** A picture moving slowly is never snapped to whole pixels (it stands still, then
+  hops). Only edges in view are snapped (the cursor's rule, below). So the picture glides inside a still
+  frame, and only the frame's cut edge is snapped.
+- **The same look from start to stop.** Never switch a layer on or off around a motion (`will-change`, or
+  GSAP's default `force3D: "auto"`). On a layer the browser draws a picture a little differently, so the
+  switch shows as the motion starts and as it stops.
+- **Nothing heavy while anything moves.** Prepare before (decode, draw at size: `warm()`) and tidy after
+  (`settle()`). A long frame mid-motion is a visible jump.
+- **Measured, not guessed.** Check per-frame positions (no hops; the landing's last frames creep), frame
+  times while moving (about 20 ms or less at 1x), and the pixels around every edge as the motion ends,
+  holding GSAP's clock there. The sandbox has no GPU: at 2x its compositor alone takes about 25 ms a frame,
+  so judge 2x timings on a real machine. Its emulated 2x also snaps pictures to whole CSS pixels, which a
+  real screen doesn't: check edges with a real scale (`--force-device-scale-factor`).
+
 ## The inverse cursor, and the one rule that keeps it clean
 
 The cursor's square (`js/cursor.js`, `css/anim.css` "custom cursor") shows every colour beneath it as
