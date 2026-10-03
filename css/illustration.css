@@ -23,9 +23,6 @@
 }
 
 :root{
-  --ink:#434343;
-  --ph:#b3b1b1;                                                   /* placeholder grey (the file's) */
-  --red:#f20000;
   --g:max(0px,calc((100vw - 460.807 * var(--k)) / 2));           /* side gutter when a wide window centres the screen */
   --e:max(0px,calc((100svh - 259.2 * var(--k)) / 2));            /* half the extra height when the window is taller than 16:9 */
 }
@@ -33,7 +30,6 @@
 /* the page never scrolls down; the row scrolls sideways */
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .cscroll-rail,.cscroll-thumb{display:none !important}
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px}
 ::selection{background:var(--red);color:#fff}
 
 /* ---- header (fixed; same placement primitive as the front page) ------------ */
@@ -71,32 +67,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .work-btn:focus{outline:none}
 .work-btn:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(1.5 * var(--k))}
 
-/* "+" — the front page's 4.5pt cross, centred 4.75pt in from the right edge, 4.05pt down.
-   It never moves: it only fades — in as its work appears, out when the work is opened,
-   and back in once the work has returned to the row (illustration.js). */
-/* It inverts the work beneath it with the cursor's inverse (#DCCBC3, difference), so it
-   reads on any picture, light or dark. */
-.work .plus{position:absolute;left:auto;right:calc(2.5 * var(--k));top:calc(1.8 * var(--k));transform:none;
-  mix-blend-mode:difference}
-.work .plus::before,.work .plus::after{background:#dccbc3;transition:background-color .25s ease}
-/* Every edge of it on a whole device pixel: its size and bar thickness come in whole
-   device pixels (--plus-s / --plus-w, illustration.js) and the bars are centred by layout,
-   not by half-bar transforms. A half-covered edge pixel over a bright picture would fold
-   through black inside the cursor's square (css/anim.css). */
-.work .plus{width:var(--plus-s,calc(4.5 * var(--k)));height:var(--plus-s,calc(4.5 * var(--k)))}
-.work .plus::before{transform:none;height:var(--plus-w,max(.75px,calc(.6 * var(--k))));top:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
-.work .plus::after{transform:none;width:var(--plus-w,max(.75px,calc(.6 * var(--k))));left:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
-/* hover highlight: the "+" turns a solid whitish grey (the band grey, #f2f1ef) while the
-   pointer is on the "+" itself — colour only, it never moves. (Not on the whole work: a
-   highlighted "+" far from the pointer read as left behind.) Inside the cursor's square it
-   shows inverted, as a dark slate. Real-hover devices only, so a tap on a phone can't
-   leave it stuck; keyboard focus on a work gets the same highlight. */
-@media (hover:hover){
-  .work .plus:hover{mix-blend-mode:normal}
-  .work .plus:hover::before,.work .plus:hover::after{background:var(--band)}
-}
-.work-btn:focus-visible .plus{mix-blend-mode:normal}
-.work-btn:focus-visible .plus::before,.work-btn:focus-visible .plus::after{background:var(--band)}
+/* "+" (its look, hover and focus: css/zoom.css): centred 4.75pt in from the work's right
+   edge, 4.05pt down */
+.work .plus{right:calc(2.5 * var(--k));top:calc(1.8 * var(--k))}
 
 /* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 222).
    Line-height 1.3 puts the baseline .889em below the box top, hence 6 - 2.667 = 3.333pt.
@@ -109,29 +82,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 .work-cap .f{white-space:nowrap}
 .cap-in{display:block}
 
-/* ---- zoom ---------------------------------------------------------------------- */
-.zoom{position:fixed;inset:0;z-index:95;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
-.zoom.is-open{visibility:visible;pointer-events:auto;cursor:pointer}
-.zoom-bg{position:absolute;inset:0;background:var(--band);opacity:0}
-/* Under the cursor's square the grey is drawn as its mirror about #DCCBC3 (#c6a597 —
-   the very same colour once the square inverts it), a patch that follows the square
-   (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
-   through #DCCBC3 and flash the square black (css/anim.css). */
-.zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
-.zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
-.zoom-fig.has-img{background:none}
-.zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}
-/* keyboard / screen-reader controls: invisible until focused. On a layer of their own, so
-   their letters are smoothed in grey like all the site's text: over the opaque grey the
-   browser would smooth them in colour (subpixel), and those coloured edges fold through
-   black inside the cursor's square. */
-.zoom-ui{position:absolute;right:calc(12 * var(--k));top:calc(12 * var(--k));display:flex;gap:calc(4 * var(--k));will-change:transform}
-.zoom-ui button{
-  position:relative;opacity:0;pointer-events:none;
-  font-family:"GothicCap","Gothic",sans-serif;font-size:calc(4 * var(--k));line-height:1;color:var(--ink);
-  background:none;border:0;padding:calc(1.2 * var(--k)) calc(2.4 * var(--k));cursor:pointer;
-}
-.zoom-ui button:focus-visible{opacity:1;pointer-events:auto;outline:max(1px,calc(.4 * var(--k))) solid var(--red)}
+/* ---- zoom: css/zoom.css (shared with the front page's photos) ----------------- */
 /* while a work is up in the zoom its place in the row is empty — only the picture is
    hidden, so its "+" can fold away and later draw itself back in */
 .work.is-zoomed .work-media,.work.is-zoomed .work-btn img{visibility:hidden}

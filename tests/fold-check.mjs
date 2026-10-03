@@ -816,6 +816,36 @@ const FLOWS = {
       return c.textContent === want && tops.size === 2 && getComputedStyle(c).opacity === "1" && b.top > 0 && b.bottom < innerHeight;
     }, CAPTION, "the BACK GROUND caption rewritten, on screen, on two lines");
     await check(p, "front page photos: the BACK GROUND caption, rewritten (two lines)", dpr);
+    // the photos open in the zoom (js/zoom.js), as a work does on the illustration page: the "+" under
+    // the pointer; the BACK GROUND photo up, whole (its place shows it cropped); the next photo; and
+    // back home, its "+" drawn in again. (While the zoom is up it covers the hamburger.)
+    const yBg = await p.evaluate(() => Math.max(0, Math.round(document.querySelector('[data-slot="background"]').getBoundingClientRect().top + scrollY - innerHeight * 0.2)));
+    await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yBg);
+    await quiet(p);
+    await underMenu();
+    await hover(p, '[data-slot="background"] .plus');
+    await expect(p, () => !!document.querySelector('[data-slot="background"] .plus:hover'), null, "the pointer on the BACK GROUND photo's +");
+    await check(p, "front page photos: pointer on a +", dpr);
+    await p.mouse.down(); await p.mouse.up();
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "the BACK GROUND photo zoomed");
+    await known(false);
+    await quiet(p);
+    await expect(p, () => {
+      const f = document.querySelector(".zoom-fig"), im = f && f.querySelector("img"), r = f && f.getBoundingClientRect();
+      return !!im && Math.abs(r.width / r.height - im.naturalWidth / im.naturalHeight) < 0.01 && !f.style.clipPath;
+    }, null, "the whole BACK GROUND picture in the zoom, not its crop");
+    await check(p, "front page photos: a photo zoomed, whole", dpr);
+    await p.keyboard.press("ArrowRight");
+    await expect(p, () => document.querySelector('[data-slot="graphic"]').classList.contains("is-zoomed"), null, "the next photo in the zoom");
+    await quiet(p);
+    await check(p, "front page photos: the zoom, the next photo", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
+    await p.mouse.move(700, 450, { steps: 2 });
+    await quiet(p);
+    await expect(p, () => [...document.querySelectorAll(".ph-open .plus")].every((x) => getComputedStyle(x).opacity === "1"), null, "every photo's + drawn in again");
+    await underMenu();
+    await check(p, "front page photos: back home from the zoom", dpr);
     // the hamburger over the BACK GROUND photo, then the menu open over it
     const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
     await known(true);
@@ -846,6 +876,15 @@ const FLOWS = {
     await tabTo(p, "#menuNav a");
     await check(p, "front page: keyboard focus on a menu label", dpr);
     await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
+    await quiet(p);
+    await tabTo(p, ".ph-open");
+    await check(p, "front page: keyboard focus on a photo", dpr);
+    await p.keyboard.press("Enter");
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a photo zoomed from the keyboard");
+    await quiet(p);
+    await tabTo(p, ".zoom-ui button");
+    await check(p, "front page: keyboard focus on a zoom button", dpr);
 
     await p.goto(SITE + "/illustration.html");
     await settled(p);

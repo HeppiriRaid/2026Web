@@ -32,17 +32,19 @@ const REVIEWED = {
     "var(--band)": [1, ".band: the grey section backgrounds lie beneath the under-squares (z-index 0), which mirror them"],
     "#d1d1d1": [1, ".box's own grey (the --c fallback)"],
     "var(--c)": [1, ".box: light grey boxes are plain, unmoved boxes (whole pixels); their wipe-in edge is snapped (wipeClip, js/anim.js)"],
-    "#f20000": [1, ".sq: the red squares are plain, unmoved boxes (whole pixels)"],
+    "#f20000": [2, "--red, the site's red; .sq: the red squares are plain, unmoved boxes (whole pixels)"],
   },
   "css/anim.css": {
     "var(--paper)": [1, ".preloader: the white sheet carries its own under-squares and moves in whole device pixels (js/wipe.js)"],
     "#ffffff": [1, ".menu-nav a: the white menu labels; inside the square only their mirror copy shows (::after, js/cursor.js)"],
   },
   "css/illustration.css": {
-    "#f20000": [1, "--red, the site's red"],
-    "var(--red)": [3, "::selection (a known limit, CLAUDE.md); the focus rings of a work and of the zoom's buttons: plain, unmoved outlines (whole pixels)"],
+    "var(--red)": [2, "::selection (a known limit, CLAUDE.md); a work's focus ring: a plain, unmoved outline (whole pixels)"],
     "#ffffff": [1, "::selection's letters (a known limit, CLAUDE.md)"],
-    "var(--band)": [3, "the + on hover / keyboard focus: sized in whole device pixels (crispPlus, js/illustration.js); .zoom-bg: carries its own mirror patch (.zoom-bg .cursor-fold)"],
+  },
+  "css/zoom.css": {
+    "var(--band)": [3, "the + on hover / keyboard focus: sized in whole device pixels (crispPlus, js/zoom.js), placed by layout, never moved; .zoom-bg: carries its own mirror patch (.zoom-bg .cursor-fold)"],
+    "var(--red)": [2, "the focus rings of a front-page photo and of the zoom's buttons: plain, unmoved outlines (whole pixels)"],
   },
   "index.html": {
     "#d1d1d1": [2, "two light grey .box placeholders (see css/style.css, var(--c))"],

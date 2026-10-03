@@ -14,6 +14,13 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   `captions` — and whatever it doesn't name keeps what `index.html` gives it; `js/photos.js` puts them in, and
   `js/anim.js` waits for that before the curtain lifts. Keep those attributes when changing the layout; a new
   `data-slot` is a new holder.
+- **The "+" and the zoom view are one, shared by both pages** (`js/zoom.js`, `css/zoom.css`): a work on the
+  illustration page, and a front-page photo holder with a `button.ph-open` inside (the whole photo is the
+  button; its `span.plus` is centred `--px` / `--py` points in from the top-left corner, `.r` the top-right),
+  lift into the band grey; ← → / the wheel / a swipe step between them, the page following underneath. A photo
+  its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
+  its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
+  photo is one more `button.ph-open` in its holder (and its states in the check).
 - A Save is on the site at once: the pages read their data file from GitHub's API as well as from the site
   (`js/fresh.js`, Main the moment it is saved, raced against 1.5 s; the site's copy when GitHub can't answer),
   and a picture the site's copy doesn't name yet comes from raw.githubusercontent.com (with CORS, so the
@@ -64,8 +71,9 @@ How the site avoids it:
     pixels (`js/wipe.js`, the `SHEET` modifiers — use them for any tween of `#preloader`);
   - the zoom's grey (fading in over the page): a mirror-colour patch under the square (`.zoom-bg .cursor-fold`).
 - Light colours above them (white, the band grey #f2f1ef, the red #f20000, #d1d1d1, a picture's edge) need
-  **crisp edges**: on whole device pixels, no half-pixel transforms. Examples: the illustration "+" is sized in
-  device pixels (`crispPlus()` in `js/illustration.js`); the zoom picture is placed on device pixels (`fit()`).
+  **crisp edges**: on whole device pixels, no half-pixel transforms. Examples: the "+" is sized in device pixels
+  and placed by layout, never by a transform (`crispPlus()` in `js/zoom.js`); the zoom picture is placed on
+  device pixels (`fit()`).
 - **Moving edges too**: every wipe's moving edge is snapped to a device pixel (`wipeClip()` in `js/anim.js` and
   `js/illustration.js`; never a percentage `inset()`), and pictures sliding sideways use the `slideX()` modifiers.
 - **No layer of its own for a photo** (`will-change`): the browser draws a layer at its exact, fractional place, so
@@ -73,7 +81,9 @@ How the site avoids it:
   device pixels (the front page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth).
 - Focus rings too: the browser's own ring has a white halo and round corners, so the site draws its own plain,
   square ring for every keyboard focus (`:focus-visible` in `css/style.css`: ink; the menu button and labels in
-  `css/anim.css`; a work and the zoom's buttons, red and unmoved, in `css/illustration.css`).
+  `css/anim.css`; a work, red and unmoved, in `css/illustration.css`; a front-page photo (just inside it, where
+  the page's edge can't cut it off) and the zoom's buttons, in `css/zoom.css` — those sit in the zoom's top
+  margin, never over the picture or its edge).
 - Text smoothing too: over an opaque layer (a fixed panel with its own background) the browser may smooth
   letters in colour (subpixel), and those coloured edges fold. Give such text a layer of its own (the zoom's
   buttons: `.zoom-ui{will-change:transform}`), as all the page's text has (`html.cursor-live .stage`).
@@ -126,7 +136,7 @@ Three layers, so an outline can't ship again — and the console's own check rid
    into the same window, and its head hid the arrow before `js/cursor.js` ran — the init scripts don't run again
    in a window a page was written into, so `stepping()` listens again after each `document.open()`), `shader`
    (the test panel, and the harmony cursor in every
-   variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre,
+   variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre, opened in the zoom,
    wiping in and at rest, and the longest caption), `focus` (each kind of keyboard focus ring). The owner's
    `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.

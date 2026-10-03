@@ -3,8 +3,8 @@
    Hard rule: every tween settles to the element's exact static
    state. Reveals only ever animate opacity, transform (ending at
    identity) and clip-path (ending at inset(0)). The "+" marks are
-   opacity-only so their translate(-50%,-50%) centring is never
-   touched. If anything throws, we fall back to the static page.
+   opacity-only: they sit on whole device pixels (css/zoom.css), and
+   a transform would set them on half pixels. If anything throws, we fall back to the static page.
    ============================================================ */
 (function () {
   "use strict";

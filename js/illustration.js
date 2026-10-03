@@ -10,7 +10,8 @@
    · "+" (or a click on the work) lifts it out of the row into the zoom view:
      the band grey, the work centred with the same 12pt margin on opposite sides.
      ← → / the wheel / a swipe step between works there; Esc or a click closes,
-     and the work flies back to its place in the row.
+     and the work flies back to its place in the row. (The zoom and the "+" are
+     shared with the front page's photos: js/zoom.js, css/zoom.css.)
    · Hard rule from the front page: every tween settles to the exact static
      state; if anything throws, the page falls back to a plain static row.
    ============================================================ */
@@ -28,9 +29,6 @@
   var zoom = document.getElementById("zoom");
   var pre = document.getElementById("preloader");
   if (!strip || !track || !zoom) return;
-  var zoomBg = zoom.querySelector(".zoom-bg");
-  var zoomUi = zoom.querySelector(".zoom-ui");
-  var zoomTitle = document.getElementById("zoomTitle");
   var menuNav = document.getElementById("menuNav");
 
   function $$(s, r) { return [].slice.call((r || document).querySelectorAll(s)); }
@@ -49,19 +47,6 @@
     };
   }
   var worksEase = cubicBezier(0.38, 0, 0.5, 1);   // the front page's panel wipe: slow → fast → slow
-  var lift = cubicBezier(0.22, 1, 0.36, 1);       // zoom: answers at once, lands softly
-
-  // the "+" in whole device pixels — its size and its bars' thickness, with the bars exactly
-  // centred — so all its edges land on pixels (css/illustration.css)
-  function crispPlus() {
-    var r = window.devicePixelRatio || 1, k = K();
-    var w = Math.max(1, Math.round(0.6 * k * r)), s = Math.round(4.5 * k * r);
-    if ((s - w) % 2) s += 1;
-    root.style.setProperty("--plus-w", w / r + "px");
-    root.style.setProperty("--plus-s", s / r + "px");
-  }
-  crispPlus();
-  window.addEventListener("resize", crispPlus);
 
   /* ---------- the works: data/illustration.json (edited in console.html) -------
      Fetched on every visit, the newest copy there is (js/fresh.js): GitHub's the
@@ -175,7 +160,7 @@
   } else {
     // no smooth scroll (reduced motion / no library): still let a vertical wheel move the row
     window.addEventListener("wheel", function (e) {
-      if (Z.open || e.ctrlKey) return;
+      if (zoomed() || e.ctrlKey) return;
       var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (e.deltaMode === 1) d *= 32; else if (e.deltaMode === 2) d *= strip.clientWidth;
       strip.scrollLeft += d;
@@ -205,7 +190,7 @@
   // drag (mouse / pen) — touch keeps the native swipe
   var drag = null, eatClick = false;
   strip.addEventListener("pointerdown", function (e) {
-    if (e.button !== 0 || e.pointerType === "touch" || Z.open || introLock) return;
+    if (e.button !== 0 || e.pointerType === "touch" || zoomed() || introLock) return;
     drag = { x: e.clientX, s: nowScroll(), moved: false, v: 0, lx: e.clientX, lt: performance.now() };
   });
   window.addEventListener("pointermove", function (e) {
@@ -234,18 +219,13 @@
   window.addEventListener("pointercancel", endDrag);
 
   /* ---------- the "+": it never moves, it only fades --------------------------
-     in as its work appears, out the moment the work is opened, and back in once the
-     work has returned to its place in the row. */
+     in as its work appears (here); out the moment the work is opened, and back in once
+     the work has returned to its place in the row (js/zoom.js). */
   function showPlus(w, delay, dur) {
     if (!w.plus) return;
     if (!gsap || REDUCE) { w.plus.style.opacity = 1; return; }
     gsap.to(w.plus, { opacity: 1, duration: dur || 0.45, delay: delay || 0, ease: "power2.out", overwrite: true });
   }
-  function hidePlus(w) {
-    if (!w.plus || !gsap || REDUCE) return;
-    gsap.to(w.plus, { opacity: 0, duration: 0.25, ease: "power2.out", overwrite: true });
-  }
-  function setPlus(w, v) { if (w.plus) { if (gsap) gsap.killTweensOf(w.plus); w.plus.style.opacity = v; } }
 
   /* ---------- whole device pixels for every moving edge ------------------------
      Inside the cursor's square a half-covered pixel on an edge folds through black
@@ -258,8 +238,6 @@
     return from === "left" ? "inset(-1px " + (r.right - dp(r.left + r.width * p)) + "px -1px -1px)"
       : "inset(-1px -1px -1px " + (dp(r.right - r.width * p) - r.left) + "px)";
   }
-  // GSAP modifiers for a picture sliding sideways by xPercent
-  function slideX(f) { return { xPercent: function (v) { var w = parseFloat(f.style.width) || f.offsetWidth || 1; return dp(v / 100 * w) / w * 100; } }; }
 
   /* ---------- reveal: the front page's panel wipe, as works come into view ---- */
   var introLock = true;
@@ -300,137 +278,22 @@
     revealInOrder(batch, 0, 0.08, 4000);
   }, { threshold: 0.12 }) : null;
 
-  /* ---------- zoom ------------------------------------------------------------ */
-  var Z = { open: false, busy: false, kbd: false, i: -1, fig: null, ret: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
-
-  function aspect(w) { var r = w.btn.getBoundingClientRect(); return r.height ? r.width / r.height : 1; }
-  // the work, centred, with the same margin (12pt) on opposite sides — on whole device
-  // pixels: a picture edge on a half pixel blurs, and inside the cursor's square a blurred
-  // edge folds through black (css/anim.css)
-  function fit(ar) {
-    var m = 12 * K(), vw = window.innerWidth, vh = window.innerHeight, r = window.devicePixelRatio || 1;
-    var aw = vw - 2 * m, ah = vh - 2 * m, w, h;
-    if (aw / ah > ar) { h = ah; w = h * ar; } else { w = aw; h = w / ar; }
-    function px(v) { return Math.round(v * r) / r; }
-    var left = px((vw - w) / 2), top = px((vh - h) / 2);
-    return { left: left, top: top, width: px(left + w) - left, height: px(top + h) - top };
-  }
-  function rectOf(el) { var r = el.getBoundingClientRect(); return { left: r.left, top: r.top, width: r.width, height: r.height }; }
-  function place(f, r) {
-    f.style.left = r.left + "px"; f.style.top = r.top + "px";
-    f.style.width = r.width + "px"; f.style.height = r.height + "px";
-  }
-  function flip(from, to) {   // the transform that lays box `to` over box `from`
-    return { x: from.left - to.left, y: from.top - to.top, scaleX: from.width / to.width, scaleY: from.height / to.height };
-  }
-  function makeFig(w) {
-    var f = document.createElement("figure");
-    f.className = "zoom-fig";
-    if (w.img) {
-      var im = document.createElement("img");
-      im.alt = w.img.alt || w.title;
-      im.src = w.img.currentSrc || w.img.getAttribute("src") || w.img.getAttribute("data-src");   // already decoded: no blank frame
-      var full = w.img.getAttribute("data-full");
-      if (full) {                                           // swap to the large file once it can paint
-        var hi = new Image(); hi.src = full;
-        (hi.decode ? hi.decode() : Promise.reject()).then(function () { im.src = full; }, function () {});
-      }
-      f.appendChild(im); f.classList.add("has-img");
-    }
-    zoom.insertBefore(f, zoomUi);
-    return f;
-  }
-  function focusIn(el) { try { el.focus({ preventScroll: true }); } catch (e) {} }
-  // a big image painted for the first time is decoded on that very frame (a visible hitch);
-  // decode it off the main thread first — capped, so a slow file never holds the motion
-  function ready(f) {
-    var im = f.querySelector("img");
-    if (!im || !im.decode) return Promise.resolve();
-    return Promise.race([im.decode().then(null, function () {}), wait(160)]);
-  }
-
-  function openZoom(i) {
-    var w = works[i];
-    if (!w || Z.open || Z.busy) return;
-    Z.open = true; Z.busy = true; Z.i = i; Z.ret = w.btn;
-    if (lenis) lenis.stop();
-    var r0 = rectOf(w.btn), r1 = fit(r0.width / r0.height);
-    var f = makeFig(w); place(f, r1); Z.fig = f;
-    zoomTitle.textContent = w.title;
-    zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
-    focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
-    hidePlus(w);                                       // the "+" fades out the moment the work is opened
-    if (!gsap || REDUCE) { w.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; return; }
-    gsap.set(f, flip(r0, r1));                         // sits exactly on the work in the row…
-    f.style.visibility = "hidden";
-    gsap.fromTo(zoomBg, { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" });   // the answer is immediate
-    ready(f).then(function () {                        // …and lifts off once its picture can paint
-      f.style.visibility = "";
-      w.el.classList.add("is-zoomed");
-      gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: lift,
-        onComplete: function () { Z.busy = false; } });
-    });
-  }
-
-  function closeZoom() {
-    if (!Z.open || Z.busy) return;
-    var w = works[Z.i], f = Z.fig;
-    Z.busy = true;
-    zoom.setAttribute("aria-hidden", "true");
-    var r1 = { left: parseFloat(f.style.left), top: parseFloat(f.style.top), width: parseFloat(f.style.width), height: parseFloat(f.style.height) };
-    var r0 = rectOf(w.btn);
-    function done() {
-      w.el.classList.remove("is-zoomed");               // the real work takes over in the same frame
-      showPlus(w, 0.05, 0.45);                          // …and then its "+" fades back in
-      if (f.parentNode) f.parentNode.removeChild(f);
-      Z.fig = null; Z.open = false; Z.busy = false;
-      zoom.classList.remove("is-open");
-      if (lenis) lenis.start();
-      // keyboard visitors get their place back (with its focus ring); a mouse visitor
-      // gets no ring at all — just the work landing and its "+" drawing in
-      if (Z.kbd) focusIn(w.btn);
-      else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    }
-    if (!gsap || REDUCE) { zoomBg.style.opacity = 0; done(); return; }
-    setPlus(w, 0);
-    gsap.to(f, Object.assign(flip(r0, r1), { duration: 0.75, ease: lift, overwrite: true, onComplete: done }));
-    gsap.to(zoomBg, { opacity: 0, duration: 0.5, delay: 0.1, ease: "power2.inOut" });
-  }
-
-  // step to the next / previous work inside the zoom: a sideways wipe in the
-  // direction of travel (the old work sweeps off, the new one sweeps in)
-  function stepZoom(d) {
-    if (!Z.open || Z.busy) return;
-    var j = Z.i + d;
-    if (j < 0 || j >= N) {                                   // the ends: a small nudge, nothing more
-      if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1, modifiers: slideX(Z.fig) });
-      return;
-    }
-    Z.busy = true;
-    var ow = works[Z.i], nw = works[j], of = Z.fig;
-    setScroll(stopFor(j), true);                             // the row follows underneath, so closing lands home
-    ow.el.classList.remove("is-zoomed"); nw.el.classList.add("is-zoomed");
-    setPlus(ow, 1); setPlus(nw, gsap && !REDUCE ? 0 : 1);    // both under the grey: no motion needed
-    var nf = makeFig(nw); place(nf, fit(aspect(nw)));
-    Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
-    if (!gsap || REDUCE) { of.parentNode.removeChild(of); Z.busy = false; return; }
-    var a = { p: 0 }, b = { p: 0 };
-    var outFrom = d > 0 ? "left" : "right", inFrom = d > 0 ? "right" : "left";
-    nf.style.clipPath = wipeClip(nf, 0, inFrom);
-    gsap.to(a, { p: 1, duration: 0.7, ease: worksEase,
-      onUpdate: function () { of.style.clipPath = wipeClip(of, 1 - a.p, outFrom); },
-      onComplete: function () { if (of.parentNode) of.parentNode.removeChild(of); } });
-    gsap.to(of, { xPercent: -5 * d, duration: 0.7, ease: worksEase, modifiers: slideX(of) });
-    gsap.set(nf, { xPercent: 5 * d, modifiers: slideX(nf) });
-    var t0 = performance.now();
-    ready(nf).then(function () {                             // the new work sweeps in once it can paint —
-      var delay = Math.max(0, 0.1 - (performance.now() - t0) / 1000);   // on the usual 0.1s cue when that is quick
-      gsap.to(b, { p: 1, duration: 0.8, delay: delay, ease: worksEase,
-        onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
-        onComplete: function () { nf.style.clipPath = ""; Z.busy = false; } });
-      gsap.to(nf, { xPercent: 0, duration: 0.8, delay: delay, ease: worksEase, modifiers: slideX(nf) });
-    });
-  }
+  /* ---------- zoom: the works in the zoom view (js/zoom.js, shared with the front page) ----
+     It lifts a work out of the row; ← → / the wheel / a swipe there step through the row,
+     and the row follows underneath, so closing lands home. */
+  var view = window.__zoom ? window.__zoom({
+    el: zoom,
+    items: function () {
+      return works.map(function (w) {
+        return { el: w.el, box: w.btn, img: w.img, full: w.img && w.img.getAttribute("data-full"),
+                 title: w.title, plus: w.plus, focus: w.btn, crop: false };
+      });
+    },
+    lock: function () { if (lenis) lenis.stop(); },
+    unlock: function () { if (lenis) lenis.start(); },
+    follow: function (j) { setScroll(stopFor(j), true); }
+  }) : null;
+  function zoomed() { return !!view && view.isOpen(); }
 
   // open: "+" or anywhere on the work (unless that press was a drag)
   // (listens on the whole work, not just the button: while a work is still wiping in, the
@@ -439,56 +302,13 @@
     var w = e.target.closest(".work");
     if (!w) return;
     if (eatClick) { e.preventDefault(); e.stopPropagation(); return; }
-    Z.kbd = e.detail === 0;                         // opened with Enter / Space (a keyboard "click")
-    openZoom(+w.getAttribute("data-i"));
+    if (view) view.open(+w.getAttribute("data-i"), e.detail === 0);   // (detail 0: opened with Enter / Space)
   });
-  // inside the zoom: the controls, else a click / tap anywhere closes
-  zoom.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-act]");
-    if (b) { var a = b.getAttribute("data-act"); if (a === "close") closeZoom(); else stepZoom(a === "next" ? 1 : -1); return; }
-    if (Z.swiped) return;
-    closeZoom();
-  });
-  // swipe between works (touch / pen)
-  zoom.addEventListener("pointerdown", function (e) { if (e.pointerType !== "mouse") { Z.sx = e.clientX; Z.sy = e.clientY; } });
-  zoom.addEventListener("pointerup", function (e) {
-    if (Z.sx === null) return;
-    var dx = e.clientX - Z.sx, dy = e.clientY - Z.sy;
-    Z.sx = null;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-      Z.swiped = true; setTimeout(function () { Z.swiped = false; }, 0);
-      stepZoom(dx < 0 ? 1 : -1);
-    }
-  });
-  // the wheel steps one work per gesture (a trackpad flick is one gesture, not ten)
-  window.addEventListener("wheel", function (e) {
-    if (!Z.open) return;
-    e.preventDefault();
-    if (e.ctrlKey) return;
-    var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    var t = performance.now(), gap = t - Z.wt;
-    Z.wt = t;
-    if (gap > 220) { Z.acc = 0; Z.used = false; }
-    if (Z.used || Z.busy) return;
-    Z.acc += d;
-    if (Math.abs(Z.acc) > 40) { Z.used = true; stepZoom(Z.acc > 0 ? 1 : -1); }
-  }, { passive: false });
-
   /* ---------- keyboard ------------------------------------------------------- */
   window.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     var k = e.key;
-    if (Z.open) {
-      if (k === "Escape") closeZoom();
-      else if (k === "ArrowRight" || k === "ArrowDown") stepZoom(1);
-      else if (k === "ArrowLeft" || k === "ArrowUp") stepZoom(-1);
-      else if (k === "Tab") {                                    // keep focus inside the zoom
-        var bs = $$("button", zoomUi), at = bs.indexOf(document.activeElement);
-        focusIn(bs[at < 0 ? (e.shiftKey ? bs.length - 1 : 0) : (at + (e.shiftKey ? bs.length - 1 : 1)) % bs.length]);
-      } else return;
-      e.preventDefault();
-      return;
-    }
+    if (zoomed()) return;                                       // (the zoom's own keys: js/zoom.js)
     if (introLock || (menuNav && menuNav.classList.contains("open"))) return;
     var i = indexAt(aimScroll());
     if (k === "ArrowRight" || k === "ArrowDown" || k === "PageDown") goTo(i + 1);
@@ -497,10 +317,6 @@
     else if (k === "End") setScroll(maxScroll(), REDUCE);
     else return;
     e.preventDefault();
-  });
-
-  window.addEventListener("resize", function () {
-    if (Z.open && Z.fig && !Z.busy) place(Z.fig, fit(aspect(works[Z.i])));
   });
 
   /* (leaving for another page — the white wipe — lives in js/wipe.js, shared with the front page;

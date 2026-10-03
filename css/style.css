@@ -21,6 +21,9 @@
   --k:calc(100vw / 460.807);
   --paper:#fffefc;
   --band:#f2f1ef;
+  --ink:#434343;
+  --ph:#b3b1b1;                                                   /* placeholder grey (the file's) */
+  --red:#f20000;
   --disp:"AvantGarde","Gothic","Century Gothic",sans-serif;
   --text:"Nunito Sans",system-ui,sans-serif;
 }
@@ -30,6 +33,7 @@ html,body{background:var(--paper)}
    are positioned in document space, scrolling with the page. */
 body{position:relative;font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
 img{display:block;width:100%;height:100%;object-fit:cover}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:-1px}
 /* keyboard focus: a plain ink ring, square, no halo. The browser's own ring has a white halo
    and round corners, which the cursor's square folds into dark lines (CLAUDE.md). The menu
    button and labels, a work, the zoom's buttons and the colour test panel draw their own. */
@@ -80,11 +84,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
    right edge), so a longer one grows to the left, then wraps onto a second line */
 .cap-r{white-space:normal;text-align:right}
 
-/* "+" mark — exact 4.5x4.5pt cross, ~0.6pt stroke, centred on --x,--y */
-.plus{width:calc(4.5 * var(--k));height:calc(4.5 * var(--k));transform:translate(-50%,-50%);z-index:5}
-.plus::before,.plus::after{content:"";position:absolute;background:#000}
-.plus::before{left:0;top:50%;width:100%;height:max(.75px,calc(.6 * var(--k)));transform:translateY(-50%)}
-.plus::after{top:0;left:50%;height:100%;width:max(.75px,calc(.6 * var(--k)));transform:translateX(-50%)}
+/* "+" — on a photo that opens in the zoom: css/zoom.css (the same on both pages) */
 
 /* link with corner-tick frame */
 .tag{font-family:var(--text);font-weight:200;color:#000;line-height:1;

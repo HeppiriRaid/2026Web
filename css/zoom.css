@@ -1,0 +1,76 @@
+/* ============================================================
+   KOKI TAKAMATSU — the "+" and the zoom view (js/zoom.js)
+   The same on both pages: the illustration page's works and the front page's
+   photos with a "+". Where a "+" sits on its picture: css/illustration.css for
+   a work, below for a photo.
+   ============================================================ */
+
+/* "+" — a 4.5pt cross. It never moves: it only fades — in as its picture appears, out the
+   moment the picture is opened, and back in once it has returned to its place. It inverts
+   the picture beneath it with the cursor's inverse (#DCCBC3, difference), so it reads on
+   any picture, light or dark.
+   Every edge of it on a whole device pixel: its size and bar thickness come in whole device
+   pixels (--plus-s / --plus-w, js/zoom.js) and the bars are centred by layout, not by
+   half-bar transforms. A half-covered edge pixel over a bright picture would fold through
+   black inside the cursor's square (css/anim.css). */
+.plus{position:absolute;width:var(--plus-s,calc(4.5 * var(--k)));height:var(--plus-s,calc(4.5 * var(--k)));mix-blend-mode:difference}
+.plus::before,.plus::after{content:"";position:absolute;background:#dccbc3;transition:background-color .25s ease}
+.plus::before{left:0;width:100%;height:var(--plus-w,max(.75px,calc(.6 * var(--k))));top:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
+.plus::after{top:0;height:100%;width:var(--plus-w,max(.75px,calc(.6 * var(--k))));left:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
+/* hover highlight: the "+" turns a solid whitish grey (the band grey, #f2f1ef) while the
+   pointer is on the "+" itself — colour only, it never moves. (Not on the whole picture: a
+   highlighted "+" far from the pointer read as left behind.) Inside the cursor's square it
+   shows inverted, as a dark slate. Real-hover devices only, so a tap on a phone can't
+   leave it stuck; keyboard focus on its picture gets the same highlight. */
+@media (hover:hover){
+  .plus:hover{mix-blend-mode:normal}
+  .plus:hover::before,.plus:hover::after{background:var(--band)}
+}
+:focus-visible > .plus{mix-blend-mode:normal}
+:focus-visible > .plus::before,:focus-visible > .plus::after{background:var(--band)}
+
+/* ---- the front page's photos with a "+" (index.html) -------------------------------
+   The whole photo is the button (as a work is), laid over the holder's picture; the
+   holder itself is untouched (figure[data-slot]: js/photos.js, the console). */
+.ph-open{
+  position:absolute;inset:0;display:block;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;
+  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;
+}
+.ph-open:focus{outline:none}
+/* its focus ring: red and unmoved, as a work's — drawn just inside the photo, since a photo
+   that reaches the page's edge would have the ring cut off outside it */
+.ph-open:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(-1 * max(1px,calc(.4 * var(--k))))}
+/* its "+": centred --px / --py points in from the photo's top-left corner (.r: its top-right),
+   where the page has always had it */
+.ph-open .plus{left:calc(var(--px) * var(--k) - var(--plus-s,calc(4.5 * var(--k))) / 2);top:calc(var(--py) * var(--k) - var(--plus-s,calc(4.5 * var(--k))) / 2)}
+.ph-open .plus.r{left:auto;right:calc(var(--px) * var(--k) - var(--plus-s,calc(4.5 * var(--k))) / 2)}
+/* while a photo is up in the zoom its place is empty, as a work's in the row — only the
+   picture is hidden, so its "+" can fold away and later draw itself back in */
+.box.is-zoomed{background:none}
+.box.is-zoomed > img{visibility:hidden}
+
+/* ---- the zoom view: the band grey, the picture centred with the same 12pt margin on
+   opposite sides (the illustration file's second row) ---------------------------------- */
+.zoom{position:fixed;inset:0;z-index:95;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
+.zoom.is-open{visibility:visible;pointer-events:auto;cursor:pointer}
+.zoom-bg{position:absolute;inset:0;background:var(--band);opacity:0}
+/* Under the cursor's square the grey is drawn as its mirror about #DCCBC3 (#c6a597 —
+   the very same colour once the square inverts it), a patch that follows the square
+   (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
+   through #DCCBC3 and flash the square black (css/anim.css). */
+.zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
+.zoom-fig{position:absolute;margin:0;transform-origin:0 0;will-change:transform;background:var(--ph)}
+.zoom-fig.has-img{background:none}
+.zoom-fig img{display:block;width:100%;height:100%;object-fit:contain}
+/* keyboard / screen-reader controls: invisible until focused. In the middle of the top margin
+   (6.4pt tall, the 12pt margin the picture always keeps clear): focused, a control never lies
+   over the picture or its edge. On a layer of their own, so their letters are smoothed in grey
+   like all the site's text: over the opaque grey the browser would smooth them in colour
+   (subpixel), and those coloured edges fold through black inside the cursor's square. */
+.zoom-ui{position:absolute;right:calc(12 * var(--k));top:calc(2.8 * var(--k));display:flex;gap:calc(4 * var(--k));will-change:transform}
+.zoom-ui button{
+  position:relative;opacity:0;pointer-events:none;
+  font-family:"GothicCap","Gothic",sans-serif;font-size:calc(4 * var(--k));line-height:1;color:var(--ink);
+  background:none;border:0;padding:calc(1.2 * var(--k)) calc(2.4 * var(--k));cursor:pointer;
+}
+.zoom-ui button:focus-visible{opacity:1;pointer-events:auto;outline:max(1px,calc(.4 * var(--k))) solid var(--red)}

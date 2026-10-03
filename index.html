@@ -17,6 +17,7 @@
 <link rel="preload" as="image" href="assets/img/about-portrait.webp" fetchpriority="high" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/anim.css" />
+<link rel="stylesheet" href="css/zoom.css" />
 <!-- the owner's photos and captions as new as they are: GitHub's copy the moment the console saves -->
 <script src="js/fresh.js"></script>
 <script>
@@ -161,7 +162,6 @@
 
   <!-- ========================= BACK GROUND ========================= -->
   <h2 class="a h" style="--x:10.9;--y:271.3;--w:200;--fs:18">BACK GROUND</h2>
-  <div class="a plus" style="--x:180.75;--y:298.75"></div>
   <div class="tri" style="--x:152.5;--y:275.7"></div>
 
   <div class="a copy j" style="--x:12;--y:293.4;--w:152.5">
@@ -175,8 +175,10 @@
     abstract shapes. Through the study of line, form, and the balance of black and white space, I
     developed a deep appreciation for aesthetics that continues to inform my work as an artist.</p></div>
 
-  <!-- data-menu-shade: the hamburger takes harmonious colours from this picture when over it (js/menu-shade.js) -->
-  <figure class="a wh box" data-slot="background" data-slot-name="Back ground (My House)" data-menu-shade style="--x:176.5;--y:294.7;--w:284.3;--h:188.2;--c:#b3b3b3"></figure>
+  <!-- data-menu-shade: the hamburger takes harmonious colours from this picture when over it (js/menu-shade.js).
+       button.ph-open: the whole photo opens in the zoom view, its "+" the sign (js/zoom.js, css/zoom.css: the same
+       as a work's on the illustration page); --px / --py: where the "+" is centred, in points from the corner -->
+  <figure class="a wh box" data-slot="background" data-slot-name="Back ground (My House)" data-menu-shade style="--x:176.5;--y:294.7;--w:284.3;--h:188.2;--c:#b3b3b3"><button class="ph-open" type="button" aria-label="View Back ground"><span class="plus" style="--px:4.25;--py:4.05" aria-hidden="true"></span></button></figure>
   <!-- data-caption-for: that holder's caption, which the owner can rewrite in the console (data/front.json, js/photos.js);
        its parts as the page gives them in data-title / -date / -medium / -location. It ends at the picture's right edge:
        a longer caption grows to the left, then onto a second line (.cap-r) -->
@@ -184,7 +186,6 @@
 
   <!-- ========================= SELECTED WORKS ========================= -->
   <h2 id="works" class="a h" style="--x:11.7;--y:526.3;--w:260;--fs:18">SELECTED WORKS</h2>
-  <div class="a plus" style="--x:180.45;--y:534.5"></div>
   <div class="tri" style="--x:152.5;--y:530.5"></div>
 
   <!-- GRAPHIC PAINT -->
@@ -196,15 +197,14 @@
     is recorded data, so a soft, painterly mark stays editable after it&#8217;s made.</p></div>
   <div class="a copy" style="--x:12;--y:599.4;--w:152.5">
     <p>AI has been used for solely the help of writing codes.</p></div>
-  <figure class="a wh box" data-slot="graphic" data-slot-name="Graphic Paint" data-fade style="--x:176.5;--y:530.5;--w:272.3;--h:111.7;--c:#d1d1d1"></figure>
+  <figure class="a wh box" data-slot="graphic" data-slot-name="Graphic Paint" data-fade style="--x:176.5;--y:530.5;--w:272.3;--h:111.7;--c:#d1d1d1"><button class="ph-open" type="button" aria-label="View Graphic Paint"><span class="plus" style="--px:3.95;--py:4" aria-hidden="true"></span></button></figure>
   <a class="a copy" style="--x:16.4;--y:635.6;--fs:5;--w:40">Details</a>
   <a class="a copy" style="--x:52.4;--y:635.6;--fs:5;--w:50">Kickstarter</a>
   <i class="ltick tl" style="--x:11.5;--y:635.5"></i><i class="ltick br" style="--x:33.75;--y:639.95"></i>
   <i class="ltick tl" style="--x:47.5;--y:635.5"></i><i class="ltick br" style="--x:77.55;--y:639.85"></i>
 
   <!-- RESSOLVE STEPS -->
-  <figure class="a wh box" data-slot="resolve" data-slot-name="Resolve Steps" data-fade data-rtl style="--x:12;--y:654;--w:273.1;--h:111.6;--c:#d1d1d1"></figure>
-  <div class="a plus" style="--x:280.65;--y:658.1"></div>
+  <figure class="a wh box" data-slot="resolve" data-slot-name="Resolve Steps" data-fade data-rtl style="--x:12;--y:654;--w:273.1;--h:111.6;--c:#d1d1d1"><button class="ph-open" type="button" aria-label="View Resolve Steps"><span class="plus r" style="--px:4.45;--py:4.1" aria-hidden="true"></span></button></figure>
   <h3 class="a h" style="--x:296.5;--y:651.1;--w:170;--fs:10">RESSOLVE STEPS</h3>
   <div class="a copy j" style="--x:297.2;--y:665.9;--w:151.6">
     <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
@@ -249,6 +249,18 @@
 
 </main>
 
+<!-- zoom view (js/zoom.js), as on the illustration page: the band grey, the photo centred with the same margin
+     on opposite sides -->
+<div class="zoom" id="zoom" role="dialog" aria-modal="true" aria-labelledby="zoomTitle" aria-hidden="true" tabindex="-1">
+  <div class="zoom-bg"><div class="cursor-fold" aria-hidden="true"></div></div>
+  <p class="sr-only" id="zoomTitle"></p>
+  <div class="zoom-ui">
+    <button type="button" data-act="prev">Previous</button>
+    <button type="button" data-act="next">Next</button>
+    <button type="button" data-act="close">Close</button>
+  </div>
+</div>
+
 <script src="vendor/gsap.min.js"></script>
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script src="vendor/lenis.min.js"></script>
@@ -257,6 +269,7 @@
 <script src="js/anim.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/menu-shade.js"></script>
+<script src="js/zoom.js"></script>
 <script src="js/cursor.js"></script>
 </body>
 </html>
