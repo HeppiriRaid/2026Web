@@ -61,6 +61,11 @@
                              // (a beat past easeUntil, so the morph fully settles first)
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
   var markBottomDoc = 36 * K; // marks' lower edge in document space (cached)
+  // While a picture is up in the zoom (js/zoom.js) the button stays the top layer and holds still:
+  // the page moving beneath the grey (the zoom follows a step) doesn't move it — it is read where
+  // the page was when the picture came up — and it doesn't yield to the scrollbar (hidden then,
+  // css/zoom.css). As the picture flies home it eases to wherever the page now puts it.
+  var zoomEl = document.getElementById("zoom"), heldAt = null;
 
   function scrollY() {
     return window.pageYOffset || document.documentElement.scrollTop || 0;
@@ -231,7 +236,13 @@
 
   // One driver, run every frame. Decides scrub vs catch, eases between them.
   function update() {
-    var sc = scrollY();
+    var up = !!zoomEl && zoomEl.getAttribute("aria-hidden") === "false";   // a picture up, not yet flying home
+    if (up && heldAt === null) heldAt = scrollY();
+    else if (!up && heldAt !== null) {
+      if (heldAt !== scrollY() && !REDUCE) { easeUntil = performance.now() + 1200; yieldHoldUntil = easeUntil + 350; }
+      heldAt = null;
+    }
+    var sc = heldAt !== null ? heldAt : scrollY();
     var cutoff = (markBottomDoc - sc) <= 0;        // lower square above top edge
     var nm = cutoff ? "catch" : "scrub";
     // scrub: keep the button centred on the (moving) marks. catch: corner (0).
@@ -257,7 +268,8 @@
     // ease itself still uses easeUntil so the catch feel is unchanged.
     var morphing = !REDUCE && performance.now() < easeUntil;
     var yieldHeld = !REDUCE && performance.now() < yieldHoldUntil;
-    var txTarget = (nm === "catch" && !yieldHeld) ? -gutterNow() : 0;
+    var zoomed = document.documentElement.classList.contains("zoom-open");
+    var txTarget = (nm === "catch" && !yieldHeld && !zoomed) ? -gutterNow() : 0;
 
     if (morphing) {
       ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime

@@ -21,6 +21,13 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).
+- **The hamburger is always the top layer.** The zoom (z 88) lies beneath it and its menu (89–90), so a
+  picture flies in and home under the hamburger, which never vanishes and reappears. While a picture is
+  up (`html.zoom-open`) the zoom has the input: a click on the hamburger closes it, as a click anywhere
+  does. The hamburger holds still, so the page following a step under the grey doesn't move it
+  (`js/menu.js`); as the picture flies home, it eases to wherever the page now puts it. The scrollbar
+  (above the menu) steps aside meanwhile (`css/zoom.css`), and the hamburger's tint from the BACK GROUND
+  picture fades out and back with the grey (`js/menu-shade.js`).
 - A Save is on the site at once: the pages read their data file from GitHub's API as well as from the site
   (`js/fresh.js`, Main the moment it is saved, raced against 1.5 s; the site's copy when GitHub can't answer),
   and a picture the site's copy doesn't name yet comes from raw.githubusercontent.com (with CORS, so the
@@ -141,6 +148,8 @@ the bars take colours from the picture beneath them through Chinese colour harmo
 (`VARIATIONS`: 阴阳, 相生, 相克, 间色, 墨分五色, 紫气, 青花). **The owner chose 墨分五色, five tones of ink**
 (`DEFAULT`): every visitor gets it, and the cursor stays Maison's inverse. Only inline `background-image`s on the
 bars, the panel's `background-color` and two `--nav-hover` variables are set, and cleared off the picture.
+When the zoom's grey covers the page, the tint mixes into the bars' own grey as far as the grey covers, so it
+fades with it, never all at once.
 Bar colours are capped at #DCCBC3 per channel (the rule above). `index.html?shader` opens a test panel: point
 at a variation to try it on the hamburger, click to keep it (or keys 0–7); P tries a real painting in the
 picture's place. A choice there holds only while testing (that visit); the panel's ✕ ends the test and puts the
@@ -177,7 +186,8 @@ Three layers, so an outline can't ship again — and the console's own check rid
    in a window a page was written into, so `stepping()` listens again after each `document.open()`), `shader`
    (the test panel, and the harmony cursor in every
    variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre, opened in the zoom,
-   wiping in and at rest, and the longest caption), `focus` (each kind of keyboard focus ring). The owner's
+   wiping in and at rest, the longest caption, and the hamburger above the zoom, its tint half-faded with the
+   grey and then gone), `focus` (each kind of keyboard focus ring). The owner's
    `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)

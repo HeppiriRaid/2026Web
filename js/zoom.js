@@ -195,6 +195,7 @@
       var list = o.items(), it = list[i];
       if (!it || Z.open || Z.busy) return;
       Z.list = list; Z.open = true; Z.busy = true; Z.i = i; Z.kbd = !!kbd;
+      root.classList.add("zoom-open");                   // (the zoom has the input till it has closed: css/zoom.css)
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
       var f = makeFig(it); place(f, r1); Z.fig = f;
@@ -230,7 +231,7 @@
         showPlus(it, 0.05, 0.45);                        // …and then its "+" fades back in
         if (f.parentNode) f.parentNode.removeChild(f);
         Z.fig = null; Z.open = false; Z.busy = false;
-        zoom.classList.remove("is-open");
+        zoom.classList.remove("is-open"); root.classList.remove("zoom-open");
         if (o.unlock) o.unlock();
         // keyboard visitors get their place back (with its focus ring); a mouse visitor
         // gets no ring at all — just the picture landing and its "+" drawing in

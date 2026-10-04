@@ -377,6 +377,8 @@ async function stepTo(p, test, arg, what) {
 const sheetAt = (p, a, b) => stepTo(p, "sheet", [a, b], `the white sheet between ${a}% and ${b}%`);
 // something matching `sel` part-way through wiping in
 const wipeAt = (p, sel) => stepTo(p, "wipe", sel, `${sel} wiping in`);
+// the first match of `sel` part-way through a fade, its opacity between a and b
+const fadeAt = (p, sel, a, b) => stepTo(p, "fade", [sel, a, b], `${sel} between ${a} and ${b} opaque`);
 // stop GSAP's clock as the next page change starts: as the sheet starts to rise ("leave"), and/or
 // as it starts to lift off the next page ("arrive") — js/wipe.js's kt:leave / kt:arrive
 const holdNext = (p, ...what) => p.evaluate((what) => { for (const w of what) sessionStorage.setItem("fold-hold-" + w, "1"); }, what);
@@ -398,6 +400,10 @@ function stepping() {
       return y > Math.min(a, b) && y < Math.max(a, b);
     },
     wipe: (sel) => [...document.querySelectorAll(sel)].some((e) => share(e).some((f) => f > 0.3 && f < 0.7)),
+    fade: ([sel, a, b]) => {                            // something part-way through fading in or out
+      const e = document.querySelector(sel), o = e ? parseFloat(getComputedStyle(e).opacity) : NaN;
+      return o > a && o < b;
+    },
     name: () => {                                      // the name risen on the curtain, a first visit
       const n = document.querySelector(".pl-name"), t = n && getComputedStyle(n).transform;
       return !!t && (t === "none" || Math.abs(new DOMMatrix(t).m42) < 0.5);
@@ -823,7 +829,7 @@ const FLOWS = {
     await check(p, "front page photos: the BACK GROUND caption, rewritten (two lines)", dpr);
     // the photos open in the zoom (js/zoom.js), as a work does on the illustration page: the "+" under
     // the pointer; the BACK GROUND photo up, whole (its place shows it cropped); the next photo; and
-    // back home, its "+" drawn in again. (While the zoom is up it covers the hamburger.)
+    // back home, its "+" drawn in again. (The hamburger stays above the zoom: here, off the photo, plain.)
     const yBg = await p.evaluate(() => Math.max(0, Math.round(document.querySelector('[data-slot="background"]').getBoundingClientRect().top + scrollY - innerHeight * 0.2)));
     await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yBg);
     await quiet(p);
@@ -868,6 +874,38 @@ const FLOWS = {
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
     await quiet(p);
     await check(p, "front page photos: the menu open over the BACK GROUND photo, pointer on WORK", dpr);
+    // the BACK GROUND photo opening in the zoom from there: the hamburger stays the top layer, its tint
+    // giving way with the grey (js/menu-shade.js) — half-way, then up (plain on the grey), then home
+    // (the tint back). Half-way, the hamburger is the known limit only where a real picture is beneath
+    // it: the page's photo, or the zoom's copy of it in flight (whose own edges are the flight's limit).
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu shut");
+    await quiet(p);
+    await hover(p, '[data-slot="background"] .ph-open');
+    await p.evaluate(() => window.gsap.globalTimeline.pause());          // (the zoom's grey waits at its start)
+    await p.mouse.down(); await p.mouse.up();
+    await fadeAt(p, "#zoom .zoom-bg", 0.35, 0.65);
+    await p.evaluate(() => {
+      const b = document.getElementById("menuBtn").getBoundingClientRect(), f = document.querySelector(".zoom-fig:not(.is-warm)");
+      const over = (r) => r.right > b.left && r.left < b.right && r.bottom > b.top && r.top < b.bottom;
+      const page = document.querySelector('[data-slot="background"]');
+      if (f && getComputedStyle(f).visibility !== "hidden") f.setAttribute("data-fold-known", "the zoom picture in flight");
+      if ((f && getComputedStyle(f).visibility !== "hidden" && over(f.getBoundingClientRect())) || (!page.classList.contains("is-zoomed") && over(page.getBoundingClientRect())))
+        document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
+      else document.getElementById("menuBtn").removeAttribute("data-fold-known");
+    });
+    await check(p, "front page photos: the BACK GROUND photo coming up, the hamburger above it, its tint half-faded", dpr);
+    await p.evaluate(() => { const f = document.querySelector('.zoom-fig[data-fold-known]'); if (f) f.removeAttribute("data-fold-known"); });
+    await known(false);
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "the BACK GROUND photo zoomed again");
+    await quiet(p);
+    await check(p, "front page photos: the BACK GROUND photo up, the hamburger above the zoom, plain", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.documentElement.classList.contains("zoom-open"), null, "the zoom closed again");
+    await quiet(p);
+    await underMenu();
+    await expect(p, () => !!document.getElementById("menuBtn").children[0].style.backgroundImage, null, "the hamburger's tint back");
+    await check(p, "front page photos: home from the zoom, the hamburger's tint back over the BACK GROUND photo", dpr);
     await known(false);
   },
 

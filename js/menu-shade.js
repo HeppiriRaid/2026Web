@@ -269,6 +269,21 @@
     put(nav, "--nav-hover", ""); put(nav, "--nav-hover-m", "");
   }
 
+  // How far the zoom's grey covers the page (js/zoom.js): the hamburger stays above the zoom, and
+  // beneath it the picture gives way to the grey and comes back as the grey goes, so its colours do
+  // the same, never at once. A tint mixed with the bars' own grey stays under #DCCBC3, as both are.
+  var zoomBg = document.querySelector("#zoom .zoom-bg"), cover = 0;
+  function covered() {
+    if (!zoomBg || !document.documentElement.classList.contains("zoom-open")) return 0;
+    return Math.min(1, Math.max(0, parseFloat(getComputedStyle(zoomBg).opacity) || 0));
+  }
+  function rgbIn(s) { var m = /rgba?\(([^)]+)\)/.exec(s); return m ? m[1].split(",").map(parseFloat) : [179, 177, 177]; }
+  function toward(c, grey, a) {
+    if (!a) return c;
+    var x = rgbIn(c), y = rgbIn(grey);
+    return css([0, 1, 2].map(function (i) { return x[i] + (y[i] - x[i]) * a; }));
+  }
+
   // Where a bar is on screen (it may be mid-transition, or turned into half of the X), and the
   // points along its length where the picture is read.
   var N = 12;
@@ -302,7 +317,7 @@
     if (!b) { put(span, "backgroundImage", ""); return; }
     var stops = [], first = null, same = true;
     b.pts.forEach(function (p, k) {
-      var c = shade(p[2], state, mode);
+      var c = toward(shade(p[2], state, mode), b.grey, cover);
       if (first === null) first = c; else if (c !== first) same = false;
       stops.push(c + " " + ((k + 0.5) / N * 100).toFixed(2) + "%");
     });
@@ -330,7 +345,7 @@
     // (the hover colour may be light: inside the cursor's square a label shows as a copy in
     // the hover colour's mirror about #DCCBC3, which keeps it clean — css/anim.css)
     var hover = rgbOf(mixLab(o, [0.97, 0, 0], 0.7)), C3 = [220, 203, 195];
-    put(panel, "backgroundColor", css(fit(o)));
+    put(panel, "backgroundColor", toward(css(fit(o)), getComputedStyle(bars[0]).backgroundColor, cover));
     put(nav, "--nav-hover", css(hover));
     put(nav, "--nav-hover-m", css(hover.map(function (v, i) { return v > C3[i] ? 2 * C3[i] - v : v; })));
   }
@@ -347,11 +362,13 @@
         if (v.width > 0 && v.height > 0) { hit = pics[i]; pr = r; vr = v; }
       }
     }
-    if (lab_) lab_.over(!!(hit && br.width));
+    cover = covered();
+    if (lab_) lab_.over(!!(hit && br.width) && cover < 1);
     if (!VARIATIONS[mode].map) { if (lastSig !== "off") { clearAll(); lastSig = "off"; } return; }
-    if (!hit || !br.width) { if (lastSig !== "none") { clearAll(); lastSig = "none"; } return; }
+    if (!hit || !br.width || cover >= 1) { if (lastSig !== "none") { clearAll(); lastSig = "none"; } return; }
     var src = sourceOf(hit, pr), W = parseFloat(getComputedStyle(btn).width), s = br.width / W;
     var sig = [mode, src.key, br.left, br.top, br.width, pr.left, pr.top, pr.width, pr.height, vr.left, vr.right, vr.top, vr.bottom, nr.top, nr.left].map(function (v) { return typeof v === "number" ? v.toFixed(2) : v; }).join("|") +
+      "|" + cover.toFixed(3) + "|" +                 // (fine enough for every level the tint moves by)
       bars.map(function (b) { var c = getComputedStyle(b); return c.top + c.height + c.opacity + c.transform; }).join("|");
     if (sig === lastSig) return;
     lastSig = sig;

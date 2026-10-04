@@ -51,7 +51,15 @@
 
 /* ---- the zoom view: the band grey, the picture centred with the same 12pt margin on
    opposite sides (the illustration file's second row) ---------------------------------- */
-.zoom{position:fixed;inset:0;z-index:95;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
+/* Beneath the hamburger and its menu (z 89–90, css/anim.css): they stay the top layer, so a picture
+   flies in and home under the hamburger, which never vanishes and reappears. While a picture is up
+   (html.zoom-open, js/zoom.js) the zoom has the input: a click on the hamburger closes it, as a click
+   anywhere does, and the page's scrollbar (above the menu) steps aside — the page under the grey
+   doesn't scroll. The hamburger holds still meanwhile (js/menu.js), and its tint from the BACK GROUND
+   picture fades with the grey (js/menu-shade.js). */
+.zoom{position:fixed;inset:0;z-index:88;visibility:hidden;pointer-events:none;outline:none;touch-action:none}
+html.zoom-open .menu-btn{pointer-events:none}
+html.zoom-open .cscroll-rail.show,html.zoom-open .cscroll-thumb.show{opacity:0;pointer-events:none}
 .zoom.is-open{visibility:visible;pointer-events:auto;cursor:pointer}
 .zoom-bg{position:absolute;inset:0;background:var(--band);opacity:0}
 /* Under the cursor's square the grey is drawn as its mirror about #DCCBC3 (#c6a597 —
