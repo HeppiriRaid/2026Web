@@ -197,6 +197,12 @@
       navs[1].classList.toggle("is-end", Z.i >= Z.list.length - 1);
     }
 
+    // …each in the 12pt strip beside the picture's edge
+    function navAt(r) {
+      navs[0].style.left = r.left - 12 * K() + "px";
+      navs[1].style.left = r.left + r.width + "px";
+    }
+
     function open(i, kbd) {
       var list = o.items(), it = list[i];
       if (!it || Z.open || Z.busy) return;
@@ -204,7 +210,7 @@
       root.classList.add("zoom-open");                   // (the zoom has the input till it has closed: css/zoom.css)
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
-      var f = makeFig(it); place(f, r1); Z.fig = f;
+      var f = makeFig(it); place(f, r1); Z.fig = f; navAt(r1);
       zoomTitle.textContent = it.title; ends();
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
@@ -283,7 +289,8 @@
       var ow = Z.list[Z.i], nw = Z.list[j], of = Z.fig, nf = Z.warm[j];
       if (nf) delete Z.warm[j];                                // (drawn already, faint: warm())
       else { nf = makeFig(nw); nf.classList.add("is-warm"); }
-      place(nf, fit(aspect(nw)));
+      var r = fit(aspect(nw)), nl = parseFloat(of.style.left), nr = nl + parseFloat(of.style.width);
+      place(nf, r);
       Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title; ends();
       // (under the grey: the page follows, so closing lands home; the places swap)
       function settle() {
@@ -295,7 +302,7 @@
         upgrade(nf);
         warm(j);
       }
-      if (!gsap || REDUCE) { nf.classList.remove("is-warm"); settle(); return; }
+      if (!gsap || REDUCE) { nf.classList.remove("is-warm"); navAt(r); settle(); return; }
       var a = { p: 0 }, b = { p: 0 }, oi = of.querySelector("img"), ni = nf.querySelector("img");
       var outFrom = d > 0 ? "left" : "right", inFrom = d > 0 ? "right" : "left";
       // (the new picture drawn, too faint to see, until it is decoded and a frame has passed. The drift
@@ -312,6 +319,9 @@
           onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
           onComplete: function () { nf.style.clipPath = ""; nextFrame().then(settle); } });
         if (ni) gsap.to(ni, { xPercent: 0, duration: 1.1, delay: 0.1, ease: stepEase, force3D: false });
+        var n = { l: nl, r: nr };                                // (the chevrons, to the new picture's edges)
+        gsap.to(n, { l: r.left, r: r.left + r.width, duration: 1.1, delay: 0.1, ease: stepEase,
+          onUpdate: function () { navAt({ left: n.l, width: n.r - n.l }); } });
       });
     }
 
@@ -361,7 +371,8 @@
     });
     window.addEventListener("resize", function () {
       if (!Z.open || !Z.fig || Z.busy) return;
-      place(Z.fig, fit(aspect(Z.list[Z.i])));
+      var r = fit(aspect(Z.list[Z.i]));
+      place(Z.fig, r); navAt(r);
       Object.keys(Z.warm).forEach(function (k) { place(Z.warm[k], fit(aspect(Z.list[k]))); });
     });
 
