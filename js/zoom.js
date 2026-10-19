@@ -75,7 +75,7 @@
      follows a step (follow: the picture's place brought into view under the grey). */
   window.__zoom = function (o) {
     var zoom = o.el, zoomBg = zoom.querySelector(".zoom-bg"), zoomUi = zoom.querySelector(".zoom-ui");
-    var zoomTitle = document.getElementById("zoomTitle");
+    var zoomTitle = document.getElementById("zoomTitle"), navs = zoom.querySelectorAll(".zoom-nav");
     var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
     /* the "+": it never moves, it only fades — out the moment its picture is opened, back in
@@ -191,6 +191,12 @@
       return Promise.race([im.decode().then(null, function () {}), wait(160)]);
     }
 
+    // the chevrons: the one with no picture past it fades away
+    function ends() {
+      navs[0].classList.toggle("is-end", Z.i <= 0);
+      navs[1].classList.toggle("is-end", Z.i >= Z.list.length - 1);
+    }
+
     function open(i, kbd) {
       var list = o.items(), it = list[i];
       if (!it || Z.open || Z.busy) return;
@@ -199,7 +205,7 @@
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
       var f = makeFig(it); place(f, r1); Z.fig = f;
-      zoomTitle.textContent = it.title;
+      zoomTitle.textContent = it.title; ends();
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
       hidePlus(it);                                      // the "+" fades out the moment the picture is opened
@@ -278,7 +284,7 @@
       if (nf) delete Z.warm[j];                                // (drawn already, faint: warm())
       else { nf = makeFig(nw); nf.classList.add("is-warm"); }
       place(nf, fit(aspect(nw)));
-      Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
+      Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title; ends();
       // (under the grey: the page follows, so closing lands home; the places swap)
       function settle() {
         if (of.parentNode) of.parentNode.removeChild(of);

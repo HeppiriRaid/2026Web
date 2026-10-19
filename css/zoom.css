@@ -67,6 +67,20 @@ html.zoom-open .cscroll-rail.show,html.zoom-open .cscroll-thumb.show{opacity:0;p
    (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
    through #DCCBC3 and flash the square black (css/anim.css). */
 .zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
+/* the chevrons: one in the middle of each side margin (the 12pt the picture always keeps clear), a click /
+   tap steps to the picture before / after. Part of the grey, so they fade in and out with it — one clock.
+   Ink, darker than #DCCBC3, so their soft diagonal edges never fold (css/anim.css). The one with nothing
+   past it (the row's end) fades away, over a step's time and curve. (Keyboard: the arrows, and .zoom-ui.) */
+.zoom-nav{position:absolute;z-index:1;top:calc(50% - 12 * var(--k));width:calc(12 * var(--k));height:calc(24 * var(--k));cursor:pointer;transition:opacity 1s cubic-bezier(.3,0,.2,1)}
+.zoom-nav.prev{left:0}
+.zoom-nav.next{right:0}
+.zoom-nav::before{
+  content:"";position:absolute;top:calc(50% - 2 * var(--k));width:calc(4 * var(--k));height:calc(4 * var(--k));
+  border:solid var(--ink);border-width:0 0 max(1px,calc(.4 * var(--k))) max(1px,calc(.4 * var(--k)));
+}
+.zoom-nav.prev::before{left:calc(5.4 * var(--k));transform:rotate(45deg)}
+.zoom-nav.next::before{right:calc(5.4 * var(--k));transform:rotate(-135deg)}
+.zoom-nav.is-end{opacity:0;pointer-events:none}
 .zoom-fig{position:absolute;margin:0;transform-origin:0 0;background:var(--ph)}
 .zoom-fig.has-img{background:none}
 /* the picture in its frame, filling it exactly, so every edge of it lies on the frame's, on whole device

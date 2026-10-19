@@ -574,7 +574,10 @@ const FLOWS = {
     await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
     await quiet(p);
     await check(p, "illustration page: a work zoomed", dpr);
-    await p.keyboard.press("ArrowRight");
+    await expect(p, () => document.querySelector(".zoom-nav.prev").classList.contains("is-end"), null, "no chevron back from the first work");
+    await hover(p, ".zoom-nav.next");
+    await check(p, "illustration page: the pointer on the zoom's chevron", dpr);
+    await p.mouse.down(); await p.mouse.up();
     await wipeAt(p, ".zoom-fig");
     await check(p, "illustration page: the zoom, half-way to the next work", dpr);
     await expect(p, () => !!document.querySelector(".work.is-zoomed") && document.querySelectorAll(".zoom-fig:not(.is-warm)").length === 1, null, "the next work in the zoom");
