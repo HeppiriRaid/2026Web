@@ -67,8 +67,8 @@ html.zoom-open .cscroll-rail.show,html.zoom-open .cscroll-thumb.show{opacity:0;p
    (js/cursor.js). Fading in over the page's mirrored paper, the plain grey would pass
    through #DCCBC3 and flash the square black (css/anim.css). */
 .zoom-bg .cursor-fold{background:#c6a597;mix-blend-mode:normal;z-index:0}
-/* the chevrons: one beside each side of the picture, centred in the 12pt strip next to its edge (the margin
-   the picture always keeps clear: js/zoom.js places them, and in a step they glide to the next picture's
+/* the chevrons: one beside each side of the picture, a hamburger box's width out from its edge (or centred
+   in the margin where that is narrower: js/zoom.js places them, and in a step they glide to the next picture's
    edges with it, on its clock and curve). As tall as the hamburger's grey box (--mk, css/anim.css), cut
    like a heavy "<" (half its width the stroke). Beneath the pictures, so in a step a wipe passes over
    and past them as over the grey. A click / tap steps to the picture before / after. Part of the grey,
