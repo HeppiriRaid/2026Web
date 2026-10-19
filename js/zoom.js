@@ -191,10 +191,13 @@
       return Promise.race([im.decode().then(null, function () {}), wait(160)]);
     }
 
-    // the chevrons: the one with no picture past it fades away
-    function ends() {
-      navs[0].classList.toggle("is-end", Z.i <= 0);
-      navs[1].classList.toggle("is-end", Z.i >= Z.list.length - 1);
+    // the chevrons: the one with no picture past it fades away — in a step, with the picture arriving
+    function ends(fade) {
+      [Z.i <= 0, Z.i >= Z.list.length - 1].forEach(function (end, k) {
+        navs[k].classList.toggle("is-end", end);
+        if (fade) gsap.to(navs[k], { opacity: end ? 0 : 1, duration: 1.1, delay: 0.1, ease: stepEase, overwrite: true });
+        else { if (gsap) gsap.killTweensOf(navs[k]); navs[k].style.opacity = end ? 0 : 1; }
+      });
     }
 
     // …each in the 12pt strip beside the picture's edge
@@ -291,7 +294,7 @@
       else { nf = makeFig(nw); nf.classList.add("is-warm"); }
       var r = fit(aspect(nw)), nl = parseFloat(of.style.left), nr = nl + parseFloat(of.style.width);
       place(nf, r);
-      Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title; ends();
+      Z.fig = nf; Z.i = j; zoomTitle.textContent = nw.title;
       // (under the grey: the page follows, so closing lands home; the places swap)
       function settle() {
         if (of.parentNode) of.parentNode.removeChild(of);
@@ -302,7 +305,7 @@
         upgrade(nf);
         warm(j);
       }
-      if (!gsap || REDUCE) { nf.classList.remove("is-warm"); navAt(r); settle(); return; }
+      if (!gsap || REDUCE) { nf.classList.remove("is-warm"); navAt(r); ends(); settle(); return; }
       var a = { p: 0 }, b = { p: 0 }, oi = of.querySelector("img"), ni = nf.querySelector("img");
       var outFrom = d > 0 ? "left" : "right", inFrom = d > 0 ? "right" : "left";
       // (the new picture drawn, too faint to see, until it is decoded and a frame has passed. The drift
@@ -319,6 +322,7 @@
           onUpdate: function () { nf.style.clipPath = wipeClip(nf, b.p, inFrom); },
           onComplete: function () { nf.style.clipPath = ""; nextFrame().then(settle); } });
         if (ni) gsap.to(ni, { xPercent: 0, duration: 1.1, delay: 0.1, ease: stepEase, force3D: false });
+        ends(true);
         var n = { l: nl, r: nr };                                // (the chevrons, to the new picture's edges)
         gsap.to(n, { l: r.left, r: r.left + r.width, duration: 1.1, delay: 0.1, ease: stepEase,
           onUpdate: function () { navAt({ left: n.l, width: n.r - n.l }); } });
