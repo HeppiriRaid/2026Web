@@ -574,8 +574,9 @@ async function works(env) {
     await ip.waitForTimeout(900);
     const r = await ip.evaluate((i) => { const b = document.querySelectorAll(".work-btn")[i].getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, idx);
     await ip.mouse.click(r.x, r.y);
-    await ip.waitForTimeout(2200);
-    const z = await ip.evaluate(() => ({ open: document.getElementById("zoom").classList.contains("is-open"), src: (document.querySelector(".zoom-fig img") || { getAttribute: () => null }).getAttribute("src") }));
+    // (the large file comes in once the picture has landed and the file has loaded: waited for, not timed)
+    await ip.waitForFunction((full) => { const i = document.querySelector(".zoom-fig:not(.is-warm) img"); return !!i && (i.getAttribute("src") || "").endsWith(full); }, big.full, { timeout: 8000 }).catch(() => {});
+    const z = await ip.evaluate(() => ({ open: document.getElementById("zoom").classList.contains("is-open"), src: (document.querySelector(".zoom-fig:not(.is-warm) img") || { getAttribute: () => null }).getAttribute("src") }));
     check(z.open && typeof z.src === "string" && z.src.endsWith(big.full), "…the big work zooms to its zoom file", z);
     check(ierr.length === 0, "…no page errors", ierr);
     await ip.close();
