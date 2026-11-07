@@ -55,9 +55,12 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   Gothic (complete). Captions are set in URW Gothic for that reason (the console lets the owner write anything). The body face, Nunito Sans ExtraLight, is Google's full Latin set (OFL), same metrics as the
   PDF's cut.
 - A word in brackets (Details, Kickstarter, Steam; the contact page's links) is one box, `.bx` (`css/style.css`): its
-  marks on the box's corners and the word centred in it on its **ink**, the same space left and right, above and
-  below (`js/brackets.js` reads the letters' extents from the font and the baseline from the page). Measured to
-  within one pixel each way, the most whole pixels allow.
+  marks on the box's corners and the word centred in it **as the eye measures it, at each mark**: up and down, the
+  top-left mark to the top of the first letter = the bottom of the last letter to the bottom-right mark; across, the
+  top-left mark to the letters at its height = the letters at the bottom-right mark's height to it (an r's foot is
+  further in than its top). `js/brackets.js` draws each word on a canvas in the page's font, reads its letters'
+  pixels there, and nudges it, then corrects for pixel snapping. Measured to within one pixel each way (an odd
+  pixel can't be split).
 - Links: CONTACT (top nav and menu) goes to `contact.html`; the front page's sections are `#about`, `#works`,
   `#calligraphy`. `js/wipe.js` knows the site's pages with or without `.html` (Cloudflare Pages serves `/contact`).
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
