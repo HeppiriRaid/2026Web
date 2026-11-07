@@ -648,8 +648,8 @@ const FLOWS = {
     await check(p, "contact page", dpr);
     await hover(p, ".cstage .copy a");
     await check(p, "contact page: pointer on the address", dpr);
-    await hover(p, ".lnk", 1);
-    await expect(p, () => !!document.querySelector(".lnk:hover"), null, "the pointer on a link");
+    await hover(p, ".bxrow .bx", 1);
+    await expect(p, () => !!document.querySelector(".bxrow .bx:hover"), null, "the pointer on a link");
     await check(p, "contact page: pointer on a link", dpr);
     await p.goto(SITE + "/contact.html");
     await settled(p);
@@ -975,7 +975,7 @@ const FLOWS = {
     await quiet(p);
     await tabTo(p, ".cstage .copy a");
     await check(p, "contact page: keyboard focus on the address", dpr);
-    await tabTo(p, ".lnk");
+    await tabTo(p, ".bxrow .bx");
     await check(p, "contact page: keyboard focus on a link", dpr);
 
     await p.goto(SITE + "/illustration.html");

@@ -54,6 +54,10 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   in a map but drawn blank shows as a gap, with no fallback. New heading words: check them, or set them in URW
   Gothic (complete). Captions are set in URW Gothic for that reason (the console lets the owner write anything). The body face, Nunito Sans ExtraLight, is Google's full Latin set (OFL), same metrics as the
   PDF's cut.
+- A word in brackets (Details, Kickstarter, Steam; the contact page's links) is one box, `.bx` (`css/style.css`): its
+  marks on the box's corners and the word centred in it on its **ink**, the same space left and right, above and
+  below (`js/brackets.js` reads the letters' extents from the font and the baseline from the page). Measured to
+  within one pixel each way, the most whole pixels allow.
 - Links: CONTACT (top nav and menu) goes to `contact.html`; the front page's sections are `#about`, `#works`,
   `#calligraphy`. `js/wipe.js` knows the site's pages with or without `.html` (Cloudflare Pages serves `/contact`).
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
@@ -141,7 +145,7 @@ How the site avoids it:
   page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth). The zoom's frame takes a layer
   only while it flies in or back (`.flies`); a picture moving in 2D is tweened with `force3D: false` (GSAP's default
   puts anything it moves on a layer of its own for the motion, and the switch shows as it starts and stops).
-- **Every 「 mark in whole pixels** (the photos' corner marks, `.fr > i`; the links' ticks, `.ltick`, `.lnk`): its
+- **Every 「 mark in whole pixels** (the photos' corner marks, `.fr > i`; the bracketed words, `.bx`): its
   size and line are `round()`ed to whole pixels. The browser snaps each edge of a box to the pixel grid, so a mark
   8.58px square drew one arm 9px and the other 8 (18 and 16 at 2x), uneven from mark to mark; whole, both arms are
   exactly its size wherever it sits.

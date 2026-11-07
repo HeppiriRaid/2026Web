@@ -9,12 +9,8 @@
 /* the screen, centred in a taller window as the illustration page's row is */
 .cstage{aspect-ratio:460.807 / 259.2;margin-top:var(--e)}
 
-/* a link with the front page's corner ticks (.ltick, css/style.css): top-left
-   4.9pt before the word, bottom-right 4.7pt after it */
-.lnk{width:auto;color:#000;text-decoration:none;line-height:1;white-space:nowrap}
-.lnk::before,.lnk::after{content:"";position:absolute;width:calc(2.75 * var(--k));height:calc(2.75 * var(--k));--b:max(1px,calc(1 * var(--k)))}
-/* (in whole pixels: both arms of each mark exactly as long, as the front page's: css/style.css, .ltick) */
-.lnk::before,.lnk::after{width:round(calc(2.75 * var(--k)), 1px);height:round(calc(2.75 * var(--k)), 1px);--b:max(1px,round(calc(1 * var(--k)), 1px))}
-.lnk::before{left:calc(-4.9 * var(--k));top:calc(-.35 * var(--k));border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
-.lnk::after{right:calc(-4.7 * var(--k));bottom:calc(-1.2 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
-.lnk:hover{color:#434343;text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:max(1px,.05em)}
+/* the links: words in brackets (css/style.css, .bx), each as wide as its word with the same space on either side,
+   in a row 11pt apart (as the front page's Details and Kickstarter) */
+.bxrow{top:calc(var(--y) * var(--k));width:auto;display:flex;gap:calc(11 * var(--k))}
+.bxrow>.bx{position:relative;top:auto;text-decoration:none}   /* (not the address's underline: .copy a) */
+.bxrow>.bx:hover span{color:#434343;text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:max(1px,.05em)}
