@@ -1,5 +1,5 @@
 {
-  "saveId": "mw65k7m88ee1",
+  "saveId": "mw65kgd9m4iy",
   "photos": {
     "background": {
       "image": "assets/img/front/background-mv5q0c1zg30x.webp",
@@ -18,13 +18,13 @@
       ]
     },
     "resolve": {
-      "image": "assets/img/front/resolve-mw65k7m99cy5.webp",
-      "width": 1920,
-      "height": 1081,
+      "image": "assets/img/front/resolve-mw65kgd9g3hb.webp",
+      "width": 1024,
+      "height": 642,
       "alt": "",
       "focus": [
         50,
-        22.2
+        43.9
       ]
     }
   }
