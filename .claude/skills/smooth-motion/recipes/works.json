@@ -1,0 +1,96 @@
+[
+ {
+  "name": "works: the name in the header rising in",
+  "page": "illustration.html",
+  "holdFromLoad": true,
+  "wait": 3000,
+  "hide": "#preloader,.menu-btn,.strip,.istage .nav{visibility:hidden !important}",
+  "clip": ".istage .brand",
+  "pad": [
+   6,
+   6,
+   160,
+   50
+  ],
+  "skip": 100,
+  "frames": 100,
+  "measure": [
+   "y"
+  ]
+ },
+ {
+  "name": "works: the first work wiping in",
+  "page": "illustration.html",
+  "holdFromLoad": true,
+  "wait": 3000,
+  "hide": "#preloader,.menu-btn,.istage,.plus,.work-cap{visibility:hidden !important}",
+  "clip": ".work-btn",
+  "pad": 0,
+  "skip": 100,
+  "frames": 100,
+  "measure": [
+   "cover"
+  ],
+  "axis": "x"
+ },
+ {
+  "name": "works: a caption rising (its mask open, to see the motion)",
+  "page": "illustration.html",
+  "holdFromLoad": true,
+  "wait": 3000,
+  "hide": "#preloader,.menu-btn,.istage,.plus,.work-btn{visibility:hidden !important} .work ~ .work{visibility:hidden !important} .work-cap{overflow:visible !important}",
+  "clip": ".work-cap",
+  "pad": [
+   4,
+   4,
+   4,
+   30
+  ],
+  "skip": 110,
+  "frames": 90,
+  "measure": [
+   "y"
+  ]
+ },
+ {
+  "name": "zoom: a work flying in (the row hidden)",
+  "page": "illustration.html",
+  "wait": 7000,
+  "hide": ".zoom-bg,.menu-btn,.zoom-nav,.istage,.strip{visibility:hidden !important}",
+  "clip": [
+   0,
+   0,
+   1440,
+   900
+  ],
+  "frames": 75,
+  "start": "document.querySelector('.work-btn').click()",
+  "measure": [
+   "x",
+   "y",
+   "sx",
+   "sy"
+  ]
+ },
+ {
+  "name": "zoom: flying home",
+  "page": "illustration.html",
+  "wait": 7000,
+  "setup": "document.querySelector('.work-btn').click(); await new Promise(r => setTimeout(r, 2500));",
+  "hide": ".zoom-bg,.menu-btn,.zoom-nav,.istage,.strip{visibility:hidden !important}",
+  "clip": [
+   0,
+   0,
+   1440,
+   900
+  ],
+  "frames": 60,
+  "start": "document.getElementById('zoom').click()",
+  "measure": [
+   "x",
+   "y",
+   "sx",
+   "sy"
+  ]
+ }
+]

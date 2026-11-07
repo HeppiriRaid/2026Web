@@ -2,11 +2,12 @@
    Illustration page — one sideways row of works + a zoom view.
 
    · The row scrolls sideways with the SAME smooth scroll as the front page
-     (Lenis, duration 1.1, the same easing), driven by the wheel / trackpad in
-     either direction, by dragging, and by the arrow keys (one work per press).
-     Touch keeps the native swipe.
-   · Works reveal with the front page's panel wipe (slow → fast → slow) as they
-     come into view; captions rise out of a mask; the "+" fades in last.
+     (Lenis, following on js/glide.js's spring), driven by the wheel / trackpad in
+     either direction, by dragging (let go, it glides on at the hand's speed), and
+     by the arrow keys (one work per press). Touch keeps the native swipe.
+   · Works reveal with the front page's panel wipe as they come into view;
+     captions rise out of a mask; the "+" fades in last. Every motion on the flow's
+     curve, stepEase (CLAUDE.md, "The flow of motion").
    · "+" (or a click on the work) lifts it out of the row into the zoom view:
      the band grey, the work centred with the same 12pt margin on opposite sides.
      ← → / the wheel / a swipe step between works there; Esc or a click closes,
@@ -46,7 +47,7 @@
       return bz(p, y1, y2);
     };
   }
-  var worksEase = cubicBezier(0.38, 0, 0.5, 1);   // the front page's panel wipe: slow → fast → slow
+  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the flow's curve: from a standstill, gently, to a long soft landing
 
   /* ---------- the works: data/illustration.json (edited in console.html) -------
      Fetched on every visit, the newest copy there is (js/fresh.js): GitHub's the
@@ -151,10 +152,10 @@
     lenis = new window.Lenis({
       wrapper: strip, content: track, eventsTarget: window,
       orientation: "horizontal", gestureOrientation: "both",
-      duration: 1.1,
-      easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+      duration: 1.1,                       // (how the row follows the wheel: js/glide.js)
       smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 1.4
     });
+    if (window.__glide) window.__glide(lenis);
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
     gsap.ticker.lagSmoothing(0);
   } else {
@@ -210,7 +211,9 @@
     if (drag.moved) {
       eatClick = true; setTimeout(function () { eatClick = false; }, 0);         // the click that follows the drag
       var v = performance.now() - drag.lt > 90 ? 0 : drag.v;                      // a held pointer has no fling
-      setScroll(nowScroll() + clamp(v * 280, -innerWidth, innerWidth), false);    // glide on, front-page easing
+      // glide on at the hand's speed, slowing to a standstill (js/glide.js)
+      if (lenis && lenis.__fling) lenis.__fling(v * 1000, innerWidth);
+      else setScroll(nowScroll() + clamp(v * 280, -innerWidth, innerWidth), false);
       root.classList.remove("is-dragging");
     }
     drag = null;
@@ -224,7 +227,7 @@
   function showPlus(w, delay, dur) {
     if (!w.plus) return;
     if (!gsap || REDUCE) { w.plus.style.opacity = 1; return; }
-    gsap.to(w.plus, { opacity: 1, duration: dur || 0.45, delay: delay || 0, ease: "power2.out", overwrite: true });
+    gsap.to(w.plus, { opacity: 1, duration: dur || 0.45, delay: delay || 0, ease: stepEase, overwrite: true });
   }
 
   /* ---------- whole device pixels for every moving edge ------------------------
@@ -247,12 +250,12 @@
     if (io) io.unobserve(w.el);
     if (!gsap || REDUCE) { w.btn.style.clipPath = "none"; w.cap.style.opacity = 1; if (w.plus) w.plus.style.opacity = 1; return; }
     var s = { p: 0 };
-    gsap.to(s, { p: 1, duration: 1.1, delay: delay, ease: worksEase,
+    gsap.to(s, { p: 1, duration: 1.1, delay: delay, ease: stepEase,
       onUpdate: function () { w.btn.style.clipPath = wipeClip(w.btn, s.p, "left"); },
       onComplete: function () { w.btn.style.clipPath = "none"; } });
     gsap.set(w.capIn, { yPercent: 108 });
     w.cap.style.opacity = 1;
-    gsap.to(w.capIn, { yPercent: 0, duration: 0.85, delay: delay + 0.32, ease: "power3.out",
+    gsap.to(w.capIn, { yPercent: 0, duration: 0.85, delay: delay + 0.32, ease: stepEase, force3D: false,
       onComplete: function () { gsap.set(w.capIn, { clearProps: "transform" }); } });
     showPlus(w, delay + 0.72, 0.6);                  // the "+" fades in as the wipe reaches it
   }
@@ -339,7 +342,7 @@
   function intro() {
     introLock = false;
     gsap.fromTo($$(".istage .brand, .istage .nav"), { opacity: 0, y: 42 },
-      { opacity: 1, y: 0, duration: 1.0, ease: "power3.out", stagger: 0.075, clearProps: "transform" });
+      { opacity: 1, y: 0, duration: 1.0, ease: stepEase, force3D: false, stagger: 0.075, clearProps: "transform" });
     // the works on screen wipe in left to right, each once its picture can paint. Usually
     // they all can already, and this is the plain 0.09s cascade; on a slow first visit
     // from another page the sheet doesn't wait for them, and they follow as they arrive.
@@ -361,7 +364,7 @@
     var entered = Promise.resolve();
     if (!arrive) {                     // a fresh visit: the name rises first (from another page of the site, no name)
       var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
+      enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
       entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
     }
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
@@ -376,8 +379,8 @@
         return;
       }
       var tl = gsap.timeline();
-      if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15");   // (never shown when arriving)
-      tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", modifiers: window.__wipe && window.__wipe.sheet }, arrive ? 0 : "-=0.25")
+      if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: stepEase, force3D: false }, "+=0.15");   // (never shown when arriving)
+      tl.to(pre, { yPercent: -100, duration: 0.85, ease: stepEase, force3D: false, modifiers: window.__wipe && window.__wipe.sheet }, arrive ? 0 : "-=0.25")
         .add(function () { pre.style.display = "none"; if (lenis) lenis.start(); })
         .add(intro, "-=0.45");
     });

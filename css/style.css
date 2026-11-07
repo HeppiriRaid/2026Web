@@ -142,3 +142,9 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
    width:calc(12 * var(--k));height:calc(12 * var(--k));
    background:#ccc9c9;clip-path:polygon(100% 0,100% 100%,0 0)}
+/* The triangles and squares grow into place (js/anim.js). Moved, a shape is drawn exactly where it is, its
+   edges between pixels; at rest the browser sets it on whole pixels. So they rest on whole pixels already,
+   and the moment the motion lets go of one nothing moves (measured: a triangle hopped 0.7px as it ended). */
+.tri,.sq{left:round(calc(var(--x) * var(--k)), 1px);top:round(calc(var(--y) * var(--k)), 1px)}
+.tri{width:round(calc(12 * var(--k)), 1px);height:round(calc(12 * var(--k)), 1px)}
+.sq{width:round(calc(var(--w,0) * var(--k)), 1px);height:round(calc(var(--h) * var(--k)), 1px)}

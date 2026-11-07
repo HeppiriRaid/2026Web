@@ -14,7 +14,7 @@
    half-bar transforms. A half-covered edge pixel over a bright picture would fold through
    black inside the cursor's square (css/anim.css). */
 .plus{position:absolute;width:var(--plus-s,calc(4.5 * var(--k)));height:var(--plus-s,calc(4.5 * var(--k)));mix-blend-mode:difference}
-.plus::before,.plus::after{content:"";position:absolute;background:#dccbc3;transition:background-color .25s ease}
+.plus::before,.plus::after{content:"";position:absolute;background:#dccbc3;transition:background-color .25s cubic-bezier(.3,0,.2,1)}
 .plus::before{left:0;width:100%;height:var(--plus-w,max(.75px,calc(.6 * var(--k))));top:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
 .plus::after{top:0;height:100%;width:var(--plus-w,max(.75px,calc(.6 * var(--k))));left:calc(50% - var(--plus-w,max(.75px,calc(.6 * var(--k)))) / 2)}
 /* hover highlight: the "+" turns a solid whitish grey (the band grey, #f2f1ef) while the

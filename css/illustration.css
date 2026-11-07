@@ -38,7 +38,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   width:calc(460.807 * var(--k));height:calc(36 * var(--k));
   aspect-ratio:auto;overflow:visible;background:none;
 }
-.istage a{pointer-events:auto;text-decoration:none;transition:color .25s ease}
+.istage a{pointer-events:auto;text-decoration:none;transition:color .25s cubic-bezier(.3,0,.2,1)}
 .istage a:hover{color:#000}
 
 /* ---- the row ------------------------------------------------------------------ */
@@ -80,7 +80,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   color:var(--ink);letter-spacing:0;white-space:normal;
 }
 .work-cap .f{white-space:nowrap}
-.cap-in{display:block}
+.cap-in{display:block;will-change:transform}   /* (it rises in: on its own layer, as all moving text: css/anim.css) */
 
 /* ---- zoom: css/zoom.css (shared with the front page's photos) ----------------- */
 /* while a work is up in the zoom its place in the row is empty — only the picture is

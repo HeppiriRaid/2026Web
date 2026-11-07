@@ -549,7 +549,13 @@ const FLOWS = {
     let win = await p.evaluate(() => window.__foldWindow);
     await holdNext(p, "leave", "arrive");
     await p.mouse.down(); await p.mouse.up();
-    await sheetAt(p, 60, 30);
+    // (the sheet's moving edge over the page once the menu, closing as the sheet rises, has faded its labels —
+    // as at this moment on the sheet's old curve; on the flow's it is a quarter of the way from the top 0.2–0.3 s
+    // after the click. Held earlier, the labels are still half-faded where the panel folds shut, the check's
+    // clock standing still while the page's real-time parts (the cursor's, the tint's) run on: a few pixels
+    // there fold in some runs and not in others. The menu closing, held at those same moments on its own,
+    // is clean in every run, so that moment tests the hold, not the page.)
+    await sheetAt(p, 25, 5);
     await check(p, "page change: the sheet rising (front page)", dpr);
 
     // -- arriving at the illustration page: the sheet half-way off, the intro rising in

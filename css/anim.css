@@ -1,12 +1,11 @@
 /* ============================================================
    KOKI TAKAMATSU — animation layer (additive)
    Pre-hide states are gated behind `.anim` on <html> and use
-   ONLY opacity / clip-path — never a transform offset and never
-   will-change. The motion (slide / scale / wipe) is supplied by
-   GSAP at run time and is fully stripped on completion, so every
-   element rasterises exactly like the static page at rest (no
-   leftover compositing layer, identical antialiasing). If JS
-   never runs, a head-script failsafe removes `.anim` and the page
+   ONLY opacity / clip-path — never a transform offset. The motion
+   (slide / scale / wipe) is supplied by GSAP at run time and is fully
+   stripped on completion. The one layer kept: the text that rises in
+   (below), so it looks the same from a standstill to a standstill. If
+   JS never runs, a head-script failsafe removes `.anim` and the page
    is the original static layout.
    ============================================================ */
 
@@ -23,6 +22,15 @@
 .anim .plus{
   opacity:0;
 }
+/* Text that rises in glides only on a layer of its own. Drawn in place, its letters are set on whole
+   pixels: a slow rise stands still, then hops (measured, a heading's 42px rise: 17 frames standing still,
+   12 hops at 1x; on its own layer, none), and as the motion let go of it the letters were set afresh, up
+   to half a pixel across (a last hop). So it has its layer for good, never switched on or off (CLAUDE.md,
+   "The flow of motion"): the same letters before, during and after. The triangles too (a clipped shape,
+   drawn in place, wavered as it moved; they rest on whole pixels, css/style.css, so on their layer they
+   look exactly as in place). Not a plain box or a mark (drawn in place, they move between pixels already)
+   nor a picture (on a layer a picture is drawn softer, and a bright one's soft edge folds). */
+.anim .brand,.anim .nav,.anim .h,.anim .copy,.anim .cap,.anim .tri{will-change:transform}
 /* photos wipe in (top→down); only the <img> is clipped */
 .anim .ph img{ clip-path:inset(0 0 100% 0); }
 /* placeholder boxes wipe in left→right */
@@ -42,7 +50,7 @@
   letter-spacing:.04em;
   font-size:clamp(15px,3.2vw,46px);
   white-space:nowrap;
-  transform:translate3d(0,110%,0);
+  transform:translate(0,110%);will-change:transform;   /* (it rises and sinks: on its own layer, as all moving text) */
 }
 html:not(.anim) .preloader{display:none}
 
@@ -107,7 +115,7 @@ html.cursor-live .stage{will-change:transform}
   width:6px;height:6px;background:#dccbc3;mix-blend-mode:difference;
   clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
   transform:translate3d(-50%,-50%,0);
-  opacity:0;transition:opacity .3s ease;
+  opacity:0;transition:opacity .3s cubic-bezier(.3,0,.2,1);
 }
 @media (pointer:fine){
   html.cursor-ready,html.cursor-ready *{cursor:none !important}
@@ -220,19 +228,23 @@ html::-webkit-scrollbar{width:0;height:0}
 .cscroll-rail{
   position:fixed;top:0;right:0;bottom:0;width:calc(var(--mk,4) * 2.64px);z-index:91;
   background:rgba(67,67,67,.05);opacity:0;pointer-events:none;
-  transition:opacity .25s ease;
+  transition:opacity .25s cubic-bezier(.3,0,.2,1);
 }
 .cscroll-rail.show{opacity:1}
+/* The thumb is as wide as it grows over the rail (1.92), cut to its width (1.2, a pill) by a clip: it grows by
+   moving the clip's edges, which glide between pixels. (Its width and place moving would be set on whole
+   pixels each frame: standing still, then hopping.) */
 .cscroll-thumb{
-  position:fixed;top:0;right:calc(var(--mk,4) * 0.72px);width:calc(var(--mk,4) * 1.2px);z-index:92;
-  border-radius:calc(var(--mk,4) * 0.72px);background:rgba(67,67,67,.42);
+  position:fixed;top:0;right:calc(var(--mk,4) * 0.36px);width:calc(var(--mk,4) * 1.92px);z-index:92;
+  background:rgba(67,67,67,.42);
+  clip-path:inset(0 calc(var(--mk,4) * 0.36px) round calc(var(--mk,4) * 0.6px));
   opacity:0;pointer-events:none;
   /* vertical position is driven by transform:translateY (set in menu.js) so it
      tracks scroll on the compositor without forcing a layout each frame. */
-  transition:opacity .35s ease,width .16s ease,right .16s ease,background-color .2s ease;
+  transition:opacity .35s cubic-bezier(.3,0,.2,1),clip-path .16s cubic-bezier(.3,0,.2,1),background-color .2s cubic-bezier(.3,0,.2,1);
 }
 .cscroll-thumb.show{opacity:1;pointer-events:auto}
-.cscroll-thumb.rail{width:calc(var(--mk,4) * 1.92px);right:calc(var(--mk,4) * 0.36px);background:rgba(67,67,67,.62)}
+.cscroll-thumb.rail{clip-path:inset(0 0 round calc(var(--mk,4) * 0.72px));background:rgba(67,67,67,.62)}
 @media (prefers-reduced-motion:reduce){
-  .cscroll-rail,.cscroll-thumb{transition:opacity .15s ease}
+  .cscroll-rail,.cscroll-thumb{transition:opacity .15s cubic-bezier(.3,0,.2,1)}
 }

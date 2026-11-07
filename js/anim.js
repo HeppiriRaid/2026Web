@@ -5,6 +5,10 @@
    identity) and clip-path (ending at inset(0)). The "+" marks are
    opacity-only: they sit on whole device pixels (css/zoom.css), and
    a transform would set them on half pixels. If anything throws, we fall back to the static page.
+   Every motion is on the flow's curve, stepEase (CLAUDE.md, "The flow of
+   motion"): it sets off from a standstill, with no jump on its first frame,
+   and lands long and soft. The parts of a cascade set off in turn, each on
+   that curve; moving text glides on a layer of its own (css/anim.css).
    ============================================================ */
 (function () {
   "use strict";
@@ -47,13 +51,14 @@
     var lenis = null;
     if (typeof window.Lenis !== "undefined") {
       lenis = new window.Lenis({
-        duration: 1.1,
-        easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+        duration: 1.1,                     // (how the page follows the wheel: js/glide.js)
         smoothWheel: true,
         wheelMultiplier: 1,
         touchMultiplier: 1.4,
       });
       window.__lenis = lenis;
+      // (the page follows the wheel on the flow: no kick per notch, no jump on the first frame: js/glide.js)
+      if (window.__glide) window.__glide(lenis);
       if (ST) lenis.on("scroll", ST.update);
       gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
       gsap.ticker.lagSmoothing(0);
@@ -77,28 +82,30 @@
         return bz(p, y1, y2);
       };
     }
-    // Works panels: slow → fast → slow, with the opening ease-in slightly
-    // shorter than the closing ease-out (velocity peaks at ~43%).
-    var worksEase = cubicBezier(0.38, 0, 0.5, 1);
+    // The flow's curve (CLAUDE.md): from a standstill, gently, to a long soft landing. Every
+    // motion here is on it; the panels' wipe had its start already (0.38, 0, 0.5, 1).
+    var stepEase = cubicBezier(0.3, 0, 0.2, 1);
 
+    // (2D transforms, force3D: false: in 3D a browser may put the part on a layer of its own just
+    // for the motion, and the switch shows as it starts and stops. Text has its layer for good.)
     function slideIn(t, o) {   // text, captions, brand, nav
       return gsap.fromTo(t, { opacity: 0, y: 42 }, Object.assign(
-        { opacity: 1, y: 0, duration: 1.0, ease: "power3.out",
+        { opacity: 1, y: 0, duration: 1.0, ease: stepEase, force3D: false,
           onComplete: function () { strip(t); } }, o || {}));
     }
-    function popIn(t, o) {      // triangles + squares
+    function popIn(t, o) {      // triangles + squares (grown into place, no overshoot)
       return gsap.fromTo(t, { opacity: 0, y: 14, scale: 0.6 }, Object.assign(
-        { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "back.out(1.7)",
+        { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: stepEase, force3D: false,
           onComplete: function () { strip(t); } }, o || {}));
     }
     function tickIn(t, o) {     // corner ticks / link ticks
       return gsap.fromTo(t, { opacity: 0, scale: 0.35 }, Object.assign(
-        { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out",
+        { opacity: 1, scale: 1, duration: 0.5, ease: stepEase, force3D: false,
           onComplete: function () { strip(t); } }, o || {}));
     }
     function plusIn(t, o) {     // "+" — OPACITY ONLY (never touch transform)
       return gsap.fromTo(t, { opacity: 0 }, Object.assign(
-        { opacity: 1, duration: 0.6, ease: "power2.out" }, o || {}));
+        { opacity: 1, duration: 0.6, ease: stepEase }, o || {}));
     }
     // The clip for a wipe that has revealed p (0→1) of el, from its "left", "right" or "top"
     // edge. The moving edge lands on a whole device pixel and the still sides lie a pixel
@@ -119,28 +126,22 @@
     }
 
     function imageIn(t, o) {    // photos — wipe in (top→down); optional settle from a slight zoom
-      // images marked data-noscale wipe at their natural size (no size change)
-      var els = gsap.utils.toArray(t);
-      var noScale = els.length && els[0].hasAttribute("data-noscale");
-      if (noScale) {             // (through a proxy each, so the wipe's edge can land on whole pixels)
-        var opt = o || {}, first;
-        els.forEach(function (el, i) {
-          var s = { p: 0 }, draw = function () { el.style.clipPath = wipeClip(el, s.p, "top"); };
-          draw();
-          var tw = gsap.to(s, { p: 1, duration: opt.duration || 1.25, ease: "power3.out",
-            delay: (opt.delay || 0) + (opt.stagger || 0) * i, onUpdate: draw,
-            onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); } });
-          if (!i) first = tw;
-        });
-        return first;
-      }
-      var from = { clipPath: "inset(0px 0px 100% 0px)" };
-      var to = { clipPath: "inset(0px 0px 0px 0px)", duration: 1.25, ease: "power3.out",
-                 onComplete: function () { gsap.set(t, { clipPath: "none" }); strip(t); } };
-      if (!noScale) { from.scale = 1.12; to.scale = 1; }
-      return gsap.fromTo(t, from, Object.assign(to, o || {}));
+      // images marked data-noscale wipe at their natural size (no size change). Through a proxy each,
+      // so the wipe's edge can land on whole pixels; a settle from a slight zoom shares its clock.
+      // (all in one timeline, so the intro places them together)
+      var els = gsap.utils.toArray(t), opt = o || {}, tl = gsap.timeline();
+      els.forEach(function (el, i) {
+        var s = { p: 0 }, draw = function () { el.style.clipPath = wipeClip(el, s.p, "top"); };
+        var dur = opt.duration || 1.25, at = (opt.delay || 0) + (opt.stagger || 0) * i;
+        draw();
+        tl.to(s, { p: 1, duration: dur, ease: stepEase, onUpdate: draw,
+          onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); } }, at);
+        if (!el.hasAttribute("data-noscale"))
+          tl.fromTo(el, { scale: 1.12 }, { scale: 1, duration: dur, ease: stepEase, force3D: false }, at);
+      });
+      return tl;
     }
-    // Proxy-driven clip wipe (slow→fast→slow worksEase). GSAP's clip-path
+    // Proxy-driven clip wipe (on the flow's curve). GSAP's clip-path
     // STRING interpolation does not honor a function ease (it snaps), so we
     // tween a numeric proxy and write the clip-path each frame. clipFor(p)
     // maps progress 0→1 to the clip-path string (direction of the wipe).
@@ -149,7 +150,7 @@
       gsap.utils.toArray(t).forEach(function (el, i) {
         var s = { p: 0 };
         var tw = gsap.to(s, {
-          p: 1, duration: 2.0, ease: worksEase, delay: (stag || 0) * i,
+          p: 1, duration: 2.0, ease: stepEase, delay: (stag || 0) * i,
           onUpdate: function () { el.style.clipPath = clipFor(s.p, el); },
           onComplete: function () { gsap.set(el, { clipPath: "none" }); strip(el); },
         });
@@ -161,7 +162,7 @@
     function clipRL(p, el) { return wipeClip(el, p, "right"); }  // wipe right→left
     function clipTB(p, el) { return wipeClip(el, p, "top"); }    // wipe top→bottom
 
-    function boxIn(t, o) {      // grey panels — sideways wipe, slow→fast→slow
+    function boxIn(t, o) {      // grey panels — sideways wipe, on the flow's curve
       o = o || {};
       var els = gsap.utils.toArray(t);
       var stag = o.stagger || 0;
@@ -169,7 +170,7 @@
       var fadeEls = els.filter(function (e) { return e.hasAttribute("data-fade"); });
       if (fadeEls.length) {
         gsap.fromTo(fadeEls, { opacity: 0 },
-          { opacity: 1, duration: 0.9, ease: "power2.inOut", stagger: stag });
+          { opacity: 1, duration: 0.9, ease: stepEase, stagger: stag });
       }
       // most panels wipe left→right; data-rtl panels (Ressolve) wipe right→left
       return wipeProxy(els, stag, function (p, el) {
@@ -358,14 +359,14 @@
         // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
         // the entrance has played and the hero image is ready to paint.
         var enter = gsap.timeline();
-        enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
+        enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
         var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
 
         Promise.all([entered, heroReady]).then(function () {
           landOnSection();
           var exit = gsap.timeline();
-          exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15")
-              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", modifiers: window.__wipe && window.__wipe.sheet }, "-=0.25")
+          exit.to(name, { y: "-115%", duration: 0.55, ease: stepEase, force3D: false }, "+=0.15")
+              .to(pre, { yPercent: -100, duration: 0.85, ease: stepEase, force3D: false, modifiers: window.__wipe && window.__wipe.sheet }, "-=0.25")
               .add(function () {
                 pre.style.display = "none";
                 if (lenis) lenis.start();
@@ -396,10 +397,10 @@
           // ABOUT ME is the first section — scroll all the way to the top so the
           // top-right corner buttons (nav + marks) are covered too, not cut off.
           if (label === "ABOUT") {
-            if (lenis) lenis.scrollTo(0, { duration: 1.3 });
+            if (lenis) lenis.scrollTo(0, { duration: 1.3, easing: stepEase });
             else window.scrollTo({ top: 0, behavior: "smooth" });
           } else if (lenis) {
-            lenis.scrollTo(target, { offset: -48, duration: 1.3 });
+            lenis.scrollTo(target, { offset: -48, duration: 1.3, easing: stepEase });
           } else {
             target.scrollIntoView({ behavior: "smooth" });
           }

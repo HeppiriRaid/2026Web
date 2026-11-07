@@ -32,8 +32,9 @@
       return bz(p, y1, y2);
     };
   }
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // zoom step: sets off as the panel wipes do, lands long and soft
-  var lift = cubicBezier(0.22, 1, 0.36, 1);       // zoom: answers at once, lands softly
+  // the flow's curve (CLAUDE.md): sets off from a standstill, gently, and lands long and soft — the zoom's
+  // step was the first on it; every motion here is now (the flight in and home, the grey, the "+", the nudge)
+  var stepEase = cubicBezier(0.3, 0, 0.2, 1);
 
   // the "+" in whole device pixels — its size and its bars' thickness, with the bars exactly
   // centred — so all its edges land on pixels (css/zoom.css)
@@ -83,11 +84,11 @@
     function showPlus(it, delay, dur) {
       if (!it.plus) return;
       if (!gsap || REDUCE) { it.plus.style.opacity = 1; return; }
-      gsap.to(it.plus, { opacity: 1, duration: dur || 0.45, delay: delay || 0, ease: "power2.out", overwrite: true });
+      gsap.to(it.plus, { opacity: 1, duration: dur || 0.45, delay: delay || 0, ease: stepEase, overwrite: true });
     }
     function hidePlus(it) {
       if (!it.plus || !gsap || REDUCE) return;
-      gsap.to(it.plus, { opacity: 0, duration: 0.25, ease: "power2.out", overwrite: true });
+      gsap.to(it.plus, { opacity: 0, duration: 0.25, ease: stepEase, overwrite: true });
     }
     function setPlus(it, v) { if (it.plus) { if (gsap) gsap.killTweensOf(it.plus); it.plus.style.opacity = v; } }
 
@@ -226,13 +227,13 @@
       gsap.set(f, cr ? cr.move : flip(r0, r1));          // sits exactly on its place (a crop: only that part)…
       if (cr) f.style.clipPath = inset(cr.clip);
       f.style.visibility = "hidden";
-      gsap.fromTo(zoomBg, { opacity: 0 }, { opacity: 1, duration: 0.55, ease: "power2.out" });   // the answer is immediate
+      gsap.fromTo(zoomBg, { opacity: 0 }, { opacity: 1, duration: 0.55, ease: stepEase });   // the answer starts at once
       ready(f).then(function () {                        // …and lifts off once its picture can paint
         f.style.visibility = "";
         it.el.classList.add("is-zoomed");
-        gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: lift,
+        gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: stepEase,
           onComplete: function () { f.classList.remove("flies"); Z.busy = false; upgrade(f); warm(Z.i); } });
-        if (cr) gsap.to(cr.clip, { t: 0, r: 0, b: 0, l: 0, duration: 0.9, ease: lift,
+        if (cr) gsap.to(cr.clip, { t: 0, r: 0, b: 0, l: 0, duration: 0.9, ease: stepEase,
           onUpdate: function () { f.style.clipPath = inset(cr.clip); }, onComplete: function () { f.style.clipPath = ""; } });
       });
     }
@@ -261,13 +262,13 @@
       setPlus(it, 0);
       f.classList.add("flies");
       // (xPercent: back from a nudge at either end, if one is under way)
-      gsap.to(f, Object.assign(cr ? cr.move : flip(r0, r1), { xPercent: 0, duration: 0.75, ease: lift, overwrite: true, onComplete: done }));
+      gsap.to(f, Object.assign(cr ? cr.move : flip(r0, r1), { xPercent: 0, duration: 0.75, ease: stepEase, overwrite: true, onComplete: done }));
       if (cr) {                                          // (the crop closes back round what its place shows)
         var c = { t: 0, r: 0, b: 0, l: 0 };
-        gsap.to(c, { t: cr.clip.t, r: cr.clip.r, b: cr.clip.b, l: cr.clip.l, duration: 0.75, ease: lift,
+        gsap.to(c, { t: cr.clip.t, r: cr.clip.r, b: cr.clip.b, l: cr.clip.l, duration: 0.75, ease: stepEase,
           onUpdate: function () { f.style.clipPath = inset(c); } });
       }
-      gsap.to(zoomBg, { opacity: 0, duration: 0.5, delay: 0.1, ease: "power2.inOut" });
+      gsap.to(zoomBg, { opacity: 0, duration: 0.5, delay: 0.1, ease: stepEase });
     }
 
     // Step to the next / previous picture inside the zoom: a sideways wipe in the direction of
@@ -287,8 +288,8 @@
     function step(d) {
       if (!Z.open || Z.busy) return;
       var j = Z.i + d;
-      if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, nothing more
-        if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
+      if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, out and back, nothing more
+        if (gsap && !REDUCE) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: stepEase, yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
         return;
       }
       Z.busy = true;

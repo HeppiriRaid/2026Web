@@ -1,0 +1,59 @@
+[
+ {
+  "name": "contact: CONTACT rising in (first visit)",
+  "page": "contact.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.menu-btn,.cstage .a:not(.h),.istage .a{visibility:hidden !important} .cstage .h ~ .h{visibility:hidden !important}",
+  "clip": ".cstage .h",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 100,
+  "frames": 110,
+  "measure": [
+   "y"
+  ]
+ },
+ {
+  "name": "contact: its triangle rising in",
+  "page": "contact.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.menu-btn,.cstage .a:not(.tri),.istage .a{visibility:hidden !important}",
+  "clip": ".cstage .tri",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 100,
+  "frames": 110,
+  "measure": [
+   "y"
+  ]
+ },
+ {
+  "name": "first visit: the name rising on the curtain",
+  "page": "contact.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": ".menu-btn,.stage,.istage{visibility:hidden !important}",
+  "clip": ".pl-name",
+  "pad": [
+   6,
+   30,
+   6,
+   60
+  ],
+  "skip": 0,
+  "frames": 70,
+  "measure": [
+   "y"
+  ]
+ }
+]

@@ -2,10 +2,11 @@
    KOKI TAKAMATSU — moving between pages: a white wipe
    Your name plays when someone arrives at the site (or reloads a page).
    Moving from one of its pages to another is only a white wipe, one quick
-   motion: the paper rises over the page being left (speeding up), and on
-   the page arrived on it lifts straight off again (slowing down) while that
-   page's own intro rises in behind it, at once and 1.6x faster than on a
-   first visit — the same rhythm, quicker.
+   motion: the paper rises over the page being left, and on the page arrived
+   on it lifts straight off again while that page's own intro rises in behind
+   it, at once and 1.6x faster than on a first visit — the same rhythm,
+   quicker. Each move of the sheet goes from a standstill to a standstill on
+   the flow's curve, stepEase (CLAUDE.md, "The flow of motion").
    A link here leaves a note for the next page (sessionStorage, read once,
    good for 15 s); anim.js and illustration.js read window.__arrive, skip
    the name and hand their intro to window.__wipe.arrive(). Stepping back /
@@ -21,6 +22,17 @@
   var COVER = 0.45, LIFT = 0.5, PACE = 1.6;     // seconds (real time); arrival speed-up
   var pre = document.getElementById("preloader");
   var gsap = window.gsap;
+  // custom cubic-bezier ease (no plugin) — the same solver as the other scripts
+  function cubicBezier(x1, y1, x2, y2) {
+    function bz(p, a, b) { var m = 1 - p; return 3 * m * m * p * a + 3 * m * p * p * b + p * p * p; }
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var lo = 0, hi = 1, p = x;
+      for (var i = 0; i < 18; i++) { p = (lo + hi) / 2; if (bz(p, x1, x2) < x) lo = p; else hi = p; }
+      return bz(p, y1, y2);
+    };
+  }
+  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the flow's curve: from a standstill, gently, to a long soft landing
   var REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   // arriving from another page of the site, or stepping back / forward through them
@@ -84,7 +96,7 @@
       clock.timeScale(PACE);
       tell("kt:arrive");                                         // (the cursor springs back in: js/cursor.js)
       gsap.timeline()
-        .to(pre, { yPercent: -100, duration: LIFT * PACE, ease: "power3.out", modifiers: SHEET }, 0)
+        .to(pre, { yPercent: -100, duration: LIFT * PACE, ease: stepEase, force3D: false, modifiers: SHEET }, 0)
         .add(function () { intro(); }, 0.06 * PACE)
         .add(function () { pre.style.display = "none"; if (done) done(); }, LIFT * PACE);
       (function settle() {
@@ -150,7 +162,7 @@
     document.write(html);
     document.close();
   }
-  // the paper rises over the page (no name, speeding up), then the next page comes in
+  // the paper rises over the page (no name), then the next page comes in
   function leave(url, push) {
     leaving = true;
     next = url;
@@ -167,7 +179,7 @@
     gsap.globalTimeline.timeScale(1);
     if (name) { gsap.killTweensOf(name); gsap.set(name, { y: "110%" }); }
     pre.style.display = "flex";
-    gsap.fromTo(pre, { yPercent: 100 }, { yPercent: 0, duration: COVER, ease: "power3.in", overwrite: true, modifiers: SHEET,
+    gsap.fromTo(pre, { yPercent: 100 }, { yPercent: 0, duration: COVER, ease: stepEase, force3D: false, overwrite: true, modifiers: SHEET,
       onComplete: function () {
         try { sessionStorage.setItem(KEY, String(Date.now())); } catch (err) {}
         var to = next, again = to !== url;                     // (back / forward pressed meanwhile: that page)
@@ -206,7 +218,7 @@
     if (getComputedStyle(pre).display === "none") return;
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       tell("kt:arrive");
-      gsap.to(pre, { yPercent: -100, duration: LIFT, ease: "power3.out", overwrite: true, modifiers: SHEET,
+      gsap.to(pre, { yPercent: -100, duration: LIFT, ease: stepEase, force3D: false, overwrite: true, modifiers: SHEET,
         onComplete: function () { pre.style.display = "none"; } });
     }); });
   });

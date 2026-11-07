@@ -36,7 +36,7 @@
   function intro() {
     locked = false;
     gsap.fromTo($$(".istage .brand, .istage .nav, .cstage .h, .cstage .tri, .cstage .copy"), { opacity: 0, y: 42 },
-      { opacity: 1, y: 0, duration: 1.1, ease: stepEase, clearProps: "transform" });
+      { opacity: 1, y: 0, duration: 1.1, ease: stepEase, force3D: false, clearProps: "transform" });
   }
 
   function start() {
@@ -44,15 +44,15 @@
     var name = pre.querySelector(".pl-name"), arrive = !!window.__arrive, entered = Promise.resolve();
     if (!arrive) {                     // a fresh visit: the name rises first (from another page of the site, no name)
       var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: "power3.out" });
+      enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
       entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
     }
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
     Promise.all([entered, fonts]).then(function () {
       if (arrive && window.__wipe) { window.__wipe.arrive(intro, function () {}); return; }   // the sheet lifts as the page rises in
       var tl = gsap.timeline();
-      if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: "power3.in" }, "+=0.15");
-      tl.to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", modifiers: window.__wipe && window.__wipe.sheet }, arrive ? 0 : "-=0.25")
+      if (!arrive) tl.to(name, { y: "-115%", duration: 0.55, ease: stepEase, force3D: false }, "+=0.15");
+      tl.to(pre, { yPercent: -100, duration: 0.85, ease: stepEase, force3D: false, modifiers: window.__wipe && window.__wipe.sheet }, arrive ? 0 : "-=0.25")
         .add(function () { pre.style.display = "none"; })
         .add(intro, "-=0.45");
     });

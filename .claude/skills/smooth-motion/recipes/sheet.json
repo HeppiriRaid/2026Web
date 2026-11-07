@@ -1,0 +1,37 @@
+[
+ {
+  "name": "page change: the sheet rising (where it is)",
+  "page": "contact.html",
+  "wait": 5000,
+  "clip": [
+   700,
+   0,
+   24,
+   900
+  ],
+  "frames": 28,
+  "start": "document.querySelector('.istage .nav[href*=about]').click()",
+  "read": "new DOMMatrix(getComputedStyle(document.getElementById('preloader')).transform).m42",
+  "measure": [
+   "read"
+  ]
+ },
+ {
+  "name": "page change: the sheet lifting (where it is)",
+  "page": "contact.html",
+  "wait": 5000,
+  "clip": [
+   700,
+   0,
+   24,
+   900
+  ],
+  "frames": 50,
+  "setup": "var pre = document.getElementById('preloader'); pre.style.display = 'flex'; gsap.set(pre, { yPercent: 0 });",
+  "start": "window.__wipe.arrive(function () {}, function () {})",
+  "read": "new DOMMatrix(getComputedStyle(document.getElementById('preloader')).transform).m42",
+  "measure": [
+   "read"
+  ]
+ }
+]

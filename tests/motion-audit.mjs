@@ -5,71 +5,32 @@
    (stagger), each CSS transition and animation (in the stylesheets, the pages and
    style.transition in scripts), and the smooth scroll's curve (Lenis `easing`).
 
-   A new motion passes only on the flow's curve: stepEase, cubic-bezier(0.3, 0,
-   0.2, 1), defined as exactly that (in CSS: cubic-bezier(.3,0,.2,1)). It sets off
-   gently, with no jump on its first frame, and lands long and soft. Anything else
-   fails unless it is in REVIEWED, used exactly as often as listed, with the reason
-   it may be so:
+   A motion passes only on the flow's curve: stepEase, cubic-bezier(0.3, 0,
+   0.2, 1), defined as exactly that (in CSS: cubic-bezier(.3,0,.2,1); a smooth
+   scroll sent somewhere: easing: stepEase). It sets off gently, with no jump on
+   its first frame, and lands long and soft. Anything else fails unless it is in
+   REVIEWED, used exactly as often as listed, with the reason it may be so:
      · another curve (power3.out, expo, CSS `ease`...): most start at speed, a jump
        on the first frame;
      · a tween with no curve: GSAP then uses power1.out, which starts at speed;
-     · a cascade (stagger): the parts don't share one clock;
+     · a cascade (stagger) of anything not on the flow's curve: each part of a
+       cascade sets off on its own, so each must set off from a standstill;
      · an overshoot (back, elastic, bounce) or steps: something moving on its own.
-   The motions listed below were all on the site before these rules, as the owner
-   has seen and kept them. Don't add to the list to get a new motion past the
-   audit: give it the flow's curve. Run from tests/fold-check.mjs (its result
-   decides the stamp), or alone: node tests/motion-audit.mjs
+   Every motion of the site is on the flow's curve but the hamburger's own colour
+   fades, listed below as the owner approved the hamburger. Don't add to the list
+   to get a motion past the audit: give it the flow's curve. Run from
+   tests/fold-check.mjs (its result decides the stamp), or alone:
+   node tests/motion-audit.mjs
    ============================================================ */
 import fs from "node:fs";
 import path from "node:path";
 import url from "node:url";
 import { strip, sources } from "./colour-audit.mjs";
 
-const OLD = "on the site before the flow rules, as the owner has seen it";
 const REVIEWED = {
-  "js/anim.js": {
-    "lenis easing": [1, "the front page's smooth scroll (1.001 - 2^-10t): " + OLD],
-    "ease power3.out": [3, "the front page's intro: text rising in, a photo wiping in, the name; " + OLD],
-    "no ease (GSAP's power1.out)": [1, "imageIn(): its curve is power3.out, set in `to` just above the call; " + OLD],
-    "ease back.out(1.7)": [1, "the front page's triangles and squares popping in; " + OLD],
-    "ease power2.out": [2, "the front page's corner ticks and \"+\" fading in; " + OLD],
-    "ease worksEase": [1, "the front page's panel wipes (0.38, 0, 0.5, 1); " + OLD],
-    "ease power2.inOut": [1, "the front page's calligraphy wipe; " + OLD],
-    "ease power3.in": [1, "the curtain's name sinking away; " + OLD],
-    "ease power4.inOut": [1, "the curtain lifting; " + OLD],
-    "stagger": [4, "the front page's parts revealed in turn (the photos' fade, and the reveals as they scroll in); " + OLD],
-  },
   "css/anim.css": {
-    "css ease": [10, "colour and opacity fades, nothing moving: the menu labels' hover colour, the bars' tint, the cursor's point, the scrollbar; " + OLD],
-  },
-  "css/illustration.css": {
-    "css ease": [1, "the header links' hover colour; " + OLD],
-  },
-  "css/zoom.css": {
-    "css ease": [1, "the \"+\" changing colour under the pointer; " + OLD],
-  },
-  "js/illustration.js": {
-    "lenis easing": [1, "the row's smooth scroll, the front page's curve: " + OLD],
-    "ease power3.out": [3, "the header rising in, the name, a caption rising; " + OLD],
-    "ease power2.out": [1, "a work's \"+\" fading in; " + OLD],
-    "ease worksEase": [1, "a work's panel wipe (0.38, 0, 0.5, 1); " + OLD],
-    "ease power3.in": [1, "the curtain's name sinking away; " + OLD],
-    "ease power4.inOut": [1, "the curtain lifting; " + OLD],
-    "stagger": [1, "the header's parts rising in turn; " + OLD],
-  },
-  "js/contact.js": {
-    "ease power3.out": [1, "the curtain's name rising (the same curtain as every page's first visit); " + OLD],
-    "ease power3.in": [1, "the curtain's name sinking away; " + OLD],
-    "ease power4.inOut": [1, "the curtain lifting; " + OLD],
-  },
-  "js/wipe.js": {
-    "ease power3.in": [1, "the white sheet rising over the page being left; " + OLD],
-    "ease power3.out": [2, "the white sheet lifting off the page arrived on (as the page comes in, and alone); " + OLD],
-  },
-  "js/zoom.js": {
-    "ease power2.out": [4, "the \"+\" fading in and out, the grey fading in, the nudge at the row's end; " + OLD],
-    "ease lift": [4, "the zoom's flight in and home, its crop opening and closing (0.22, 1, 0.36, 1: answers the click at once); " + OLD],
-    "ease power2.inOut": [1, "the grey fading out as the picture flies home; " + OLD],
+    "css ease": [3, "the hamburger's own colour fades, nothing moving (its bars' tint from the picture beneath, its labels' hover " +
+      "colour and that colour's mirror): the hamburger as the owner approved it, left as it is"],
   },
 };
 
@@ -117,11 +78,17 @@ function motionsIn(file, text, kind) {
       add(ease === null ? "no ease (GSAP's power1.out)" : "ease " + ease, src, m.index);
       if (/\bstagger\s*:/.test(a)) add("stagger", src, m.index);
     }
-    for (const m of src.matchAll(/\bstagger\s*:/g)) {                           // (a stagger outside a tween call: a cascade too)
+    // (a stagger outside a tween call — handed to a tween elsewhere in the file: a cascade of whatever that tween is,
+    // so it passes where every tween in the file is on the flow's curve)
+    const offFlow = found.some((f) => f.token !== "stagger");
+    for (const m of src.matchAll(/\bstagger\s*:/g)) {
       const inCall = found.some((f) => f.token === "stagger" && f.line === lineAt(src, m.index));
-      if (!inCall && !/\.(to|from|fromTo)\s*\([^;]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))) add("stagger", src, m.index);
+      if (offFlow && !inCall && !/\.(to|from|fromTo)\s*\([^;]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))) add("stagger", src, m.index);
     }
-    for (const m of src.matchAll(/\beasing\s*:/g)) add("lenis easing", src, m.index);
+    for (const m of src.matchAll(/\beasing\s*:\s*([A-Za-z_$][\w$]*)?/g)) {      // a smooth scroll's curve
+      if (m[1] === "stepEase" && flowDefined) continue;
+      add("lenis easing", src, m.index);
+    }
     for (const m of src.matchAll(/\.style\.(transition|animation)\s*=\s*([^;\n]+)/g)) {
       const lit = /^\s*(["'])((?:(?!\1).)*)\1\s*$/.exec(m[2]);
       if (lit) for (const t of cssTokens(lit[2])) { if (t !== "flow") add(t, src, m.index); }
@@ -160,7 +127,7 @@ export function audit(root) {
 
 export function report(r) {
   console.log(`Motion audit: ${r.files.length} files of ${r.pages.join(", ")} — ${r.motions} motions off the flow's curve, ` +
-    (r.problems.length ? `${r.problems.length} problem${r.problems.length > 1 ? "s" : ""}:` : "all of them reviewed (older than the rules); every new one is on stepEase."));
+    (r.problems.length ? `${r.problems.length} problem${r.problems.length > 1 ? "s" : ""}:` : "all of them reviewed (the hamburger's colour fades); every other motion is on stepEase."));
   for (const p of r.problems) console.log("  ✗ " + p);
   if (r.problems.length) console.log("  Every new motion sets off gently and lands long and soft: stepEase, cubic-bezier(0.3, 0, 0.2, 1), one clock and\n" +
     "  one easing for whatever moves together, no overshoot (CLAUDE.md, \"The flow of motion\"). Measure it frame by frame too.");

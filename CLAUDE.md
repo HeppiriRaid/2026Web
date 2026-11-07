@@ -85,6 +85,11 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 ## The flow of motion — every new motion follows it
 
 The owner, on the zoom's step to the next picture as it is now: perfect, and the way every motion should move.
+Every motion of the site now moves this way (the owner asked for it, after the hamburger was rebuilt on it).
+
+**Before you add or change anything that moves, fades, wipes or scrolls, load the `smooth-motion` skill**
+(`.claude/skills/smooth-motion/`): how a motion is built here, how to film it frame by frame on a held clock
+(`scripts/probe.mjs`, with recipes for the site's motions), and the cases behind each rule below.
 
 - **From a standstill to a standstill.** A motion sets off gently, with no jump on its first frame. It lands long
   and soft, slower and slower to the very end, so it never seems to stop at once. The zoom's step: `stepEase`,
@@ -102,19 +107,33 @@ The owner, on the zoom's step to the next picture as it is now: perfect, and the
 - **The same look from start to stop.** Never switch a layer on or off around a motion (`will-change`, or
   GSAP's default `force3D: "auto"`). On a layer the browser draws a picture a little differently, so the
   switch shows as the motion starts and as it stops.
+- **Moving text has a layer of its own, for good** (`css/anim.css`: the text that rises in, the triangles, the
+  curtain's name, the works' captions). Drawn in place, letters are set on whole pixels: a slow rise stood still,
+  then hopped (measured: 17 stills and 12 hops in a heading's rise at 1x; at 2x a device pixel at a time), and as
+  the motion let go the letters were set afresh, a last hop. On its layer the same rise glides, exactly, at 1x and
+  2x. Shapes that move and rest crisp rest on whole pixels (`round()`, `css/style.css`), so nothing moves as the
+  motion lets go of them. Pictures still never get a layer at rest.
+- **The smooth scroll follows; it never restarts** (`js/glide.js`). Following the wheel, the trackpad, the keys or a
+  fling, the page is an exact overdamped spring (35 ms and 159 ms, the second the old easing's own): a new notch
+  bends the speed. Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
+  kick per notch. A scroll sent somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the
+  works' row let go mid-drag carries on at the hand's speed (`lenis.__fling`).
 - **Nothing heavy while anything moves.** Prepare before (decode, draw at size: `warm()`) and tidy after
   (`settle()`). A long frame mid-motion is a visible jump.
-- **Never jaggy, and checked by machine.** Every new motion is on `stepEase` (CSS: `cubic-bezier(.3,0,.2,1)`), one
-  clock and one easing for whatever moves together: no other curve (most start at speed, a jump on the first frame),
-  no tween without a curve (GSAP's default `power1.out` starts at speed), no `stagger`, no overshoot (`back`,
-  `elastic`, `bounce`) or `steps`. `tests/motion-audit.mjs` reads every motion from the code and fails on any that
-  isn't, unless it is one of the motions listed in its `REVIEWED` (all older than these rules, as the owner has seen
-  them). Never add a new motion to that list to get it past the audit: give it the flow's curve.
-- **Measured, not guessed.** Check per-frame positions (no hops; the landing's last frames creep), frame
-  times while moving (about 20 ms or less at 1x), and the pixels around every edge as the motion ends,
-  holding GSAP's clock there. The sandbox has no GPU: at 2x its compositor alone takes about 25 ms a frame,
-  so judge 2x timings on a real machine. Its emulated 2x also snaps pictures to whole CSS pixels, which a
-  real screen doesn't: check edges with a real scale (`--force-device-scale-factor`).
+- **Never jaggy, and checked by machine.** Every motion is on `stepEase` (CSS: `cubic-bezier(.3,0,.2,1)`; a scroll
+  sent somewhere: `easing: stepEase`), one clock and one easing for whatever moves together: no other curve (most
+  start at speed, a jump on the first frame), no tween without a curve (GSAP's default `power1.out` starts at speed),
+  no overshoot (`back`, `elastic`, `bounce`) or `steps`, and a cascade (parts setting off in turn) only of parts on
+  stepEase, each setting off from a standstill. Keep each motion's pace: never make one slower than it was.
+  `tests/motion-audit.mjs` reads every motion from the code and fails on any that isn't; its `REVIEWED` holds only
+  the hamburger's own colour fades. Never add a motion to that list to get it past the audit: give it the curve.
+- **Measured, not guessed.** Film the drawn pixels frame by frame on a held clock (the skill's `scripts/probe.mjs`):
+  per-frame steps (no stills, hops or reversals; a small first step; the landing's last frames creep), frame
+  times while moving (about 20 ms or less at 1x), and the pixels around every edge as the motion ends.
+  Never judge from layout numbers: they hid the snapping. The sandbox has no GPU: at 2x its compositor alone
+  takes about 25 ms a frame, so judge 2x timings on a real machine. Playwright's emulated 2x snaps pictures to
+  whole CSS pixels, which a real screen doesn't: for a true 2x launch with `--force-device-scale-factor=2` and give
+  the page no viewport of its own (`viewport: null`; with one, it draws at 1x inside the 2x window).
 
 ## The inverse cursor, and the one rule that keeps it clean
 
@@ -236,8 +255,7 @@ Three layers, so an outline can't ship again — and the console's own check rid
    for speed (the same pixels as `page.screenshot()`, checked once per job); the pixel test runs in worker
    threads (`tests/fold-scan.mjs`). And no state is reached by the clock: `quiet()` waits until the page is at
    rest (no GSAP tween or CSS transition under way, the smooth scrolls still, the scrollbar away, the hamburger
-   settled, pictures in — GSAP's tweens hurried there, never CSS: the menu's morph is a chain of transitions
-   started by timers), and `stepTo()` reaches a moment part-way through an animation by stopping GSAP's clock
+   settled, pictures in — GSAP's tweens hurried there, CSS transitions waited out), and `stepTo()` reaches a moment part-way through an animation by stopping GSAP's clock
    (and the CSS ones with it) where it begins — at a page change (`holdNext()`: `kt:leave` / `kt:arrive`), with a
    scroll (`scrollHeld()`) — and moving it on by hand, 8 ms at a time. So a slow or busy machine only makes the
    run longer, never different. Never add a fixed pause to a flow: if `quiet()` misses something that moves,

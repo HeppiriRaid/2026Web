@@ -1,0 +1,138 @@
+[
+ {
+  "name": "front: ABOUT ME rising in (the real intro)",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(#about),.menu-btn,.cscroll-thumb{visibility:hidden !important}",
+  "clip": "#about",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 95,
+  "frames": 110,
+  "measure": [
+   "y",
+   "mass"
+  ]
+ },
+ {
+  "name": "front: a paragraph rising in",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(.copy),.menu-btn,.cscroll-thumb{visibility:hidden !important} .copy ~ .copy{visibility:hidden !important}",
+  "clip": ".copy",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 95,
+  "frames": 120,
+  "measure": [
+   "y",
+   "mass"
+  ]
+ },
+ {
+  "name": "front: a triangle popping in",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(.tri),.menu-btn,.cscroll-thumb{visibility:hidden !important} .tri ~ .tri{visibility:hidden !important}",
+  "clip": ".tri",
+  "pad": [
+   10,
+   10,
+   10,
+   26
+  ],
+  "skip": 95,
+  "frames": 110,
+  "measure": [
+   "y",
+   "x",
+   "sy"
+  ]
+ },
+ {
+  "name": "front: the red square popping in",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(.sq),.menu-btn,.cscroll-thumb{visibility:hidden !important}",
+  "clip": ".sq",
+  "pad": [
+   12,
+   12,
+   12,
+   26
+  ],
+  "skip": 95,
+  "frames": 120,
+  "measure": [
+   "y",
+   "x"
+  ]
+ },
+ {
+  "name": "front: the portrait wiping in",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.menu-btn,.cscroll-thumb,.fr > i,.plus{visibility:hidden !important}",
+  "clip": "figure[data-slot=about]",
+  "pad": 0,
+  "skip": 90,
+  "frames": 110,
+  "measure": [
+   "cover"
+  ],
+  "axis": "y"
+ },
+ {
+  "name": "front: ABOUT ME rising in (the real intro) (a true 2x)",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(#about),.menu-btn,.cscroll-thumb{visibility:hidden !important}",
+  "clip": "#about",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 95,
+  "frames": 110,
+  "measure": [
+   "y"
+  ],
+  "dpr": 2
+ },
+ {
+  "name": "front: a paragraph rising in (a true 2x)",
+  "page": "index.html",
+  "holdFromLoad": true,
+  "wait": 2500,
+  "hide": "#preloader,.a:not(.copy),.menu-btn,.cscroll-thumb{visibility:hidden !important} .copy ~ .copy{visibility:hidden !important}",
+  "clip": ".copy",
+  "pad": [
+   6,
+   6,
+   6,
+   50
+  ],
+  "skip": 95,
+  "frames": 120,
+  "measure": [
+   "y"
+  ],
+  "dpr": 2
+ }
+]
