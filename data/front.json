@@ -1,11 +1,15 @@
 {
-  "saveId": "mw65kgd9m4iy",
+  "saveId": "mw65kv93chf6",
   "photos": {
     "background": {
-      "image": "assets/img/front/background-mv5q0c1zg30x.webp",
-      "width": 2354,
-      "height": 1324,
-      "alt": ""
+      "image": "assets/img/front/background-mw65kv93wo06.webp",
+      "width": 1200,
+      "height": 1697,
+      "alt": "",
+      "focus": [
+        50,
+        24.2
+      ]
     },
     "graphic": {
       "image": "assets/img/front/graphic-mw65g19nls5m.webp",
