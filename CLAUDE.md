@@ -52,7 +52,7 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - Fonts: the headings' ITC Avant Garde files (`assets/fonts/avantgarde-*.woff2`) were cut from the design PDF and
   draw only the letters it used (Demi: no F, J, digits or lowercase; Book: no E, F, J, V, Y). Any other character
   in a map but drawn blank shows as a gap, with no fallback. New heading words: check them, or set them in URW
-  Gothic (complete). The body face, Nunito Sans ExtraLight, is Google's full Latin set (OFL), same metrics as the
+  Gothic (complete). Captions are set in URW Gothic for that reason (the console lets the owner write anything). The body face, Nunito Sans ExtraLight, is Google's full Latin set (OFL), same metrics as the
   PDF's cut.
 - Links: CONTACT (top nav and menu) goes to `contact.html`; the front page's sections are `#about`, `#works`,
   `#calligraphy`. `js/wipe.js` knows the site's pages with or without `.html` (Cloudflare Pages serves `/contact`).

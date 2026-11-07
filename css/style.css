@@ -82,7 +82,7 @@ img{display:block;width:100%;height:100%;object-fit:cover}
    font-size:calc(var(--fs) * var(--k));white-space:nowrap;letter-spacing:-.008em;
    top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
 .nav{text-decoration:none}
-.cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
+.cap{font-family:"Gothic",var(--disp);font-weight:400;color:#403f3f;line-height:1;
    font-size:calc(3 * var(--k));white-space:nowrap;top:calc((var(--y) + .5) * var(--k))}
 /* a caption the owner can rewrite (data-caption-for): it ends where its box does (the picture's
    right edge), so a longer one grows to the left, then wraps onto a second line */
