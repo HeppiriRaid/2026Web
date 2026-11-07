@@ -10,7 +10,8 @@
 @font-face{font-family:"AvantGarde";src:url("../assets/fonts/avantgarde-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-book.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Gothic";src:url("../assets/fonts/urwgothic-demi.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
-/* body = Nunito Sans 12pt ExtraLight (exact subset extracted from the PDF) */
+/* body = Nunito Sans ExtraLight (Google Fonts, the full Latin set: the subset extracted from the PDF drew
+   only the letters the PDF used. Same metrics and widths. Licence: assets/fonts/OFL-NunitoSans.txt) */
 @font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunitosans-extralight.woff2") format("woff2");font-weight:200;font-style:normal;font-display:swap}
 @font-face{font-family:"Nunito Sans";src:url("../assets/fonts/nunitosans-extralight-italic.woff2") format("woff2");font-weight:200;font-style:italic;font-display:swap}
 
@@ -73,11 +74,14 @@ img{display:block;width:100%;height:100%;object-fit:cover}
    top:calc((var(--y) + var(--fs,4)/12 + .25) * var(--k))}
 .copy p{margin:0 0 calc(4.8 * var(--k))}
 .copy p:last-child{margin-bottom:0}
+/* a link in the copy (the address): the copy's own ink, underlined; never the browser's blue */
+.copy a{color:inherit;text-decoration:underline;text-underline-offset:.18em;text-decoration-thickness:max(1px,.05em)}
 /* body copy is left-aligned (ragged right) in the source, not justified */
 
 .brand,.nav{font-family:var(--disp);font-weight:400;color:#434343;line-height:1;
    font-size:calc(var(--fs) * var(--k));white-space:nowrap;letter-spacing:-.008em;
    top:calc((var(--y) + var(--fs)/12 + .25) * var(--k))}
+.nav{text-decoration:none}
 .cap{font-family:var(--disp);font-weight:400;color:#403f3f;line-height:1;
    font-size:calc(3 * var(--k));white-space:nowrap;top:calc((var(--y) + .5) * var(--k))}
 /* a caption the owner can rewrite (data-caption-for): it ends where its box does (the picture's

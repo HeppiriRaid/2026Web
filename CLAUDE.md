@@ -3,7 +3,9 @@
 Static site, no build step: plain HTML / CSS / JS, with GSAP 3.12.5 and Lenis 1.0.42 in `vendor/`.
 Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Main`** branch (capital M).
 
-- `index.html` front page · `illustration.html` the row of works + zoom · `console.html` the owner's editor
+- `index.html` front page · `illustration.html` the row of works + zoom · `contact.html` the address and related
+  links (one screen under the illustration page's header; `css/contact.css`, its intro `js/contact.js`) ·
+  `console.html` the owner's editor
   (it commits `data/illustration.json` and `assets/img/illustration/` — the works — and `data/front.json` and
   `assets/img/front/` — the front page's photos and caption — straight to `Main` through the GitHub API).
 - The front page's photo holders are its `figure[data-slot]` (name in `data-slot-name`, shape from `--w`/`--h`);
@@ -47,6 +49,13 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   document (a media query's listener, an observer, a smooth scroll, GSAP's ticker, ScrollTrigger) is let go on
   `kt:gone` or in `swap()`, or every page visited would live on. Anything that isn't one of the site's pages,
   or a page that doesn't come, opens the usual way.
+- Fonts: the headings' ITC Avant Garde files (`assets/fonts/avantgarde-*.woff2`) were cut from the design PDF and
+  draw only the letters it used (Demi: no F, J, digits or lowercase; Book: no E, F, J, V, Y). Any other character
+  in a map but drawn blank shows as a gap, with no fallback. New heading words: check them, or set them in URW
+  Gothic (complete). The body face, Nunito Sans ExtraLight, is Google's full Latin set (OFL), same metrics as the
+  PDF's cut.
+- Links: CONTACT (top nav and menu) goes to `contact.html`; the front page's sections are `#about`, `#works`,
+  `#calligraphy`. `js/wipe.js` knows the site's pages with or without `.html` (Cloudflare Pages serves `/contact`).
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
   Never force-push `Main`.
 - Pages caches the code for 10 minutes: after a deploy, check with a hard refresh.
@@ -188,7 +197,7 @@ Three layers, so an outline can't ship again — and the console's own check rid
    variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre, opened in the zoom,
    wiping in and at rest, the longest caption, and the hamburger above the zoom, its tint half-faded with the
    grey and then gone), `focus` (each kind of keyboard focus ring). The owner's
-   `data/front.json` is replaced per flow by a fixed list, and GitHub is never asked (the pages' own copies are
+   `data/front.json` and `data/illustration.json` are replaced per flow by fixed lists (`FRONT`, `WORKS`), and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)
    How it stays fast without testing less: each flow at each pixel ratio is a job, run side by side (as many as

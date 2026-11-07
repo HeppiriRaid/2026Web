@@ -106,8 +106,8 @@
     document.head.appendChild(l);
   }
   function warm(url) {
-    var fresh = window.__fresh, works = /illustration\.html$/.test(url.pathname);
-    if (!fresh || !(works || /(\/|index\.html)$/.test(url.pathname))) return;
+    var fresh = window.__fresh, works = /\/illustration(\.html)?$/.test(url.pathname);
+    if (!fresh || !(works || /\/(index(\.html)?)?$/.test(url.pathname))) return;
     fresh.hand(works ? "data/illustration.json" : "data/front.json").then(function (r) {
       var d = r.data;
       if (works && d && Array.isArray(d.works)) d.works.slice(0, 4).forEach(function (w) { if (w && w.image) prefetch(new URL(fresh.url(w.image, r.site), url).href); });
@@ -125,7 +125,8 @@
   // head hides the arrow at once: cursor-ready); the address moves on (history). Back /
   // forward between the site's pages do the same (popstate). Its pages only (each carries
   // this wipe); anything else, or a page that doesn't come, opens the usual way.
-  var SITE = /\/(index\.html|illustration\.html)?$/;
+  // (with or without ".html": a host may serve /contact for contact.html, as Cloudflare Pages does)
+  var SITE = /\/((index|illustration|contact)(\.html)?)?$/;
   var next = null;                                           // where the sheet is going
   function fetchPage(url) {
     return fetch(url.href, { credentials: "same-origin" }).then(function (r) {

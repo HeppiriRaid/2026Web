@@ -304,7 +304,7 @@
         window.scrollTo(0, was.y);
         return;
       }
-      var h = location.hash, t = /^#(about|works|contact)$/.test(h) && document.querySelector(h);
+      var h = location.hash, t = /^#(about|works|calligraphy)$/.test(h) && document.querySelector(h);
       if (!t) return;
       // its place in the layout (its reveal may already be sliding it in from 42px below)
       for (var top = 0, el = t; el; el = el.offsetParent) top += el.offsetTop;
@@ -383,13 +383,14 @@
 
     /* ---------- nav → smooth scroll to sections ------------------------ */
     (function nav() {
-      var map = { ABOUT: "#about", WORK: "#works", CONTACT: "#contact" };
+      var map = { ABOUT: "#about", WORK: "#works" };   // (CONTACT: its own page, contact.html)
       document.querySelectorAll(".nav").forEach(function (a) {
         a.style.cursor = "pointer";
         a.addEventListener("click", function (e) {
-          e.preventDefault();
           var label = (a.textContent || "").trim();
           var sel = map[label];
+          if (!sel) return;                       // (another page: js/wipe.js takes it there)
+          e.preventDefault();
           var target = sel && document.querySelector(sel);
           if (!target) return;
           // ABOUT ME is the first section — scroll all the way to the top so the

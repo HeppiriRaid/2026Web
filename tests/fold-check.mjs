@@ -624,6 +624,33 @@ const FLOWS = {
       await expect(p, there, null, `Back at the ${page} page: ${where}`);
       await check(p, `${page} page, Back: ${where}`, dpr);
     }
+
+    // -- the contact page, from the menu: the sheet lifting off it, then at rest, the pointer on the
+    // address and on a link; and a first visit there (the curtain)
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
+    const ct = await menuLink(p, "CONTACT");
+    await p.mouse.move(ct.x, ct.y, { steps: 2 });
+    win = await p.evaluate(() => window.__foldWindow);
+    await holdNext(p, "arrive");
+    await p.mouse.down(); await p.mouse.up();
+    await p.waitForURL(/contact\.html/, { waitUntil: "commit" });
+    await sheetAt(p, -35, -70);
+    await check(p, "page change: the sheet lifting, the intro rising (contact)", dpr);
+    await arrowHidden(p, "contact", win);
+    await settled(p);
+    await quiet(p);
+    await check(p, "contact page", dpr);
+    await hover(p, ".cstage .copy a");
+    await check(p, "contact page: pointer on the address", dpr);
+    await hover(p, ".lnk", 1);
+    await expect(p, () => !!document.querySelector(".lnk:hover"), null, "the pointer on a link");
+    await check(p, "contact page: pointer on a link", dpr);
+    await p.goto(SITE + "/contact.html");
+    await settled(p);
+    await quiet(p);
+    await check(p, "contact page: a first visit, at rest", dpr);
   },
 
   // the colour test panel (index.html?shader, js/menu-shade.js): a panel above the
@@ -933,6 +960,19 @@ const FLOWS = {
     await quiet(p);
     await tabTo(p, ".zoom-ui button");
     await check(p, "front page: keyboard focus on a zoom button", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
+    await quiet(p);
+    await tabTo(p, ".copy a");
+    await check(p, "front page: keyboard focus on the address", dpr);
+
+    await p.goto(SITE + "/contact.html");
+    await settled(p);
+    await quiet(p);
+    await tabTo(p, ".cstage .copy a");
+    await check(p, "contact page: keyboard focus on the address", dpr);
+    await tabTo(p, ".lnk");
+    await check(p, "contact page: keyboard focus on a link", dpr);
 
     await p.goto(SITE + "/illustration.html");
     await settled(p);
@@ -963,6 +1003,14 @@ const FRONT = {
     calligraphy: { image: "assets/img/about-portrait.webp", alt: "", focus: [25, 50] } },
     captions: { background: CAPTION_PARTS } },
 };
+// The works on the illustration page are the owner's too (data/illustration.json, set in the console):
+// every flow gets this fixed row instead, sixteen works in three shapes (portrait, wide, tall), drawn from
+// the page's own two pictures (a picture fills its frame, so a wide one is the portrait stretched)
+const SHAPES = [["assets/img/about-portrait.webp", 1500, 2250], ["assets/img/about-portrait.webp", 2133, 1200], ["assets/img/calligraphy.webp", 800, 1592], ["assets/img/calligraphy.webp", 2133, 1200]];
+const WORKS = { saveId: "fold-check", works: Array.from({ length: 16 }, (_, i) => {
+  const [image, width, height] = SHAPES[i % SHAPES.length];
+  return { id: "fc" + i, title: "Work " + (i + 1), date: String(2026 - i), medium: "Ink and digital", width, height, image };
+}) };
 for (const f of ONLY) if (!FLOWS[f] && f !== "console") { console.log(`No flow "${f}" (flows: ${Object.keys(FLOWS).join(", ")}, and console).`); process.exit(2); }
 
 // ---- the jobs, side by side: the console's check, and each flow at each pixel ratio ----------
@@ -986,6 +1034,7 @@ for (const dpr of [1, 2]) for (const [name, flow] of Object.entries(FLOWS)) {
     const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: dpr });
     try {
       await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
+      await ctx.route("**/data/illustration.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(WORKS) }));
       // (the pages ask GitHub for their newest data too, js/fresh.js: never here — the check goes by the
       // site's own copies, never by the network or what the owner has saved there. Last registered, so
       // it wins for GitHub's own address of data/front.json.)
