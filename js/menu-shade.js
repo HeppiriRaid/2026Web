@@ -287,13 +287,18 @@
   // Where a bar is on screen (it may be mid-transition, or turned into half of the X), and the
   // points along its length where the picture is read.
   var N = 12;
+  // (js/menu.js moves each bar by its transform alone — translateY, rotate, scaleY about its centre — so its
+  // centre is its box's plus the transform's move, and its length the box's times the scale)
   function barAt(span, br, s, W, vr) {
-    var cs = getComputedStyle(span), top = parseFloat(cs.top), h = parseFloat(cs.height), op = parseFloat(cs.opacity);
-    if (!(h > 0) || !(op > 0.01)) return null;
-    var th = 0, m = cs.transform;
-    if (m && m !== "none") { var v = m.match(/-?[\d.]+(e-?\d+)?/g); th = Math.atan2(+v[1], +v[0]); }
+    var cs = getComputedStyle(span), top = parseFloat(cs.top), H = parseFloat(cs.height), op = parseFloat(cs.opacity);
+    if (!(H > 0) || !(op > 0.01)) return null;
+    var th = 0, dy = 0, h = H, m = cs.transform;
+    if (m && m !== "none") {
+      var v = m.match(/-?[\d.]+(e-?\d+)?/g);
+      th = Math.atan2(+v[1], +v[0]); h = H * Math.hypot(+v[2], +v[3]); dy = +v[5];
+    }
     var co = Math.cos(th), si = Math.sin(th), hl = s * W / 2, ht = s * h / 2;
-    var b = { grey: cs.backgroundColor, h: h, th: th, cx: br.left + hl, cy: br.top + s * (top + h / 2),
+    var b = { grey: cs.backgroundColor, h: h, th: th, cx: br.left + hl, cy: br.top + s * (top + H / 2 + dy),
               ey: Math.abs(hl * si) + Math.abs(ht * co), ex: Math.abs(hl * co) + Math.abs(ht * si), pts: [] };
     if (b.cy + b.ey <= vr.top || b.cy - b.ey >= vr.bottom || b.cx + b.ex <= vr.left || b.cx - b.ex >= vr.right) return null;
     for (var k = 0; k < N; k++) {

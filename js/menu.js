@@ -56,6 +56,7 @@
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
   var _ax, _ay, _as;         // last-applied tx / ty / scl (skip redundant writes)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
+  var btnLeft = 0;           // the button's layout left (its centre, before its own transform)
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
   var markBottomDoc = 36 * K; // marks' lower edge in document space (cached)
   // While a picture is up in the zoom (js/zoom.js) the button stays the top layer and holds still:
@@ -90,7 +91,8 @@
     OVERLAY = 4.32 * K;        // dodge + hover-zone track the viewport scale, so they
     RAIL_ZONE = 3.36 * K;      // stay matched to the (constant) scrollbar under zoom
     document.documentElement.style.setProperty("--mk", K);
-    btn.style.left = (stageLeft + 454.8 * K) + "px";
+    btnLeft = stageLeft + 454.8 * K;
+    btn.style.left = btnLeft + "px";
     btn.style.top = (18 * K) + "px";
     btn.style.right = "auto";
     // The extended menu sits to the LEFT of the caught hamburger, its box top
@@ -115,6 +117,7 @@
     var ov = 460.8 * K - cw;                        // hamburger's overlap of it (≈0)
     classicGutter = ov > 0.5 ? ov + 2 : 0;
     layoutThumb();                                  // size/position the custom thumb
+    barShapes(); measurePanel();                    // (the bars' rest shapes at this size, the panel's box)
     apply();
   }
 
@@ -238,10 +241,13 @@
   //   M.o  0 closed .. 1 the menu open
   //   M.y  0 .. 1 stepped aside for the scrollbar
   //   M.h  0 .. 1 back from where it held still under the zoom's grey to where the page now puts it
-  // Whatever moves together shares one of them, so it moves as one: the catch's position, size and
-  // the bars' shape; the menu's panel growing out of the middle bar, the X, the shadow and the labels.
-  // (They were a per-frame chase, which jumps on its first frame, and chains of CSS transitions on
-  // their own curves and clocks, started by timers, the second taking over mid-flight.)
+  // Whatever moves together shares one of them, so it moves as one: the catch's position, size and the
+  // bars' shape; the menu's panel growing out of the middle bar, the X, the shadow and the labels.
+  // Everything moves by transform only, drawn between pixels: the bars' place and length by
+  // translate / scaleY / rotate, never top / height (the browser snaps those to whole pixels, so a bar
+  // stood still, then hopped — measured: the X's bars jiggled back and forth a dozen times a morph).
+  // At rest each is exactly where the layout put it before. Nothing is read back
+  // from the page while anything moves (the panel's start is worked out, not measured).
   function cubicBezier(x1, y1, x2, y2) {
     function bz(p, a, b) { var m = 1 - p; return 3 * m * m * p * a + 3 * m * p * p * b + p * p * p; }
     return function (x) {
@@ -252,44 +258,68 @@
     };
   }
   var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the zoom step's
-  var CATCH = 1.1, OPEN = 0.9, YIELD = 0.5;      // seconds
-  var M = { w: 0, o: 0, y: 0, h: 1 };
+  var CATCH = 0.8, OPEN = 0.6, YIELD = 0.45, HOME = 0.75;   // seconds (HOME: as the zoom's picture flies home)
+  var M = { w: 0, o: 0, y: 0, h: 1 }, T = { w: 0, o: 0, y: 0, h: 1 };     // where each is, where it is heading
   var gsap = window.gsap;
+  // a new heading only when it changes (asked again each frame, it would start again from rest each frame)
   function go(key, to, dur) {
-    // (already there: any tween still heading the other way stops — scrolled back past the marks and
-    // down again before it had moved, it would otherwise carry the hamburger off with the page)
-    if (M[key] === to) { if (gsap) gsap.killTweensOf(M, key); return; }
+    if (T[key] === to) return;
+    T[key] = to;
     if (!gsap || REDUCE) { M[key] = to; return; }
     var v = {}; v[key] = to;
     gsap.to(M, Object.assign({ duration: dur, ease: stepEase, overwrite: "auto" }, v));
   }
+  function set(key, v) { if (gsap) gsap.killTweensOf(M, key); M[key] = T[key] = v; }
   function mix(a, b, t) { return a + (b - a) * t; }
   var heldTy = 0, gut = 0, twoBox = false, lastO = "", lastShape = "";
 
-  // the bars: the two squares (camouflage), the three-bar hamburger, the X — in points
-  var SHAPE = { cam: [[0, 12], [16.75, 2.5], [24, 12]], ham: [[12.75, 0], [16.75, 0], [20.75, 0]] };
+  // the bars, each as [centre, length] in the button's own pixels, exactly where the layout put them before
+  // (not snapped one by one: the button itself sits between pixels, and snapped bars came out a pixel
+  // apart in thickness): the two squares (camouflage), the three-bar hamburger, the X
+  var BAR = { cam: [], ham: [], x: [], base: 1 }, panel = null;
+  function edges(top, len) { return [top + len / 2, len]; }
+  function barShapes() {
+    var bar = Math.max(2, 2.4 * K), cam = [[0, 12 * K], [16.75 * K, 2.5 * K], [24 * K, 12 * K]], ham = [12.75, 16.75, 20.75];
+    for (var i = 0; i < 3; i++) {
+      BAR.cam[i] = edges(cam[i][0], cam[i][1]);
+      BAR.ham[i] = edges(ham[i] * K, bar);
+      BAR.x[i] = edges(16.75 * K, bar);                 // all three on the middle line, the outer two turned
+    }
+    // each bar's own box: 100px tall at the top, a whole number, so the browser draws it as it is before the
+    // transform shapes it (a 7.5px box was snapped to 7 first, then scaled five times into a square: 3px short)
+    BAR.base = 100;
+    for (var j = 0; j < 3; j++) { btn.children[j].style.top = "0px"; btn.children[j].style.height = "100px"; }
+    lastShape = "";
+  }
+  function barNow(i) {
+    var w = M.w, o = M.o, a = BAR.cam[i], b = BAR.ham[i], x = BAR.x[i];
+    return [mix(mix(a[0], b[0], w), x[0], o), mix(mix(a[1], b[1], w), x[1], o)];
+  }
   function shapeBars() {
-    var bar = Math.max(2, 2.4 * K), w = M.w, o = M.o, key = w.toFixed(4) + o.toFixed(4) + K;
+    var key = M.w + "|" + M.o;
     if (key === lastShape) return;
     lastShape = key;
     for (var i = 0; i < 3; i++) {
-      var s = btn.children[i], top = mix(SHAPE.cam[i][0], SHAPE.ham[i][0], w) * K;
-      var h = mix(SHAPE.cam[i][1] * K, bar, w);
-      top = mix(top, 16.75 * K, o); h = mix(h, bar, o);        // into the X: all three on the middle line
-      s.style.top = top.toFixed(2) + "px";
-      s.style.height = h.toFixed(2) + "px";
-      s.style.transform = i === 1 ? "" : "rotate(" + ((i === 0 ? 45 : -45) * o).toFixed(2) + "deg)";
+      var s = btn.children[i], c = barNow(i), turn = i === 1 ? 0 : (i === 0 ? 45 : -45) * M.o;
+      s.style.transform = "translateY(" + (c[0] - BAR.base / 2).toFixed(3) + "px) rotate(" + turn.toFixed(3) +
+        "deg) scaleY(" + (c[1] / BAR.base).toFixed(4) + ")";
       // the middle bar: drawn in as the squares split; while the menu is open (or opening) the panel,
       // seeded exactly over it, is the bar
-      if (i === 1) s.style.opacity = o > 0 ? "0" : w.toFixed(3);
+      if (i === 1) s.style.opacity = M.o > 0 ? "0" : M.w.toFixed(3);
     }
   }
-  // the panel: from the middle bar (seed) to its own box, on the menu's clock
-  function flipParts() {
-    var b = midSpan.getBoundingClientRect();           // the middle bar
-    var p = nav.getBoundingClientRect();               // the panel's natural box
-    if (!p.width || !p.height) return null;
-    return { x: b.left - p.left, y: b.top - p.top, sx: b.width / p.width, sy: b.height / p.height };
+  // the panel: out of the middle bar to its own box, on the menu's clock. Its box is measured once, as a
+  // menu motion starts (and on resize); the bar's place each frame is worked out from the button's own
+  // numbers, so nothing is read back from the page mid-motion
+  function measurePanel() {
+    var r = nav.getBoundingClientRect();
+    panel = r.width && r.height ? { left: r.left - tx, top: r.top, w: r.width, h: r.height } : null;
+  }
+  function seed() {
+    if (!panel) return null;
+    var cx = btnLeft + tx, cy = 18 * K + ty, BW = 12 * K, BH = 36 * K, m = barNow(1);
+    var left = cx - BW / 2 * scl, top = cy + (m[0] - m[1] / 2 - BH / 2) * scl;
+    return { x: left - (panel.left + tx), y: top - panel.top, sx: BW * scl / panel.w, sy: m[1] * scl / panel.h };
   }
   function shapePanel() {
     var o = M.o, opening = nav.classList.contains("open"), key = o + (opening ? "+" : "-");
@@ -302,10 +332,13 @@
       for (var i = 0; i < links.length; i++) { links[i].style.opacity = opening ? "0" : ""; links[i].style.transform = ""; }
       return;
     }
-    var f = flipParts();
+    // it slides out of the bar as a thin line first, then drops open: on the one clock, its place and width
+    // lead (1-(1-o)²) and its height follows (o²) — both still set off and land at rest, as o does — so it
+    // never swells into a block over the button, and closing folds it up first, then slides it home
+    var f = seed(), ox = 1 - (1 - o) * (1 - o), oy = o * o;
     bg.style.visibility = "visible";
-    bg.style.transform = !f || o >= 1 ? "none" : "translate(" + mix(f.x, 0, o).toFixed(2) + "px," + mix(f.y, 0, o).toFixed(2) +
-      "px) scale(" + mix(f.sx, 1, o).toFixed(4) + "," + mix(f.sy, 1, o).toFixed(4) + ")";
+    bg.style.transform = !f || o >= 1 ? "none" : "translate(" + mix(f.x, 0, ox).toFixed(3) + "px," + mix(f.y, 0, ox).toFixed(3) +
+      "px) scale(" + mix(f.sx, 1, ox).toFixed(5) + "," + mix(f.sy, 1, oy).toFixed(5) + ")";
     bg.style.opacity = twoBox ? o.toFixed(3) : "";      // from the two squares there is no bar: it fades into being
     bg.style.boxShadow = "0 " + (2 * K).toFixed(2) + "px " + (9 * K).toFixed(2) + "px rgba(0,0,0," + (0.1 * o).toFixed(3) + ")";
     // the labels come in as the panel arrives under them, on its clock: over its second half, easing in
@@ -314,7 +347,7 @@
     t = t * t * (3 - 2 * t);
     for (var j = 0; j < links.length; j++) {
       links[j].style.opacity = t.toFixed(3);
-      links[j].style.transform = "translateX(" + ((1 - t) * 5 * K).toFixed(2) + "px)";
+      links[j].style.transform = "translateX(" + ((1 - t) * 5 * K).toFixed(3) + "px)";
     }
   }
 
@@ -322,7 +355,7 @@
     var up = !!zoomEl && zoomEl.getAttribute("aria-hidden") === "false";   // a picture up, not yet flying home
     if (up && heldAt === null) heldAt = scrollY();
     else if (!up && heldAt !== null) {
-      if (heldAt !== scrollY() && !REDUCE) { heldTy = ty; M.h = 0; go("h", 1, CATCH); }   // ease to the page's new place
+      if (heldAt !== scrollY() && !REDUCE) { heldTy = ty; set("h", 0); go("h", 1, HOME); }   // ease to the page's new place
       heldAt = null;
     }
     var sc = heldAt !== null ? heldAt : scrollY();
@@ -332,7 +365,7 @@
       var first = mode === null;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
-      if (first) M.w = mode === "catch" ? 1 : 0; else go("w", mode === "catch" ? 1 : 0, CATCH);
+      if (first) set("w", mode === "catch" ? 1 : 0); else go("w", mode === "catch" ? 1 : 0, CATCH);
       setOpen(false, true);                        // never leave the menu adrift
     } else if (mode === "scrub" && Math.abs(markCenterDoc - sc - 18 * K) > 2 && nav.classList.contains("open")) {
       setOpen(false, true);                        // scrolled off the top → close
@@ -360,6 +393,7 @@
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
     if (open) twoBox = !btn.classList.contains("scrolled");   // the panel fades in where there is no bar
+    measurePanel();                                           // (once, as the motion starts)
     nav.classList.toggle("open", open);
     go("o", open ? 1 : 0, OPEN);
   }
