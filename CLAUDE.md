@@ -23,6 +23,11 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).
+- **The hamburger moves on the flow's curve** (`js/menu.js`): every part of it is read each frame from a few progress
+  values, each a GSAP tween on `stepEase` — the catch (squares ↔ hamburger: position, size and the bars' shape, 1.1 s;
+  its position blended from riding with the page to the corner, so it takes over from the page's own motion), the
+  menu (the panel growing out of the middle bar, the X, its shadow, the labels last, 0.9 s), the step aside for the
+  scrollbar (0.5 s). No CSS transitions or timers drive it any more (only colour fades); measured frame by frame.
 - **The hamburger is always the top layer.** The zoom (z 88) lies beneath it and its menu (89–90), so a
   picture flies in and home under the hamburger, which never vanishes and reappears. While a picture is
   up (`html.zoom-open`) the zoom has the input: a click on the hamburger closes it, as a click anywhere

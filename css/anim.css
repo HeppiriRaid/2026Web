@@ -148,36 +148,26 @@ html.cursor-live .stage{will-change:transform}
 .menu-btn:focus-visible{outline:max(1px,calc(var(--mk,4) * .5px)) solid #434343;outline-offset:calc(var(--mk,4) * 1px)}
 .menu-btn span{
   position:absolute;left:0;width:100%;background:#b3b1b1;
-  transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
-             opacity .3s ease,transform .35s ease,background-color .3s ease;
+  transition:background-color .3s ease;   /* (a tint from the picture beneath: js/menu-shade.js) */
 }
-/* (1) camouflage: two squares over the marks, middle hidden */
+/* The bars' shape is set every frame by js/menu.js, on the catch's and the menu's clocks (stepEase);
+   these are the shapes it moves between, and what shows without it.
+   (1) camouflage: two squares over the marks, middle hidden */
 .menu-btn span:nth-child(1){top:0;height:calc(var(--mk,4) * 12px)}
 .menu-btn span:nth-child(2){top:calc(var(--mk,4) * 16.75px);height:calc(var(--mk,4) * 2.5px);opacity:0}
 .menu-btn span:nth-child(3){top:calc(var(--mk,4) * 24px);height:calc(var(--mk,4) * 12px)}
 /* (2) scrolled: split into a 3-bar hamburger (its position is driven by menu.js
-   — it rides up with the page, then catches back up into the corner). The
-   squares->bars morph is slowed to read as a deliberate "catch up", matching
-   the JS position ease; the X toggle below restores the snappy timing. */
-.menu-btn.scrolled span{
-  height:max(2px,calc(var(--mk,4) * 2.4px));
-  transition:top .8s cubic-bezier(.4,0,.2,1),height .8s cubic-bezier(.4,0,.2,1),
-             opacity .55s ease,transform .35s ease,background-color .3s ease;
-}
+   — it rides up with the page, then catches back up into the corner) */
+.menu-btn.scrolled span{height:max(2px,calc(var(--mk,4) * 2.4px))}
 .menu-btn.scrolled span:nth-child(1){top:calc(var(--mk,4) * 12.75px)}
 .menu-btn.scrolled span:nth-child(2){top:calc(var(--mk,4) * 16.75px);opacity:1}
 .menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
-/* (3) open: hamburger -> X (from either state) — keep the click toggle snappy
-   (this transition wins over .scrolled for the open state, same specificity). */
-.menu-btn[aria-expanded="true"] span{
-  height:max(2px,calc(var(--mk,4) * 2.4px));background:#b3b1b1;
-  transition:top .5s cubic-bezier(.4,0,.2,1),height .5s cubic-bezier(.4,0,.2,1),
-             opacity .3s ease,transform .35s ease,background-color .3s ease;
-}
+/* (3) open: hamburger -> X (from either state) */
+.menu-btn[aria-expanded="true"] span{height:max(2px,calc(var(--mk,4) * 2.4px));background:#b3b1b1}
 .menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
 /* middle bar hides instantly — the panel background (.menu-bg) is seeded exactly
    over it and distorts out into the panel in one continuous shape (see menu.js) */
-.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0;transition:opacity 0s}
+.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
 .menu-btn[aria-expanded="true"] span:nth-child(3){top:calc(var(--mk,4) * 16.75px);transform:rotate(-45deg)}
 
 .menu-nav{
@@ -190,38 +180,26 @@ html.cursor-live .stage{will-change:transform}
 .menu-nav.open{pointer-events:auto}
 /* The background panel IS the middle bar made large. menu.js seeds it (a FLIP)
    exactly over the hamburger's middle bar, then this single element distorts —
-   translate+scale on the worksEase curve — out into the panel. It keeps the grey
+   translate+scale, on the menu's clock (stepEase) — out into the panel. It keeps the grey
    of the corner box (no recolour). No cross-fade: one continuous, warping shape.
-   The text rides on top separately so it never warps. */
+   The text rides on top separately so it never warps. Its shadow comes in with it. */
 .menu-bg{
   position:absolute;inset:0;z-index:-1;
   background:#b3b1b1;visibility:hidden;
   box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,0);
   transform-origin:0 0;
-  /* the morph runs in two phases driven inline by menu.js — slide-left, then
-     expand; the panel stays grey (matches the corner box). visibility toggles
-     there too. */
 }
-.menu-nav.open .menu-bg{
-  background:#b3b1b1;
-  box-shadow:0 calc(var(--mk,4)*2px) calc(var(--mk,4)*9px) rgba(0,0,0,.10);
-}
+.menu-nav.open .menu-bg{background:#b3b1b1}
 .menu-nav a{
   /* --disp 400, pure white, 4pt (font-size 4 * --mk), -.008em. */
   font-family:var(--disp);font-weight:400;color:#fff;
   font-size:calc(var(--mk,4) * 4px);letter-spacing:-.008em;
   text-decoration:none;line-height:1;white-space:nowrap;
   opacity:0;transform:translateX(calc(var(--mk,4) * 5px));
-  transition:color .2s ease,opacity .3s ease,
-             transform .45s cubic-bezier(.38,0,.5,1);
+  transition:color .2s ease;
 }
-/* items appear once the panel has mostly grown, lightly staggered.
-   nth-of-type (not nth-child) so the .menu-bg first child doesn't shift them. */
+/* (they come in as the panel arrives under them, together, on its clock: js/menu.js) */
 .menu-nav.open a{opacity:1;transform:translateX(0)}
-.menu-nav.open a:nth-of-type(1){transition-delay:0s,.46s,.46s}
-.menu-nav.open a:nth-of-type(2){transition-delay:0s,.55s,.55s}
-.menu-nav.open a:nth-of-type(3){transition-delay:0s,.64s,.64s}
-.menu-nav.open a:nth-of-type(4){transition-delay:0s,.73s,.73s}
 .menu-nav a:hover{color:var(--nav-hover,#000)}   /* (a light tint on a coloured panel: js/menu-shade.js) */
 .menu-nav a:focus-visible{outline-color:#000}     /* (the site's ring, css/style.css, in the hover's black) */
 

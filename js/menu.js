@@ -56,9 +56,6 @@
   var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
   var _ax, _ay, _as;         // last-applied tx / ty / scl (skip redundant writes)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
-  var easeUntil = 0;         // performance.now() until which we ease the offset
-  var yieldHoldUntil = 0;    // …and until which the scrollbar yield stays disabled
-                             // (a beat past easeUntil, so the morph fully settles first)
   var markCenterDoc = 18 * K; // marks' centre in document space (cached)
   var markBottomDoc = 36 * K; // marks' lower edge in document space (cached)
   // While a picture is up in the zoom (js/zoom.js) the button stays the top layer and holds still:
@@ -234,159 +231,137 @@
     if (railShown) armRailFade(RAIL_HOLD);         // re-arm so a post-drag park can't latch
   }
 
-  // One driver, run every frame. Decides scrub vs catch, eases between them.
+  // ---- the motion: one driver, run every frame, and every part of the hamburger read from a few
+  // progress values, each moved by a GSAP tween on the zoom step's curve (stepEase: sets off gently,
+  // lands long and soft; CLAUDE.md, "The flow of motion"):
+  //   M.w  0 the two grey squares riding with the page .. 1 the hamburger caught in the corner
+  //   M.o  0 closed .. 1 the menu open
+  //   M.y  0 .. 1 stepped aside for the scrollbar
+  //   M.h  0 .. 1 back from where it held still under the zoom's grey to where the page now puts it
+  // Whatever moves together shares one of them, so it moves as one: the catch's position, size and
+  // the bars' shape; the menu's panel growing out of the middle bar, the X, the shadow and the labels.
+  // (They were a per-frame chase, which jumps on its first frame, and chains of CSS transitions on
+  // their own curves and clocks, started by timers, the second taking over mid-flight.)
+  function cubicBezier(x1, y1, x2, y2) {
+    function bz(p, a, b) { var m = 1 - p; return 3 * m * m * p * a + 3 * m * p * p * b + p * p * p; }
+    return function (x) {
+      if (x <= 0) return 0; if (x >= 1) return 1;
+      var lo = 0, hi = 1, p = x;
+      for (var i = 0; i < 18; i++) { p = (lo + hi) / 2; if (bz(p, x1, x2) < x) lo = p; else hi = p; }
+      return bz(p, y1, y2);
+    };
+  }
+  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the zoom step's
+  var CATCH = 1.1, OPEN = 0.9, YIELD = 0.5;      // seconds
+  var M = { w: 0, o: 0, y: 0, h: 1 };
+  var gsap = window.gsap;
+  function go(key, to, dur) {
+    // (already there: any tween still heading the other way stops — scrolled back past the marks and
+    // down again before it had moved, it would otherwise carry the hamburger off with the page)
+    if (M[key] === to) { if (gsap) gsap.killTweensOf(M, key); return; }
+    if (!gsap || REDUCE) { M[key] = to; return; }
+    var v = {}; v[key] = to;
+    gsap.to(M, Object.assign({ duration: dur, ease: stepEase, overwrite: "auto" }, v));
+  }
+  function mix(a, b, t) { return a + (b - a) * t; }
+  var heldTy = 0, gut = 0, twoBox = false, lastO = "", lastShape = "";
+
+  // the bars: the two squares (camouflage), the three-bar hamburger, the X — in points
+  var SHAPE = { cam: [[0, 12], [16.75, 2.5], [24, 12]], ham: [[12.75, 0], [16.75, 0], [20.75, 0]] };
+  function shapeBars() {
+    var bar = Math.max(2, 2.4 * K), w = M.w, o = M.o, key = w.toFixed(4) + o.toFixed(4) + K;
+    if (key === lastShape) return;
+    lastShape = key;
+    for (var i = 0; i < 3; i++) {
+      var s = btn.children[i], top = mix(SHAPE.cam[i][0], SHAPE.ham[i][0], w) * K;
+      var h = mix(SHAPE.cam[i][1] * K, bar, w);
+      top = mix(top, 16.75 * K, o); h = mix(h, bar, o);        // into the X: all three on the middle line
+      s.style.top = top.toFixed(2) + "px";
+      s.style.height = h.toFixed(2) + "px";
+      s.style.transform = i === 1 ? "" : "rotate(" + ((i === 0 ? 45 : -45) * o).toFixed(2) + "deg)";
+      // the middle bar: drawn in as the squares split; while the menu is open (or opening) the panel,
+      // seeded exactly over it, is the bar
+      if (i === 1) s.style.opacity = o > 0 ? "0" : w.toFixed(3);
+    }
+  }
+  // the panel: from the middle bar (seed) to its own box, on the menu's clock
+  function flipParts() {
+    var b = midSpan.getBoundingClientRect();           // the middle bar
+    var p = nav.getBoundingClientRect();               // the panel's natural box
+    if (!p.width || !p.height) return null;
+    return { x: b.left - p.left, y: b.top - p.top, sx: b.width / p.width, sy: b.height / p.height };
+  }
+  function shapePanel() {
+    var o = M.o, opening = nav.classList.contains("open"), key = o + (opening ? "+" : "-");
+    if (key === lastO && (o === 0 || o === 1)) return;          // (at rest, and nothing changed)
+    lastO = key;
+    var links = nav.querySelectorAll("a");
+    if (o <= 0) {
+      bg.style.visibility = "hidden"; bg.style.transform = "none"; bg.style.opacity = ""; bg.style.boxShadow = "";
+      // (opening, on its first frame the motion hasn't moved yet: the labels stay out, not CSS's open state)
+      for (var i = 0; i < links.length; i++) { links[i].style.opacity = opening ? "0" : ""; links[i].style.transform = ""; }
+      return;
+    }
+    var f = flipParts();
+    bg.style.visibility = "visible";
+    bg.style.transform = !f || o >= 1 ? "none" : "translate(" + mix(f.x, 0, o).toFixed(2) + "px," + mix(f.y, 0, o).toFixed(2) +
+      "px) scale(" + mix(f.sx, 1, o).toFixed(4) + "," + mix(f.sy, 1, o).toFixed(4) + ")";
+    bg.style.opacity = twoBox ? o.toFixed(3) : "";      // from the two squares there is no bar: it fades into being
+    bg.style.boxShadow = "0 " + (2 * K).toFixed(2) + "px " + (9 * K).toFixed(2) + "px rgba(0,0,0," + (0.1 * o).toFixed(3) + ")";
+    // the labels come in as the panel arrives under them, on its clock: over its second half, easing in
+    // from nothing (a plain ramp would start at the panel's full speed)
+    var t = Math.max(0, Math.min(1, (o - 0.5) / 0.5));
+    t = t * t * (3 - 2 * t);
+    for (var j = 0; j < links.length; j++) {
+      links[j].style.opacity = t.toFixed(3);
+      links[j].style.transform = "translateX(" + ((1 - t) * 5 * K).toFixed(2) + "px)";
+    }
+  }
+
   function update() {
     var up = !!zoomEl && zoomEl.getAttribute("aria-hidden") === "false";   // a picture up, not yet flying home
     if (up && heldAt === null) heldAt = scrollY();
     else if (!up && heldAt !== null) {
-      if (heldAt !== scrollY() && !REDUCE) { easeUntil = performance.now() + 1200; yieldHoldUntil = easeUntil + 350; }
+      if (heldAt !== scrollY() && !REDUCE) { heldTy = ty; M.h = 0; go("h", 1, CATCH); }   // ease to the page's new place
       heldAt = null;
     }
     var sc = heldAt !== null ? heldAt : scrollY();
     var cutoff = (markBottomDoc - sc) <= 0;        // lower square above top edge
     var nm = cutoff ? "catch" : "scrub";
-    // scrub: keep the button centred on the (moving) marks. catch: corner (0).
-    var tyTarget = nm === "catch" ? 0 : (markCenterDoc - sc - 18 * K);
-    var sclTarget = nm === "catch" ? HAMBURGER_SCALE : 1; // shrink once caught
-
     if (nm !== mode) {
-      if (mode !== null && !REDUCE) {
-        easeUntil = performance.now() + 1200;
-        yieldHoldUntil = easeUntil + 350;          // hold the yield a beat past the settle
-      }
+      var first = mode === null;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
+      if (first) M.w = mode === "catch" ? 1 : 0; else go("w", mode === "catch" ? 1 : 0, CATCH);
       setOpen(false, true);                        // never leave the menu adrift
-    } else if (mode === "scrub" && Math.abs(tyTarget) > 2 &&
-               nav.classList.contains("open")) {
+    } else if (mode === "scrub" && Math.abs(markCenterDoc - sc - 18 * K) > 2 && nav.classList.contains("open")) {
       setOpen(false, true);                        // scrolled off the top → close
     }
-
-    // The menu must NOT yield to the scrollbar/rail until the box<->hamburger
-    // transition is COMPLETELY finished — held until yieldHoldUntil (a beat past
-    // the position settle) so the morph never overlaps the yield. The position
-    // ease itself still uses easeUntil so the catch feel is unchanged.
-    var morphing = !REDUCE && performance.now() < easeUntil;
-    var yieldHeld = !REDUCE && performance.now() < yieldHoldUntil;
+    // position and size: blended from riding with the page (the squares over their marks) to the corner,
+    // so the hamburger takes over from the page's own motion with no jolt, and back
+    var ride = markCenterDoc - sc - 18 * K;
+    var live = mix(ride, 0, M.w);
+    ty = M.h < 1 ? mix(heldTy, live, M.h) : live;
+    scl = mix(1, HAMBURGER_SCALE, M.w);
+    // the scrollbar: stepped aside only once caught (never mid-catch), never under the zoom
     var zoomed = document.documentElement.classList.contains("zoom-open");
-    var txTarget = (nm === "catch" && !yieldHeld && !zoomed) ? -gutterNow() : 0;
-
-    if (morphing) {
-      ty += (tyTarget - ty) * 0.07;                // gentle ease into the new regime
-      scl += (sclTarget - scl) * 0.07;             // shrink/grow eases in with it
-    } else {
-      ty = tyTarget;                               // steady state: exact tracking
-      scl = sclTarget;
-    }
-    // tx rides its own clock so the scrollbar yield can slide in/out mid-catch
-    if (REDUCE || Math.abs(txTarget - tx) <= 0.05) tx = txTarget;
-    else tx += (txTarget - tx) * 0.12;
+    var g = (mode === "catch" && M.w >= 1 && !zoomed) ? gutterNow() : 0;
+    if (g) gut = g;
+    go("y", g ? 1 : 0, YIELD);
+    tx = -gut * M.y;
     apply();
-  }
-
-  // The morph is a FLIP split into two phases: SLIDE (bar -> thin full-width line
-  // at the panel top) then EXPAND (that line -> full panel). flipParts() gives the
-  // transforms mapping the panel's box onto the bar (seed) and onto that thin line.
-  var WE = "cubic-bezier(.38,0,.5,1)";
-  var phaseTimer = 0;
-  function tr(dur) {
-    return "transform " + dur + " " + WE + ", background-color .55s ease, box-shadow .55s ease";
-  }
-  function flipParts() {
-    var b = btn.children[1].getBoundingClientRect();   // the middle bar
-    var p = nav.getBoundingClientRect();               // the panel's natural box
-    if (!p.width || !p.height) return { seed: "none", thin: "none" };
-    var tx = (b.left - p.left).toFixed(2), ty = (b.top - p.top).toFixed(2);
-    var sx = (b.width / p.width).toFixed(4), sy = (b.height / p.height).toFixed(4);
-    return {
-      seed: "translate(" + tx + "px," + ty + "px) scale(" + sx + "," + sy + ")",
-      thin: "translate(0px,0px) scale(1," + sy + ")"
-    };
+    shapeBars();
+    shapePanel();
   }
 
   function setOpen(open, viaScroll) {
     if (open === (btn.getAttribute("aria-expanded") === "true")) return; // already there
-    if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = 0; }
-    // In the two-grey-box (camouflage) state there is NO middle bar — the morph
-    // slides a bar out into the panel, which only reads right for the 3-bar
-    // hamburger. From the two-box state the panel would otherwise emerge from /
-    // collapse into an empty gap and pop out of nothing, so here the "bar" the
-    // panel grows from is FADED in on open and FADED out on close instead.
-    var twoBox = !btn.classList.contains("scrolled");
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.setAttribute("aria-label", open ? "Close menu" : "Menu");
     nav.setAttribute("aria-hidden", open ? "false" : "true");
-
-    // A scroll-driven close fires while the button is flying up / catching the
-    // corner (or a link-jump is scrolling the page). Morphing the panel back onto
-    // that moving bar chases a stale position and glitches, so just fade the whole
-    // panel out where it is and let the button revert on its own.
-    if (!open && viaScroll) {
-      midSpan.style.transition = ""; midSpan.style.opacity = "";   // button reverts naturally
-      nav.style.transition = "opacity .2s ease";
-      nav.style.opacity = "0";
-      nav.classList.remove("open");
-      phaseTimer = setTimeout(function () {
-        phaseTimer = 0;
-        bg.style.transition = "none";
-        bg.style.transform = "none"; bg.style.opacity = ""; bg.style.visibility = "hidden";
-        nav.style.transition = ""; nav.style.opacity = "";
-      }, 220);
-      return;
-    }
-
-    var f = flipParts();
-    if (open) {
-      midSpan.style.transition = ""; midSpan.style.opacity = ""; // CSS hides it (X)
-      bg.style.visibility = "visible";
-      bg.style.transition = "none";                 // seed exactly over the bar,
-      bg.style.transform = f.seed;
-      bg.style.opacity = twoBox ? "0" : "";         // two-box: fade the bar into being
-      void bg.offsetWidth;                          // commit
-      bg.style.transition = tr(".34s") + (twoBox ? ", opacity .3s ease" : ""); // phase 1: SLIDE
-      if (twoBox) bg.style.opacity = "1";
-      nav.classList.add("open");
-      bg.style.transform = f.thin;
-      phaseTimer = setTimeout(function () {         // phase 2: EXPAND down into the panel
-        phaseTimer = 0;
-        bg.style.transition = tr(".46s");
-        bg.style.transform = "translate(0px,0px) scale(1,1)";
-      }, 300);
-    } else {
-      // hold the real middle bar hidden so it doesn't double with the returning
-      // panel — the panel itself is what travels back to the cross centre.
-      midSpan.style.transition = "none"; midSpan.style.opacity = "0";
-      bg.style.transition = tr(".3s");              // close: collapse back to the thin line
-      bg.style.transform = f.thin;
-      nav.classList.remove("open");                 // un-cross the X into the hamburger
-      phaseTimer = setTimeout(function () {         // ...then slide it back onto the bar
-        phaseTimer = 0;
-        bg.style.transition = tr(".34s");
-        bg.style.transform = f.seed;
-        phaseTimer = setTimeout(function () {       // bar is back at the centre; resolve it
-          phaseTimer = 0;
-          if (twoBox) {
-            // no real middle bar to hand to — fade the bar out, then hide
-            bg.style.transition = "opacity .28s ease";
-            bg.style.opacity = "0";
-            phaseTimer = setTimeout(function () {
-              phaseTimer = 0;
-              midSpan.style.opacity = "";           // CSS (two-box keeps it hidden)
-              bg.style.transition = "none";         // don't let opacity drift back up while hidden
-              bg.style.visibility = "hidden";
-              bg.style.opacity = "";
-              requestAnimationFrame(function () { midSpan.style.transition = ""; });
-            }, 290);
-          } else {
-            // hand off in one frame: real bar in, panel out -> no double, no gap
-            midSpan.style.opacity = "";             // -> CSS (hamburger middle), still instant
-            bg.style.visibility = "hidden";
-            bg.style.opacity = "";
-            requestAnimationFrame(function () { midSpan.style.transition = ""; });
-          }
-        }, 340);
-      }, 270);
-    }
+    if (open) twoBox = !btn.classList.contains("scrolled");   // the panel fades in where there is no bar
+    nav.classList.toggle("open", open);
+    go("o", open ? 1 : 0, OPEN);
   }
 
   place();

@@ -40,19 +40,13 @@ const REVIEWED = {
     "stagger": [4, "the front page's parts revealed in turn (the photos' fade, and the reveals as they scroll in); " + OLD],
   },
   "css/anim.css": {
-    "css ease": [19, "hover colours and fades (menu labels, the menu, the scrollbar) and the hamburger's bars fading; " + OLD],
-    "css cubic-bezier(.4,0,.2,1)": [6, "the hamburger's bars moving as it turns into the X and back; " + OLD],
-    "css cubic-bezier(.38,0,.5,1)": [1, "the menu labels sliding in; " + OLD],
+    "css ease": [10, "colour and opacity fades, nothing moving: the menu labels' hover colour, the bars' tint, the cursor's point, the scrollbar; " + OLD],
   },
   "css/illustration.css": {
     "css ease": [1, "the header links' hover colour; " + OLD],
   },
   "css/zoom.css": {
     "css ease": [1, "the \"+\" changing colour under the pointer; " + OLD],
-  },
-  "js/menu.js": {
-    "css ease": [2, "the menu fading out on a jump, its panel fading; " + OLD],
-    "style.transition built in code": [4, "the menu panel's morph out of the hamburger's bar and back (tr(): 0.38, 0, 0.5, 1); " + OLD],
   },
   "js/illustration.js": {
     "lenis easing": [1, "the row's smooth scroll, the front page's curve: " + OLD],
