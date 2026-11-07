@@ -86,6 +86,12 @@ The owner, on the zoom's step to the next picture as it is now: perfect, and the
   switch shows as the motion starts and as it stops.
 - **Nothing heavy while anything moves.** Prepare before (decode, draw at size: `warm()`) and tidy after
   (`settle()`). A long frame mid-motion is a visible jump.
+- **Never jaggy, and checked by machine.** Every new motion is on `stepEase` (CSS: `cubic-bezier(.3,0,.2,1)`), one
+  clock and one easing for whatever moves together: no other curve (most start at speed, a jump on the first frame),
+  no tween without a curve (GSAP's default `power1.out` starts at speed), no `stagger`, no overshoot (`back`,
+  `elastic`, `bounce`) or `steps`. `tests/motion-audit.mjs` reads every motion from the code and fails on any that
+  isn't, unless it is one of the motions listed in its `REVIEWED` (all older than these rules, as the owner has seen
+  them). Never add a new motion to that list to get it past the audit: give it the flow's curve.
 - **Measured, not guessed.** Check per-frame positions (no hops; the landing's last frames creep), frame
   times while moving (about 20 ms or less at 1x), and the pixels around every edge as the motion ends,
   holding GSAP's clock there. The sandbox has no GPU: at 2x its compositor alone takes about 25 ms a frame,
@@ -135,6 +141,10 @@ How the site avoids it:
   page's photos are pre-decoded instead, `js/anim.js`; measured, no less smooth). The zoom's frame takes a layer
   only while it flies in or back (`.flies`); a picture moving in 2D is tweened with `force3D: false` (GSAP's default
   puts anything it moves on a layer of its own for the motion, and the switch shows as it starts and stops).
+- **Every 「 mark in whole pixels** (the photos' corner marks, `.fr > i`; the links' ticks, `.ltick`, `.lnk`): its
+  size and line are `round()`ed to whole pixels. The browser snaps each edge of a box to the pixel grid, so a mark
+  8.58px square drew one arm 9px and the other 8 (18 and 16 at 2x), uneven from mark to mark; whole, both arms are
+  exactly its size wherever it sits.
 - Focus rings too: the browser's own ring has a white halo and round corners, so the site draws its own plain,
   square ring for every keyboard focus (`:focus-visible` in `css/style.css`: ink; the menu button and labels in
   `css/anim.css`; a work, red and unmoved, in `css/illustration.css`; a front-page photo (just inside it, where
@@ -179,7 +189,10 @@ fixed panel): the lens splits their coloured fringes. So such text gets a layer 
 
 Three layers, so an outline can't ship again — and the console's own check rides in the second:
 
-1. **The colour audit**, `tests/colour-audit.mjs` (a second). It reads every colour the cursor pages paint
+1. **The motion audit**, `tests/motion-audit.mjs` (a second; "The flow of motion", above): every GSAP tween, cascade,
+   CSS transition / animation and smooth-scroll curve in the cursor pages' code is on `stepEase` or in its `REVIEWED`
+   list, used exactly as often as listed. Its result decides the stamp, as the others do.
+   **The colour audit**, `tests/colour-audit.mjs` (a second). It reads every colour the cursor pages paint
    (their HTML, CSS and scripts, custom properties followed) and fails on any colour 12 or more levels lighter
    than #DCCBC3 in some channel that is not in its `REVIEWED` list, or used more or less often than listed —
    whatever state would show it. A new light colour needs one of the three remedies above, its reason written in

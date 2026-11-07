@@ -74,7 +74,7 @@ const NAMED = Object.fromEntries(("aliceblue:f0f8ff antiquewhite:faebd7 aqua:00f
 /* ---- reading the code --------------------------------------------------------------------- */
 // comments out (kept as spaces, so line numbers stay true): CSS /* */, and in scripts // too,
 // minding strings and regular expressions
-function strip(src, js) {
+export function strip(src, js) {
   let out = "", i = 0, q = null, prev = "";
   const blank = (s) => s.replace(/[^\n]/g, " ");
   while (i < src.length) {

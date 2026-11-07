@@ -107,12 +107,23 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 .fr>i.tr{top:calc(-3 * var(--k));right:calc(-3 * var(--k));border-top:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
 .fr>i.bl{bottom:calc(-3 * var(--k));left:calc(-3 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
 .fr>i.br{bottom:calc(-3 * var(--k));right:calc(-3 * var(--k));border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
+/* Every 「 mark in whole pixels: its size and its line. The browser snaps each edge of a box to the pixel
+   grid, so a box 8.58px square drew one arm 9px and the other 8 (measured; 18 and 16 at 2x), uneven
+   from mark to mark. Whole, both edges move together: both arms are exactly its size, wherever it sits.
+   (A browser without round() keeps the lines above.) */
+.fr>i{--s:round(calc(3 * var(--k)), 1px);width:var(--s);height:var(--s);--b:max(1px,round(calc(1.25 * var(--k)), 1px))}
+.fr>i.tl,.fr>i.tr{top:calc(-1 * var(--s))}
+.fr>i.bl,.fr>i.br{bottom:calc(-1 * var(--s))}
+.fr>i.tl,.fr>i.bl{left:calc(-1 * var(--s))}
+.fr>i.tr,.fr>i.br{right:calc(-1 * var(--s))}
 
 /* link corner-tick frame marks (positioned independently in artboard space) */
 .ltick{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));
    width:calc(2.75 * var(--k));height:calc(2.75 * var(--k));--b:max(1px,calc(1 * var(--k)))}
 .ltick.tl{border-top:var(--b) solid #ccc9c9;border-left:var(--b) solid #ccc9c9}
 .ltick.br{border-bottom:var(--b) solid #ccc9c9;border-right:var(--b) solid #ccc9c9}
+/* (in whole pixels, as the photos' marks above: both arms of each mark exactly as long, every mark alike) */
+.ltick{width:round(calc(2.75 * var(--k)), 1px);height:round(calc(2.75 * var(--k)), 1px);--b:max(1px,round(calc(1 * var(--k)), 1px))}
 
 /* triangle accent (right angle at top-right, hypotenuse to lower-left) */
 .tri{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));

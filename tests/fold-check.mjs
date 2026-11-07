@@ -48,6 +48,7 @@ import path from "node:path";
 import url from "node:url";
 import { Worker } from "node:worker_threads";
 import { audit, report, DIP } from "./colour-audit.mjs";
+import { audit as motionAudit, report as motionReport } from "./motion-audit.mjs";
 import { codeHere, writeStamp } from "./code-stamp.mjs";
 import { consoleCheck } from "./console-check.mjs";
 import { decode } from "./fold-scan.mjs";
@@ -64,6 +65,9 @@ const T0 = Date.now();
 // ---- the colours, read from the code --------------------------------------------------------
 const colours = audit(ROOT);
 report(colours);
+// ---- the motions, read from the code: every new one on the flow's curve (tests/motion-audit.mjs) --
+const motions = motionAudit(ROOT);
+motionReport(motions);
 console.log("");
 const code = codeHere(ROOT);   // (the stamp is for this code: a file changed during the run, and there is none)
 const { chromium } = await import(process.env.PLAYWRIGHT_CORE ? url.pathToFileURL(path.join(process.env.PLAYWRIGHT_CORE, "index.mjs")).href : "playwright-core");
@@ -1091,8 +1095,9 @@ if (bad.length) {
 console.log(`(${Math.floor((Date.now() - T0) / 60000)} min ${Math.round((Date.now() - T0) / 1000) % 60} s)`);
 if (stopped.length) console.log(`\nNOT CHECKED — a flow stopped before its states:\n  ${stopped.join("\n  ")}`);
 if (colours.problems.length) console.log(`\nThe colour audit failed (at the top).`);
+if (motions.problems.length) console.log(`\nThe motion audit failed (at the top): a motion off the flow's curve.`);
 if (consoleFails.length) console.log(`\nThe console's check failed (near the top): ${consoleFails.join("; ")}.`);
-process.exitCode = bad.length || stopped.length || colours.problems.length || consoleFails.length ? 1 : 0;
+process.exitCode = bad.length || stopped.length || colours.problems.length || motions.problems.length || consoleFails.length ? 1 : 0;
 if (ONLY.length) console.log(`(Only ${ONLY.join(", ")}: no stamp — the push guard wants a full run.)`);
 else if (!process.exitCode) {
   if (codeHere(ROOT) !== code) console.log("The code changed during the run: no stamp. Run it again.");
