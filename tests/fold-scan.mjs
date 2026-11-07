@@ -64,11 +64,15 @@ export function folds(plain, inverse, DIP) {
     const q = i * 4;
     let worst = 0, wx = 0, wy = 0;
     for (const [dx, dy] of DIRS) {
-      // (two pixels out: for an edge blurred over two pixels, which are two different mixes. A pixel the
-      // same as its neighbour along the line is a flat stripe of a real colour instead: two rows of the
-      // band grey between the paper and a hamburger bar invert darker than both, as the band does
-      // anywhere — no mix, no fold)
-      if (dx + dy === 2) { const h = (dy * W + dx) / 2; if (P32[i - h] === P32[i] || P32[i + h] === P32[i]) continue; }
+      // (two pixels out: for an edge blurred over two pixels, which are two different mixes — at different
+      // coverages of an edge of 24 levels or more, so far apart. A pixel within a few levels of its
+      // neighbour along the line is a flat stripe of a real colour instead: the band grey between the
+      // paper and a hamburger bar, one bar's soft edge just touching it, inverts darker than both, as the
+      // band does anywhere — no mix, no fold)
+      if (dx + dy === 2) {
+        const h = (dy * W + dx) / 2, near = (j) => Math.abs(P[j * 4] - P[q]) <= 4 && Math.abs(P[j * 4 + 1] - P[q + 1]) <= 4 && Math.abs(P[j * 4 + 2] - P[q + 2]) <= 4;
+        if (near(i - h) || near(i + h)) continue;
+      }
       const s = ((y - dy) * W + x - dx) * 4, e = ((y + dy) * W + x + dx) * 4;
       for (let k = 0; k < 3; k++) {
         const pa = P[s + k], pb = P[e + k], pq = P[q + k];
