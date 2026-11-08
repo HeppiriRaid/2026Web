@@ -83,8 +83,11 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   - The front page's parts sit in section wrappers, `.sec[data-sec]` (`display: contents` on the artboard, so each
     part still places itself by its points). On a narrow screen each wrapper is a flex column, its parts in reading
     order (`order`).
-  - The column's right gutter is the grey squares' width, so no text or photo runs under the hamburger once it has
-    caught the corner. Where the column has margins of its own (on its side, a tablet), it keeps 6pt.
+  - **Spacing, the owner's rule:** the grey square (12pt) is the unit. A small margin is ½ (6pt) or ¼ (3pt) of it,
+    a large one whole squares. The column is ½ in from each side, the same both ways: the hamburger may pass over
+    it once caught (it inverts what it lies on). The header's name sits ¼ from the corner, both ways. A heading's
+    triangle and the red square end one square in from the window's edge, in line with the grey squares, never
+    under the hamburger: its soft bar edge over a shape's soft edge folds in the cursor's square.
   - **A new part on the front page goes inside its `.sec`, and gets its narrow place in `css/narrow.css`.**
   - `js/narrow.js` (front page, contact):
     - lays each grey band under its `.sec[data-band]`; the bands stay beneath the cursor's under-squares;

@@ -17,10 +17,10 @@
 /* every part in the flow of its section, in reading order (not placed by its points) */
 .narrow .stage .a,.narrow .stage .tri,.narrow .stage .sq{position:relative;left:auto;top:auto;width:auto}
 .narrow .stage .sec{display:flex;flex-wrap:wrap;align-items:flex-start;max-width:calc(160 * var(--k));margin:0 auto;
-  padding:calc(16 * var(--k)) calc(6 * var(--k)) 0;
-  /* (on the right, the grey squares' width: once the hamburger has caught the corner the page passes beneath it,
-     and its text and photos never run under it — where the column has no margin of its own to give) */
-  padding-right:max(calc(6 * var(--k)), calc(12 * var(--k) - max(0px, (100vw - 160 * var(--k)) / 2)))}
+  padding:calc(12 * var(--k)) calc(6 * var(--k)) 0}
+/* (spacing, the owner's rule: the grey square, 12pt, is the unit; a small margin is half of it (6pt) or a quarter
+   (3pt), a large one whole squares. The column is half a square in from each side, the same both ways: the
+   hamburger may pass over it once it has caught the corner — it inverts what it lies on) */
 .narrow .stage .sec>*{flex:0 0 100%;order:10}
 .narrow .stage .part{padding:0;margin:0;max-width:none}
 
@@ -28,23 +28,27 @@
 .narrow .stage>.sqg{position:absolute;left:auto;right:0;top:calc(var(--y) * var(--k));width:calc(12 * var(--k))}
 
 /* the header: the name, and the links beneath it, beside the squares */
-.narrow .stage [data-sec=head]{height:calc(36 * var(--k));padding:calc(4 * var(--k)) calc(18 * var(--k)) 0 calc(6 * var(--k));
+.narrow .stage [data-sec=head]{height:calc(36 * var(--k));padding:calc(3 * var(--k)) calc(18 * var(--k)) 0 calc(3 * var(--k));   /* (the corner: a quarter each way) */
   align-content:flex-start}
 .narrow .brand{font-size:calc(4.4 * var(--k))}
-.narrow .stage [data-sec=head]>.nav{flex:0 0 auto;margin:calc(7.6 * var(--k)) calc(4.6 * var(--k)) 0 0;font-size:calc(3.4 * var(--k))}
+.narrow .stage [data-sec=head]>.nav{flex:0 0 auto;margin:calc(6 * var(--k)) calc(6 * var(--k)) 0 0;font-size:calc(3.4 * var(--k))}
 
 /* type: the headings scaled down from the artboard's (a 32px heading beside 15px copy), the copy opened up */
 .narrow .stage .sec>h2.h{flex:1 1 0;min-width:0;font-size:calc(8.6 * var(--k))}
-.narrow .stage .sec>h3.h{font-size:calc(5.6 * var(--k));margin-top:calc(11 * var(--k))}
-.narrow .stage .copy{margin-top:calc(3.6 * var(--k));line-height:1.4}
-.narrow .copy p{margin-bottom:calc(3.6 * var(--k))}
-.narrow .stage .tri+.copy,.narrow .stage h3.h+.copy{margin-top:calc(5 * var(--k))}
-.narrow .stage [data-sec=about]>h2.h+.copy{margin-top:calc(7 * var(--k))}   /* (after the portrait: the heading's order puts it first) */
-.narrow .cap{font-size:calc(3.4 * var(--k));line-height:1.35;white-space:normal;margin-top:calc(2.4 * var(--k))}
+.narrow .stage .sec>h3.h{font-size:calc(5.6 * var(--k));margin-top:calc(12 * var(--k))}
+.narrow .stage .copy{margin-top:calc(3 * var(--k));line-height:1.4}
+.narrow .copy p{margin-bottom:calc(3 * var(--k))}
+.narrow .stage .tri+.copy,.narrow .stage h3.h+.copy{margin-top:calc(6 * var(--k))}
+.narrow .stage [data-sec=about]>h2.h+.copy{margin-top:calc(6 * var(--k))}   /* (after the portrait: the heading's order puts it first) */
+.narrow .cap{font-size:calc(3.4 * var(--k));line-height:1.35;white-space:normal;margin-top:calc(3 * var(--k))}
 
 /* a heading's triangle at the end of its line; the red square at the end of its section */
+/* (a heading's triangle and the red square end one square in from the window's right edge, in line with the grey
+   squares: never under the caught hamburger, whose soft bar edges over a shape's soft edge folded in the cursor's
+   square. The text and photos run the full column; where it has a margin of its own, nothing to add) */
+.narrow .stage .tri,.narrow .stage .sq{margin-right:max(0px, calc(6 * var(--k) - max(0px, (100vw - 160 * var(--k)) / 2)))!important}
 /* (whole pixels square: js/narrow.js nudges each onto the pixel grid, as the artboard places them, css/style.css) */
-.narrow .stage .sec>.tri{flex:0 0 auto;width:round(calc(6.4 * var(--k)), 1px);height:round(calc(6.4 * var(--k)), 1px);margin:calc(.6 * var(--k)) 0 0 calc(4 * var(--k))}
+.narrow .stage .sec>.tri{flex:0 0 auto;width:round(calc(6.4 * var(--k)), 1px);height:round(calc(6.4 * var(--k)), 1px);margin:calc(.6 * var(--k)) 0 0 calc(3 * var(--k))}
 .narrow .stage .sec>.sq{flex:0 0 auto;width:round(calc(6.4 * var(--k)), 1px);height:round(calc(6.4 * var(--k)), 1px);margin:calc(6 * var(--k)) 0 0 auto}
 
 /* the photos: the column's width in their own shape; the calligraphy (tall) narrower, centred */
@@ -54,52 +58,52 @@
 
 /* the words in brackets, side by side */
 .narrow .stage .sec>.bx{flex:0 0 auto;width:auto;height:calc(6.6 * var(--k));padding:0 calc(3.8 * var(--k));
-  margin:calc(6 * var(--k)) calc(4 * var(--k)) 0 0;font-size:calc(4 * var(--k))}
+  margin:calc(6 * var(--k)) calc(3 * var(--k)) 0 0;font-size:calc(4 * var(--k))}
 
 /* reading order where the artboard's differs: a heading before its photo */
 .narrow .stage [data-sec=about]>.h{order:1}
 .narrow .stage [data-sec=about]>.tri{order:2}
-.narrow .stage [data-sec=about]>figure{order:3;margin-top:calc(9 * var(--k))}
+.narrow .stage [data-sec=about]>figure{order:3;margin-top:calc(3 * var(--k))}   /* (close under its heading: a quarter) */
 .narrow .stage [data-part=resolve]>figure{order:11}
 .narrow .stage [data-part=resolve]>.bx{order:12}
 
 /* the sections' spacing; the grey bands lie under BACK GROUND and CALLIGRAPHY (js/narrow.js) */
 .narrow .stage [data-sec=about]{padding-top:calc(6 * var(--k))}
-.narrow .stage .sec[data-band]{margin-top:calc(16 * var(--k));padding-top:calc(13 * var(--k));padding-bottom:calc(15 * var(--k))}
+.narrow .stage .sec[data-band]{margin-top:calc(12 * var(--k));padding-top:calc(12 * var(--k));padding-bottom:calc(12 * var(--k))}
 .narrow .stage [data-sec=calligraphy]{margin-bottom:0}
 .narrow .stage [data-sec=works]{padding-bottom:0}
 
 /* ---- the header of the works' and contact pages (fixed, as on the artboard): the same as the front page's,
    the name beside the third grey square, top left ------------------------------------------------- */
 .narrow .istage{left:0;width:100%;height:calc(36 * var(--k));display:flex;flex-wrap:wrap;align-content:flex-start;
-  padding:calc(4 * var(--k)) calc(18 * var(--k)) 0 calc(16 * var(--k))}
+  padding:calc(3 * var(--k)) calc(18 * var(--k)) 0 calc(15 * var(--k))}   /* (beside its square, a quarter off it) */
 .narrow .istage>.sqg{position:absolute;left:0;top:calc(var(--y) * var(--k));width:calc(12 * var(--k))}
 .narrow .istage>.sqg:not(:first-child){left:auto;right:0}
 .narrow .istage>.brand{flex:0 0 100%}
-.narrow .istage>.nav{flex:0 0 auto;margin:calc(7.6 * var(--k)) calc(4.6 * var(--k)) 0 0;font-size:calc(3.4 * var(--k))}
+.narrow .istage>.nav{flex:0 0 auto;margin:calc(6 * var(--k)) calc(6 * var(--k)) 0 0;font-size:calc(3.4 * var(--k))}
 
 /* ---- the works: the row as tall as the phone allows under the header (--row), its captions readable; a work
    never wider than the column (6pt in from each side), so a wide one fits the width instead, shorter. Its shape
    is known before it loads (--iw, --ih: js/illustration.js) ------------------------------------------------- */
-.narrow .strip-track{--row:clamp(150px,calc(100svh - 70 * var(--k)),75svh);padding:calc(46 * var(--k)) calc(6 * var(--k)) 0;gap:calc(3 * var(--k))}
+.narrow .strip-track{--row:clamp(150px,calc(100svh - 70 * var(--k)),75svh);padding:calc(48 * var(--k)) calc(6 * var(--k)) 0;gap:calc(3 * var(--k))}
 .narrow .work-btn{height:auto;width:min(calc(var(--row) * var(--iw,1) / var(--ih,1)), calc(100vw - 12 * var(--k)))}
 .narrow .work-btn img,.narrow .work-media{width:100%;height:auto}
 .narrow .work-btn img{aspect-ratio:var(--iw,1) / var(--ih,1)}   /* (the shape it was given, not changed as it loads: it fills it) */
-.narrow .work-cap{font-size:calc(3.4 * var(--k));line-height:1.3;top:calc(100% + 2.4 * var(--k))}
+.narrow .work-cap{font-size:calc(3.4 * var(--k));line-height:1.3;top:calc(100% + 3 * var(--k))}
 /* (a phone on its side: the row just under the links, a little shorter, so a caption of three lines still shows) */
 @media (max-height:520px){
-  .narrow .strip-track{--row:max(120px,calc(100svh - 57 * var(--k)));padding-top:calc(38 * var(--k))}
+  .narrow .strip-track{--row:max(120px,calc(100svh - 57 * var(--k)));padding-top:calc(36 * var(--k))}
 }
 
 /* ---- contact: one column under the header ------------------------------------------------------------ */
 .narrow .cstage{display:flex;flex-wrap:wrap;align-items:flex-start;max-width:calc(160 * var(--k));margin:0 auto;
-  padding:calc(50 * var(--k)) calc(6 * var(--k)) calc(12 * var(--k))}
+  padding:calc(48 * var(--k)) calc(6 * var(--k)) calc(12 * var(--k))}
 .narrow .cstage>*{flex:0 0 100%}
 .narrow .cstage>h2.h{flex:1 1 0;min-width:0;font-size:calc(8.6 * var(--k))}
-.narrow .cstage>.tri{flex:0 0 auto;width:round(calc(6.4 * var(--k)), 1px);height:round(calc(6.4 * var(--k)), 1px);margin:calc(.6 * var(--k)) 0 0 calc(4 * var(--k))}
+.narrow .cstage>.tri{flex:0 0 auto;width:round(calc(6.4 * var(--k)), 1px);height:round(calc(6.4 * var(--k)), 1px);margin:calc(.6 * var(--k)) 0 0 calc(3 * var(--k))}
 .narrow .cstage>.copy{margin-top:calc(6 * var(--k));font-size:calc(4.6 * var(--k))}
-.narrow .cstage>h3.h{margin-top:calc(14 * var(--k));font-size:calc(5.6 * var(--k))}
-.narrow .cstage>.bxrow{display:flex;flex-wrap:wrap;gap:calc(4 * var(--k));margin-top:calc(5 * var(--k));font-size:calc(4 * var(--k))}
+.narrow .cstage>h3.h{margin-top:calc(12 * var(--k));font-size:calc(5.6 * var(--k))}
+.narrow .cstage>.bxrow{display:flex;flex-wrap:wrap;gap:calc(3 * var(--k));margin-top:calc(6 * var(--k));font-size:calc(4 * var(--k))}
 .narrow .cstage .bx{height:calc(6.6 * var(--k));padding:0 calc(3.8 * var(--k))}
 
 /* ---- the hamburger's menu, touched: each label answers a finger a little beyond its letters (unseen) ---- */

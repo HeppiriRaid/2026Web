@@ -1086,11 +1086,13 @@ const FLOWS = {
     await click(p, "#menuBtn");
     await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
     await quiet(p);
+    await overPicture();
     await check(p, "narrow front page: menu open", dpr);
     const lw = await menuLink(p, "WORK");
     await p.mouse.move(lw.x, lw.y, { steps: 4 });
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
     await quiet(p);
+    await overPicture();
     await check(p, "narrow front page: menu open, pointer on WORK", dpr);
     await p.keyboard.press("Escape");
     await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
