@@ -181,7 +181,7 @@ html.cursor-live .stage{will-change:transform}
    the page content that mirror the paper about #DCCBC3, as the cursor's square and its under-squares do. */
 .menu-inv,.menu-lift,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
   pointer-events:none;mix-blend-mode:difference;opacity:0;will-change:opacity}
-.menu-inv,.menu-lift{z-index:90}
+.menu-inv,.menu-lift{z-index:10000}   /* (over the cursor's square, after it in the page, beneath its point: js/menu.js) */
 /* (the lift: the inverse "screened" with a colour worked out so the paper comes out exactly the bars' grey,
    #b3b1b1, the band within 4 levels of it, ink light — grey as usual, every pixel beneath lively through it) */
 .menu-lift{mix-blend-mode:screen}

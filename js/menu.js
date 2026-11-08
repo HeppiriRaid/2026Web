@@ -49,7 +49,11 @@
   // (over the inverse, the lift: blended with "screen" in a colour worked out so the paper, inverted, comes out
   // exactly the bars' grey — grey as usual, and every pixel of text or a picture beneath lively through it)
   var lift = document.body.appendChild(barCopy("menu-lift"));
-  var copies = [inv, lift].concat(folds), lastInv = -1;
+  var copies = [inv, lift].concat(folds), lastInv = -1, leaving = false;
+  // (the inverse and the lift lie over the cursor's square: under it, the lift brought letters out lighter than
+  // #DCCBC3 and the square, inverting them again, folded their edges. Over it, all they are given is below
+  // #DCCBC3, a straight line for both. So they also lie over the white sheet of a page change: they go as it sets off)
+  document.addEventListener("kt:leave", function () { leaving = true; set("i", 0); });
   document.documentElement.classList.add("menu-inv-live");
 
   // Custom scrollbar (the native one is hidden in CSS). We draw it ourselves so
@@ -176,7 +180,7 @@
   var INV = 0.3, lastCopy = "";
   function copyBars() {
     var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && !chasing;
-    go("i", !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
+    go("i", !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
       (T.y === M.y) && rest ? 1 : 0, INV);
     var a = M.i;
     if (a !== lastInv) {
