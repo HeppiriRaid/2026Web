@@ -143,8 +143,9 @@ quick off the mark, then a long soft landing, and the smoothness kept. So the fl
 `cubic-bezier(0.215, 0.61, 0.355, 1)`** (the site's own curve before the rework), at each motion's pace. The
 variable is still called `stepEase`. The hamburger's catch runs on its own two old clocks (`js/menu.js`):
 - its place and size: the original driver itself. For 1.2 s after it changes between riding with the page and
-  the corner, it chases its target by 7% of the gap a 60th of a second (`chaseUntil`; while riding, a target moving
-  with the page), otherwise it is exactly there. Measured against the original commit (7fd2300~1), frame by frame
+  the corner, it chases its target by 7% of the gap a 60th of a second (`chasing`; while riding, a target moving
+  with the page), otherwise it is exactly there. The original cut the chase at 1.2 s and jumped the last 0.5% at
+  once, a hop of about a pixel as it landed (the owner: "jaggy"). Now it runs out, ending within 0.02 px. Measured against the original commit (7fd2300~1), frame by frame
   in real time, it now matches both ways;
 - its bars' shape: 0.8 s on `cubic-bezier(.4,0,.2,1)` (`BARS_GO`).
 
