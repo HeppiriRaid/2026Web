@@ -164,14 +164,19 @@
       "translate(calc(-50% + " + tx.toFixed(2) + "px), calc(-50% + " + ty.toFixed(2) +
       "px)) scale(" + scl.toFixed(3) + ")";
   }
-  // the inverse's copies: each bar where the button draws it, as a plain box on whole device pixels (as the
-  // cursor's square is: an edge pixel a copy only partly covered mixes mirrored and plain paper, and a letter's
-  // soft edge there folds), worked out from the button's numbers — never read back from the page; and how far
-  // the inverse is in. The grey bars beneath glide between pixels as ever; the inverse is gone by the time
-  // they turn into the X (it gives way as the menu opens).
-  var lastCopy = "";
+  // The inverse's copies. The catch is the grey bars' own motion, gliding between pixels, untouched: the inverse
+  // comes in only once the hamburger rests in the corner (M.i, 0.3 s on the flow's curve) and goes as soon as
+  // anything sets it moving again (back to the squares, the menu, the step aside). At rest each copy is a plain
+  // box on whole device pixels (as the cursor's square is: an edge pixel a copy only partly covered mixes
+  // mirrored and plain paper, and a letter's soft edge there folds), worked out from the button's numbers. While
+  // it fades out with the hamburger moving, each copy takes the button's and its bar's exact transforms instead,
+  // gliding with the grey bars: snapped, it stepped a pixel at a time over their glide, and the catch read rough.
+  var INV = 0.3, lastCopy = "", glided = null;
   function copyBars() {
-    var a = document.documentElement.classList.contains("shade-test") ? 0 : M.w * (1 - M.o);
+    var rest = M.w >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && M.h >= 1;
+    go("i", !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
+      (T.y === M.y) && rest ? 1 : 0, INV);
+    var a = M.i;
     if (a !== lastInv) {
       lastInv = a;
       for (var j = 0; j < copies.length; j++) copies[j].style.opacity = a.toFixed(3);
@@ -180,23 +185,43 @@
     var mid = ((M.o > 0 ? 0 : M.w) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
+    var p, k, st;
+    if (!rest) {                                         // moving: exactly the button's glide
+      for (p = 0; p < copies.length; p++) {
+        st = copies[p].style;
+        st.left = btn.style.left; st.top = btn.style.top; st.transform = btn.style.transform;
+        st.width = 12 * K + "px"; st.height = 36 * K + "px";
+        for (k = 0; k < 3; k++) {
+          var cs = copies[p].children[k].style, bs = btn.children[k].style;
+          cs.width = "100%"; cs.height = "100px"; cs.transform = bs.transform; cs.opacity = k === 1 ? (M.o > 0 ? 0 : M.w) : 1;
+        }
+      }
+      glided = true; lastCopy = "";
+      return;
+    }
     var r = window.devicePixelRatio || 1, snap = function (v) { return Math.round(v * r) / r; };
     var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, out = [];
     for (var i = 0; i < 3; i++) {
-      var c = barNow(i), op = i === 1 ? (M.o > 0 ? 0 : M.w) : 1;
+      var c = barNow(i), op = i === 1 ? M.w : 1;
       var y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
       var x0 = snap(cx - w / 2), x1 = snap(cx + w / 2);
       out.push([x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0), op]);
     }
     var key = JSON.stringify(out);
-    if (key === lastCopy) return;
+    if (key === lastCopy && !glided) return;
     lastCopy = key;
-    for (var p = 0; p < copies.length; p++) for (var k = 0; k < 3; k++) {
-      var st = copies[p].children[k].style, b = out[k];
-      st.transform = "translate(" + b[0] + "px," + b[1] + "px)";
-      st.width = b[2] + "px"; st.height = b[3] + "px"; st.opacity = b[4];
+    for (p = 0; p < copies.length; p++) {
+      st = copies[p].style;
+      if (glided !== false) { st.left = "0px"; st.top = "0px"; st.transform = "none"; st.width = "0px"; st.height = "0px"; }
+      for (k = 0; k < 3; k++) {
+        var s2 = copies[p].children[k].style, b = out[k];
+        s2.transform = "translate(" + b[0] + "px," + b[1] + "px)";
+        s2.width = b[2] + "px"; s2.height = b[3] + "px"; s2.opacity = b[4];
+      }
     }
+    glided = false;
   }
+
 
   // ---- custom scrollbar: geometry, visibility, and the overlap test ----------
   // We DRAW the bar, so these are facts, not guesses: the thumb band is exactly
@@ -321,7 +346,7 @@
   }
   var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the zoom step's
   var CATCH = 0.8, OPEN = 0.6, YIELD = 0.45, HOME = 0.75;   // seconds (HOME: as the zoom's picture flies home)
-  var M = { w: 0, o: 0, y: 0, h: 1 }, T = { w: 0, o: 0, y: 0, h: 1 };     // where each is, where it is heading
+  var M = { w: 0, o: 0, y: 0, h: 1, i: 0 }, T = { w: 0, o: 0, y: 0, h: 1, i: 0 };     // where each is, where it is heading
   var gsap = window.gsap;
   // a new heading only when it changes (asked again each frame, it would start again from rest each frame)
   function go(key, to, dur) {

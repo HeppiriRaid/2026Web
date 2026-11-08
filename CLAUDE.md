@@ -41,9 +41,12 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   - two `.menu-fold` under the page content, beside the page's own under-squares (`body > .cursor-fold`, not the
     curtain's), mirroring the paper so letters under a bar stay clean.
 
-  The copies are plain boxes on whole device pixels (`copyBars()`), worked out from the button's numbers each
-  frame; a soft edge there folded the letters crossing it. The inverse comes in with the catch and gives way as
-  the menu opens (`M.w * (1 - M.o)`), the grey bars fading the other way. Over the grey squares at the top it is
+  **The catch is the grey bars' own glide, untouched.** The inverse fades in only once the hamburger rests in the
+  corner (`M.i`, 0.3 s), and goes as soon as anything sets it moving: back to the squares, the menu, the step
+  aside. At rest the copies are plain boxes on whole device pixels (`copyBars()`), worked out from the button's
+  numbers; a soft edge there folded the letters crossing it. While they fade out with the hamburger moving, they
+  take its exact transforms and glide with it. The first version faded the inverse in during the catch, snapped,
+  and the owner saw the catch step a pixel at a time: "the motion is destroyed". Over the grey squares at the top it is
   off. While the `?shader` test runs (`html.shade-test`) it stays off, so the variations' tints show on the bars;
   visitors no longer see the 墨分五色 tint.
 - **Each menu label answers across its whole row of the panel** (`.menu-nav a::before`, `--panel-w` from
@@ -165,11 +168,12 @@ Every motion of the site now moves this way (the owner asked for it, after the h
   sticky grip, which the owner wants kept (at 35 ms the page floated, and the hamburger riding with it lost its stick).
   On a touch screen the front page is moved the same way (`syncTouch`): the browser's own touch scroll ran ahead of
   the hamburger riding with the page, and it shook. The page sits under the finger while it drags. Let go, it
-  carries on at the finger's speed and slows on a 0.32 s spring, about a phone's own momentum.
+  carries on at the finger's speed and slows on a 0.32 s spring, about a phone's own momentum. Lenis's own way
+  started every notch afresh at full speed: 10% of a notch on the first frame, a kick per notch. A scroll sent
+  somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the works' row let go mid-drag
+  carries on at the hand's speed (`lenis.__fling`).
 - **A heading's box reaches 0.1em left of its letters** (`.h`, `css/style.css`): a heading rises on a layer of its
-  own, Safari trims a layer to its box, and the A's overhanging foot was cut off. Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
-  kick per notch. A scroll sent somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the
-  works' row let go mid-drag carries on at the hand's speed (`lenis.__fling`).
+  own, Safari trims a layer to its box, and the A's overhanging foot was cut off.
 - **What moves while the page loads moves on the compositor.** The name on the curtain sets off as the page is
   at its busiest, and stalled mid-rise. It also changed face part-way up: its font, not yet loaded, swapped in.
   So it waits for its face (preloaded in each page's head) and rises as a CSS animation of its own layer
