@@ -34,6 +34,7 @@
   var stepEase = cubicBezier(0.3, 0, 0.2, 1);       // the flow's curve: from a standstill, gently, to a long soft landing
   var T1 = 0.006, T2 = 1.1 / (10 * Math.LN2);       // s: the spring's two time constants (T2 = 0.1587 s)
   var R1 = -1 / T1, R2 = -1 / T2;
+  var TF = 0.32;                                    // s: a finger's let-go slows on this one, about a phone's own momentum
   // (the mark of a scroll that follows: Lenis passes its own easing for the wheel and for a scroll given no
   // duration. Were it ever run as a curve, it is the old one.)
   function FOLLOW(t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); }
@@ -43,14 +44,26 @@
     if (!A || !opt || typeof A.advance !== "function" || typeof A.fromTo !== "function" || A.__glide) return;
     A.__glide = true;
     opt.easing = FOLLOW;
-    var v = 0, curve = null, stop = A.stop;
-    A.stop = function () { v = 0; curve = null; return stop.apply(this, arguments); };
+    var v = 0, curve = null, drag = false, fling = false, still = 0, stop = A.stop;
+    A.stop = function () { if (!drag) v = 0; curve = null; return stop.apply(this, arguments); };   // (a drag's speed is kept for the let-go)
     A.fromTo = function (from, to, o) {
       o = o || {};
       var given = o.easing, curveOf = given && given !== FOLLOW ? given : null;   // (a curve it was given)
-      if (!this.isRunning) v = 0;                      // (from a standstill)
+      if (!this.isRunning && !drag) v = 0;             // (from a standstill; after a drag, at the finger's speed)
       this.from = this.value = from; this.to = to;
       this.lerp = false; this.duration = o.duration; this.easing = o.easing; this.currentTime = 0;
+      // (a finger dragging the page, syncTouch: Lenis asks for no lag, lerp 1 — the page sits under the finger;
+      // let go, it heads for where the finger's speed carries it, and the spring takes it there from that speed)
+      var wasDrag = drag;
+      if (o.lerp >= 1) { drag = true; curve = null; }
+      else drag = false;
+      // let go mid-drag: it carries on at the finger's speed, slowing on the longer spring, as far as that speed
+      // takes it (Lenis aims its fling for its own lerp, 35 steps on: far quicker than the finger, a jump)
+      fling = wasDrag && !drag && o.lerp > 0 && o.lerp < 1;
+      if (fling) {
+        this.to = Math.max(0, Math.min(lenis.limit, from + v * (T1 + TF)));
+        lenis.targetScroll = this.to;
+      }
       curve = o.easing === FOLLOW && o.duration === opt.duration ? null
         : { x0: from, v0: v, t: 0, d: Math.max(0.001, o.duration || opt.duration || 1), ease: curveOf || stepEase };
       this.isRunning = true;
@@ -61,7 +74,14 @@
       if (!this.isRunning) return;
       dt = Math.min(Math.max(dt || 0, 0), 0.064);      // (a long gap, a hidden tab, is one frame: never a leap)
       var x = this.value, done = false;
-      if (curve) {                                     // sent somewhere: the curve, plus the speed it had, fading out
+      if (drag) {                                      // under the finger, exactly; its speed kept for the let-go
+        if (Math.abs(this.to - x) < 0.01) {            // (a frame the finger didn't move: not a step — Lenis reads
+          still += dt;                                 // the let-go's speed from the last step — until it rests)
+          if (still < 0.06) return;
+          done = true;
+        } else { still = 0; if (dt > 0) v = (this.to - x) / dt; }
+        x = this.to;
+      } else if (curve) {                              // sent somewhere: the curve, plus the speed it had, fading out
         var c = curve, u, m, nx;
         c.t = Math.min(c.t + dt, c.d); u = c.t / c.d; m = 1 - u;
         nx = c.x0 + (this.to - c.x0) * c.ease(u) + c.v0 * c.d * u * m * m;
@@ -69,9 +89,10 @@
         x = nx;
         if (u >= 1) { x = this.to; v = 0; done = true; }
       } else {                                         // following: the spring, exactly over dt
-        var e0 = x - this.to, a = (v - R2 * e0) / (R1 - R2), b = e0 - a, e1 = Math.exp(R1 * dt), e2 = Math.exp(R2 * dt);
+        var r2 = fling ? -1 / TF : R2;
+        var e0 = x - this.to, a = (v - r2 * e0) / (R1 - r2), b = e0 - a, e1 = Math.exp(R1 * dt), e2 = Math.exp(r2 * dt);
         var e = a * e1 + b * e2;
-        v = a * R1 * e1 + b * R2 * e2;
+        v = a * R1 * e1 + b * r2 * e2;
         x = this.to + e;
         if (Math.abs(e) < 0.1 && Math.abs(v) < 6) { x = this.to; v = 0; done = true; }
       }

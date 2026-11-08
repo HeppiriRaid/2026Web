@@ -162,7 +162,12 @@ Every motion of the site now moves this way (the owner asked for it, after the h
 - **The smooth scroll follows; it never restarts** (`js/glide.js`). Following the wheel, the trackpad, the keys or a
   fling, the page is an exact overdamped spring (6 ms and 159 ms, the second the old easing's own): a new notch
   bends the speed. The first is under a frame, on purpose: the page takes hold of a notch at once, the old scroll's
-  sticky grip, which the owner wants kept (at 35 ms the page floated, and the hamburger riding with it lost its stick). Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
+  sticky grip, which the owner wants kept (at 35 ms the page floated, and the hamburger riding with it lost its stick).
+  On a touch screen the front page is moved the same way (`syncTouch`): the browser's own touch scroll ran ahead of
+  the hamburger riding with the page, and it shook. The page sits under the finger while it drags. Let go, it
+  carries on at the finger's speed and slows on a 0.32 s spring, about a phone's own momentum.
+- **A heading's box reaches 0.1em left of its letters** (`.h`, `css/style.css`): a heading rises on a layer of its
+  own, Safari trims a layer to its box, and the A's overhanging foot was cut off. Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
   kick per notch. A scroll sent somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the
   works' row let go mid-drag carries on at the hand's speed (`lenis.__fling`).
 - **What moves while the page loads moves on the compositor.** The name on the curtain sets off as the page is
