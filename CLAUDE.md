@@ -42,8 +42,10 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
     curtain's), mirroring the paper so letters under a bar stay clean.
 
   **The catch is the grey bars' own glide, untouched.** The inverse fades in only once the hamburger rests in the
-  corner (`M.i`, 0.3 s), and goes as soon as anything sets it moving: back to the squares, the menu, the step
-  aside. **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
+  corner (`M.i`, 0.3 s), and goes at once, in the same frame, as soon as anything sets it moving: back to the
+  squares, the menu, the step aside. (Faded out, the copies and the bars were both part-clear while the bars
+  morphed, and the cursor's square and the panel showed through: "not physical". On paper the inverse is the
+  bars' own grey, so its going shows only on what lies beneath a bar.) **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
   inverse lies a lift, `.menu-lift`, blended with `screen` in #a89e9c, a colour worked out so the paper,
   inverted, comes out exactly the bars' grey #b3b1b1 (the band within 4 levels of it). Ink comes out light, and a
   picture shows through, recoloured, pixel by pixel. Cutting the bars at the boxes of text lines (the version

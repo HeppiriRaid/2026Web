@@ -180,8 +180,13 @@
   var INV = 0.3, lastCopy = "";
   function copyBars() {
     var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && !chasing;
-    go("i", !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
-      (T.y === M.y) && rest ? 1 : 0, INV);
+    // (it fades in at rest, but goes at once the moment anything sets the hamburger moving: faded out, the copies
+    // and the grey bars were both part-clear while the bars morphed, and the cursor's square and the panel showed
+    // through them, a see-through smear — the owner: "not physical". On the paper the inverse is the bars' own
+    // grey, so its going shows only on what lies beneath a bar, and the bars are solid all through the motion)
+    var on = !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
+      (T.y === M.y) && rest;
+    if (on) go("i", 1, INV); else if (M.i > 0 || T.i !== 0) set("i", 0);
     var a = M.i;
     if (a !== lastInv) {
       lastInv = a;
