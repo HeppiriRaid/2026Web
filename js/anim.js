@@ -55,10 +55,9 @@
         smoothWheel: true,
         wheelMultiplier: 1,
         touchMultiplier: 1.4,
-        // (a finger moves the page through the same script as the wheel: the browser's own touch scroll ran a
-        // frame or more ahead of the hamburger riding with the page, and it shook on a phone. js/glide.js: the
-        // page sits under the finger while it drags, then carries on at its speed on the spring)
-        syncTouch: true,
+        // (a finger scrolls the page natively — the browser's own pull-to-refresh, toolbar and stretch at the
+        // top. Driven by the script instead (syncTouch), those broke on a phone. The hamburger riding with the
+        // page lets the page's own squares show meanwhile, so nothing lags behind the finger: js/menu.js)
       });
       window.__lenis = lenis;
       // (the page follows the wheel on the flow: no kick per notch, no jump on the first frame: js/glide.js)

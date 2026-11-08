@@ -362,7 +362,7 @@
   // 1.2 s: an exponential, quick then long and soft (CATCH_GO, the same curve at any frame rate; 7% a 60th of a
   // second is a time constant of 0.23 s). The bars' shape morphed on their own: 0.8 s on cubic-bezier(.4,0,.2,1)
   // (BARS_GO). Now by transform, between pixels, as the rest of the hamburger.
-  var chasing = false, lastT = 0;
+  var chasing = false, lastT = 0, onPage = false;
   var CATCH_K = 1.2 / (-1 / (60 * Math.log(1 - 0.07)));          // 1.2 s over the time constant: 5.2
   function CATCH_GO(t) { return t >= 1 ? 1 : (1 - Math.exp(-CATCH_K * t)) / (1 - Math.exp(-CATCH_K)); }
   var BARS_GO = cubicBezier(0.4, 0, 0.2, 1), CATCH_T = 1.2, BARS_T = 0.8;
@@ -498,6 +498,12 @@
     apply();
     shapeBars();
     copyBars();
+    // (a touch screen: the page scrolls natively there, a frame or more ahead of anything the script moves. So
+    // while the hamburger sits on the squares, riding with the page, menu closed, its bars step aside and the
+    // page's own grey squares — beneath it, the same shape, scrolling with the page — show instead; it shows
+    // again the moment it sets off for the corner, from exactly their place)
+    var still = TOUCH && mode === "scrub" && !chasing && M.s <= 0 && M.o <= 0 && T.o === 0;
+    if (still !== onPage) { onPage = still; btn.classList.toggle("on-page", still); }
     shapePanel();
   }
 

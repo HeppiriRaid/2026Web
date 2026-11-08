@@ -192,9 +192,10 @@ The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held
   fling, the page is an exact overdamped spring (6 ms and 159 ms, the second the old easing's own): a new notch
   bends the speed. The first is under a frame, on purpose: the page takes hold of a notch at once, the old scroll's
   sticky grip, which the owner wants kept (at 35 ms the page floated, and the hamburger riding with it lost its stick).
-  On a touch screen the front page is moved the same way (`syncTouch`): the browser's own touch scroll ran ahead of
-  the hamburger riding with the page, and it shook. The page sits under the finger while it drags. Let go, it
-  carries on at the finger's speed and slows on a 0.32 s spring, about a phone's own momentum. Lenis's own way
+  A touch screen scrolls natively (no `syncTouch`): driven by the script, a phone lost its pull-to-refresh and
+  stuck a little below the top. Native touch scrolling runs a frame ahead of anything the script moves, so while
+  the hamburger rides with the page on the grey squares (menu closed, not chasing), its bars step aside
+  (`.menu-btn.on-page`, `js/menu.js`) and the page's own squares, the same shape beneath it, show instead. Lenis's own way
   started every notch afresh at full speed: 10% of a notch on the first frame, a kick per notch. A scroll sent
   somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the works' row let go mid-drag
   carries on at the hand's speed (`lenis.__fling`).

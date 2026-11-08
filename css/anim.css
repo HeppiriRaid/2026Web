@@ -192,6 +192,7 @@ html.cursor-live .stage{will-change:transform}
 .menu-btn span{opacity:var(--inv,1)}
 /* (the page lifted onto a layer of its own while the under-bars can show, as for the cursor: its text drawn the same throughout) */
 html.menu-inv-live .stage{will-change:transform}
+.menu-btn.on-page span{visibility:hidden}   /* (a touch screen, riding with the page: the page's own squares show, js/menu.js) */
 /* (3) open: hamburger -> X (from either state) */
 .menu-btn[aria-expanded="true"] span{height:max(2px,calc(var(--mk,4) * 2.4px));background:#b3b1b1}
 .menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
