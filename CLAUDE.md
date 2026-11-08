@@ -47,7 +47,10 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   inverse lies a lift, `.menu-lift`, blended with `screen` in #a89e9c, a colour worked out so the paper,
   inverted, comes out exactly the bars' grey #b3b1b1 (the band within 4 levels of it). Ink comes out light, and a
   picture shows through, recoloured, pixel by pixel. Cutting the bars at the boxes of text lines (the version
-  before) inverted whole blocks, the letters lost in them. At rest the copies sit on whole device pixels (a soft
+  before) inverted whole blocks, the letters lost in them. `.menu-inv` and `.menu-lift` lie over the cursor's
+  square (z 10000, after it in the page, under its point): under it, the lift brought letters out lighter than
+  #DCCBC3 and the square, inverting them again, folded their edges; over it, all they are given is below #DCCBC3.
+  So they also lie over a page change's white sheet: they go at once as it sets off (`kt:leave`). At rest the copies sit on whole device pixels (a soft
   edge there folded the letters crossing it); moving, they follow the bars' live shape between pixels (100px
   boxes scaled), worked out from the button's numbers each frame. Over the grey squares at the top it is
   off. While the `?shader` test runs (`html.shade-test`) it stays off, so the variations' tints show on the bars;
