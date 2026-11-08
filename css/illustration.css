@@ -5,7 +5,8 @@
      · header exactly as the front page; the brand moves to x 17.35 beside a
        12pt grey square in the top-left corner
      · one row of works: top y 60 (five squares), 180pt tall (fifteen), each keeping
-       its own shape; 3pt (a quarter square) between works, 12pt outer margin, bleeding
+       its own shape; 1.5pt (an eighth of a square, the quarter halved
+       again: the owner, "tighten a little more") between works, 12pt outer margin, bleeding
        off the right edge. (The file had y 54, 162pt and 6pt; the owner: lower and
        larger, the works closer together, on the square's units.)
      · "+" at each work's top-right corner; caption baseline 6pt under the work
@@ -51,7 +52,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 }
 .strip::-webkit-scrollbar{display:none}
 .strip-track{
-  display:flex;align-items:flex-start;gap:calc(3 * var(--k));
+  display:flex;align-items:flex-start;gap:calc(1.5 * var(--k));
   width:max-content;margin:0;list-style:none;
   /* top: y 60 (+ half of any extra height, so a taller window keeps the row centred
      in the screen); sides: the 12pt outer margin inside the centred screen */

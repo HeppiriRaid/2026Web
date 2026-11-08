@@ -119,7 +119,8 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   - The front page's parts sit in section wrappers, `.sec[data-sec]` (`display: contents` on the artboard, so each
     part still places itself by its points). On a narrow screen each wrapper is a flex column, its parts in reading
     order (`order`).
-  - **Spacing, the owner's rule:** the grey square (12pt) is the unit. A small margin is ½ (6pt) or ¼ (3pt) of it,
+  - **Spacing, the owner's rule:** the grey square (12pt) is the unit. A small margin is ½ (6pt) or ¼ (3pt) of it (⅛, 1.5pt, for the tightest: the works on the
+    desktop works page, the owner),
     a large one whole squares. The column is ½ in from each side, the same both ways: the hamburger may pass over
     it once caught (it inverts what it lies on). The header's name sits ¼ from the corner, both ways. A heading's
     triangle and the red square end one square in from the window's edge, in line with the grey squares, never
