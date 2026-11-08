@@ -6,7 +6,7 @@
        12pt grey square in the top-left corner
      · one row of works: top y 60 (five squares), 180pt tall (fifteen), each keeping
        its own shape; 1.5pt (an eighth of a square, the quarter halved
-       again: the owner, "tighten a little more") between works, 12pt outer margin, bleeding
+       again: the owner, "tighten a little more") between works; the first work under the top-left grey square's left edge, bleeding
        off the right edge. (The file had y 54, 162pt and 6pt; the owner: lower and
        larger, the works closer together, on the square's units.)
      · "+" at each work's top-right corner; caption baseline 6pt under the work
@@ -55,8 +55,10 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   display:flex;align-items:flex-start;gap:calc(1.5 * var(--k));
   width:max-content;margin:0;list-style:none;
   /* top: y 60 (+ half of any extra height, so a taller window keeps the row centred
-     in the screen); sides: the 12pt outer margin inside the centred screen */
-  padding:calc(60 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 calc(12 * var(--k) + var(--g));
+     in the screen); sides: the 12pt outer margin inside the centred screen on the right */
+  /* (the first work's left edge: under the top-left grey square's left edge, the same margin from the window's
+     edge as the square's, on any window — the owner) */
+  padding:calc(60 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 var(--g);
 }
 .work{position:relative;flex:0 0 auto;margin:0}
 .work-btn{
