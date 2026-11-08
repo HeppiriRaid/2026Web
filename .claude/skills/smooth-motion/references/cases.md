@@ -61,3 +61,17 @@ under the cursor mid-fade. Fixed with a GSAP fade on the step's clock.
 ## The page-change sheet
 Before: power3.in up (arrives at full speed), power3.out off (starts at full speed). After: stepEase both
 ways, snapped to whole device pixels (a light edge): `-5 -17 -31 -49 -68 -80 -85 -82 … -3 -2 -1`.
+
+## The name on the curtain (first visit)
+Owner: "stutters, kinda stuck in mid motion". A held-clock film can't show this: it steps the clock by hand.
+Filmed as drawn instead (Chromium's screencast, a first visit, the CPU slowed 4x, the font held back 700 ms,
+the mask opened so the centroid is the motion alone):
+- Before (a GSAP tween on the main thread, starting at once):
+  - the first frame came after 236 ms, already 15px up;
+  - then uneven steps (`-0.62 -0.38 -1.87 -1.47 -0.41`);
+  - with the slow font, a 6.8px jump part-way up, as AvantGarde swapped in.
+- After (the face awaited, then a CSS animation of its layer on stepEase): `0 -0.03 -0.27 -0.48 -0.65 -0.94 …
+  -2.88 … -0.2 -0.07 0`, with no gap and no jump.
+- The rule: a motion that runs while the page loads goes on the compositor (a CSS animation or transition of a
+  layer's transform or opacity), and its text waits for its face.
+

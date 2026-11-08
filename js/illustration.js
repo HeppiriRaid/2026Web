@@ -364,9 +364,7 @@
     var name = pre.querySelector(".pl-name"), arrive = !!window.__arrive;
     var entered = Promise.resolve();
     if (!arrive) {                     // a fresh visit: the name rises first (from another page of the site, no name)
-      var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
-      entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+      entered = window.__wipe.rise(name);   // (in its own face, by the compositor: js/wipe.js)
     }
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
     var firstImgs = works.filter(function (w) { return w.img && onScreen(w); }).map(function (w) { return whenReady(w.img); });

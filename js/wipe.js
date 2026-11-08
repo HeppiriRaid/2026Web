@@ -91,6 +91,28 @@
   // intro keeps its exact rhythm, only quicker), then returns to normal speed.
   window.__wipe = {
     sheet: SHEET,
+    // The name rising on the curtain (a first visit). It used to stall mid-rise: it set off as the page was at
+    // its busiest (the photos decoding, the scroll triggers measuring, the owner's photos coming in), moved
+    // frame by frame from the page's own thread, so every long frame there froze it; and its face, not yet
+    // loaded, swapped in part-way up, the letters changing width as they rose. So it waits for its face
+    // (preloaded in each page's head; 1.5 s at most) and a drawn frame, then rises on the compositor
+    // (css/anim.css .pl-name.rise: a CSS animation of its layer, which nothing on the page can hold up),
+    // on the flow's curve. Resolves once it has risen, held there for the exit's tween (y 0).
+    rise: function (name) {
+      var face = document.fonts && document.fonts.load ? document.fonts.load('400 1em "AvantGarde"', "KOKI TAKAMATSU").catch(function () {}) : Promise.resolve();
+      return Promise.race([face, new Promise(function (r) { setTimeout(r, 1500); })])
+        .then(function () { return new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(r); }); }); })
+        .then(function () {
+          return new Promise(function (res) {
+            name.addEventListener("animationend", function () {
+              gsap.set(name, { y: "0%" });                    // (where it rose to, now GSAP's: the exit starts from it)
+              name.classList.remove("rise");
+              res();
+            }, { once: true });
+            name.classList.add("rise");
+          });
+        });
+    },
     arrive: function (intro, done) {
       var clock = gsap.globalTimeline, t0 = performance.now();
       clock.timeScale(PACE);

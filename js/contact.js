@@ -43,9 +43,7 @@
     if (!gsap || REDUCE || !pre) { shown(); return; }
     var name = pre.querySelector(".pl-name"), arrive = !!window.__arrive, entered = Promise.resolve();
     if (!arrive) {                     // a fresh visit: the name rises first (from another page of the site, no name)
-      var enter = gsap.timeline();
-      enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
-      entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+      entered = window.__wipe.rise(name);   // (in its own face, by the compositor: js/wipe.js)
     }
     var fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, wait(2500)]) : Promise.resolve();
     Promise.all([entered, fonts]).then(function () {

@@ -53,6 +53,9 @@
   transform:translate(0,110%);will-change:transform;   /* (it rises and sinks: on its own layer, as all moving text) */
 }
 html:not(.anim) .preloader{display:none}
+/* (its rise: by the compositor, once its face is in — js/wipe.js rise(): nothing the page does as it loads can stall it) */
+@keyframes pl-rise{from{transform:translate(0,110%)}to{transform:translate(0,0)}}
+.pl-name.rise{animation:pl-rise .9s cubic-bezier(.3,0,.2,1) both}
 
 /* ---- custom cursor (fine pointers only; driven by js/cursor.js) -- */
 /* A small rhombus marks the exact point. Around it, Maison Auge's inverse square:

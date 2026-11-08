@@ -364,7 +364,9 @@ async function stepTo(p, test, arg, what) {
     const css = window.__foldCss || (window.__foldCss = new Set());
     const hold = () => { for (const a of document.getAnimations()) if (a.playState === "running") { a.pause(); css.add(a); } };
     tl.pause(); hold();
-    const under = () => tl.getChildren(true, true, false).some((x) => !x.paused() && x.progress() < 1);
+    // (a GSAP tween under way, or a CSS animation held part-way — the name on the curtain rises by one: js/wipe.js)
+    const under = () => tl.getChildren(true, true, false).some((x) => !x.paused() && x.progress() < 1) ||
+      [...css].some((a) => a.playState === "paused" && (a.currentTime || 0) < a.effect.getComputedTiming().endTime);
     for (let i = 0; i < 25; i++) {
       if (t(arg)) { window.__foldStep = null; return "ok"; }
       if (!under()) return false;                       // (nothing to move on yet: wait for the page)

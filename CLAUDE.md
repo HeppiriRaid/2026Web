@@ -147,6 +147,11 @@ Every motion of the site now moves this way (the owner asked for it, after the h
   bends the speed. Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
   kick per notch. A scroll sent somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the
   works' row let go mid-drag carries on at the hand's speed (`lenis.__fling`).
+- **What moves while the page loads moves on the compositor.** The name on the curtain sets off as the page is
+  at its busiest, and stalled mid-rise. It also changed face part-way up: its font, not yet loaded, swapped in.
+  So it waits for its face (preloaded in each page's head) and rises as a CSS animation of its own layer
+  (`js/wipe.js` `rise()`, `.pl-name.rise`), which no long frame on the page can hold up. Measured as drawn, with
+  the CPU slowed 4×, it follows stepEase exactly. The outline check's `stepTo()` steps held CSS animations too.
 - **Nothing heavy while anything moves.** Prepare before (decode, draw at size: `warm()`) and tidy after
   (`settle()`). A long frame mid-motion is a visible jump.
 - **Never jaggy, and checked by machine.** Every motion is on `stepEase` (CSS: `cubic-bezier(.3,0,.2,1)`; a scroll

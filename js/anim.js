@@ -358,9 +358,7 @@
       } else {
         // entrance (wordmark) runs regardless; the curtain only lifts once BOTH
         // the entrance has played and the hero image is ready to paint.
-        var enter = gsap.timeline();
-        enter.to(name, { y: "0%", duration: 0.9, ease: stepEase, force3D: false });
-        var entered = new Promise(function (res) { enter.eventCallback("onComplete", res); });
+        var entered = window.__wipe.rise(name);   // (in its own face, by the compositor: js/wipe.js)
 
         Promise.all([entered, heroReady]).then(function () {
           landOnSection();
