@@ -4,8 +4,10 @@
    (460.807 x 259.2 pt) that never scrolls down — only sideways:
      · header exactly as the front page; the brand moves to x 17.35 beside a
        12pt grey square in the top-left corner
-     · one row of works: top y 54, 162pt tall, each keeping its own shape;
-       6pt between works, 12pt outer margin, bleeding off the right edge
+     · one row of works: top y 60 (five squares), 180pt tall (fifteen), each keeping
+       its own shape; 3pt (a quarter square) between works, 12pt outer margin, bleeding
+       off the right edge. (The file had y 54, 162pt and 6pt; the owner: lower and
+       larger, the works closer together, on the square's units.)
      · "+" at each work's top-right corner; caption baseline 6pt under the work
      · zoom (the file's second row): the band grey, the work centred with the
        same 12pt margin on opposite sides
@@ -49,15 +51,15 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 }
 .strip::-webkit-scrollbar{display:none}
 .strip-track{
-  display:flex;align-items:flex-start;gap:calc(6 * var(--k));
+  display:flex;align-items:flex-start;gap:calc(3 * var(--k));
   width:max-content;margin:0;list-style:none;
-  /* top: y 54 (+ half of any extra height, so a taller window keeps the row centred
+  /* top: y 60 (+ half of any extra height, so a taller window keeps the row centred
      in the screen); sides: the 12pt outer margin inside the centred screen */
-  padding:calc(54 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 calc(12 * var(--k) + var(--g));
+  padding:calc(60 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 calc(12 * var(--k) + var(--g));
 }
 .work{position:relative;flex:0 0 auto;margin:0}
 .work-btn{
-  position:relative;display:block;height:calc(162 * var(--k));
+  position:relative;display:block;height:calc(180 * var(--k));
   margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;
   -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;
 }
@@ -71,7 +73,8 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
    edge, 4.05pt down */
 .work .plus{right:calc(2.5 * var(--k));top:calc(1.8 * var(--k))}
 
-/* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 222).
+/* caption: 3pt Avant Garde Book, baseline 6pt under the work (y 246, a square
+   above the screen's foot).
    Line-height 1.3 puts the baseline .889em below the box top, hence 6 - 2.667 = 3.333pt.
    It wraps only between fields, and never wider than its work. */
 .work-cap{
