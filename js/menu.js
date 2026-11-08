@@ -54,9 +54,17 @@
   // grey bars to the inverse, the bars solid throughout. Faded as copies over bars, each part-clear, the page and
   // the cursor's square showed through mid-way. Inside the cursor's square the bars show as the square makes
   // them, |grey - #DCCBC3|: there the cover's second group, cut to the square (js/cursor.js: window.__cursorBox))
+  // (the cover is a live clone of the bars and of the panel — their boxes, transforms and colours, the tint from
+  // the picture beneath included (js/menu-shade.js), copied each frame: plain grey pieces in their place dropped
+  // the tint in one frame as the inverse set in over the BACK GROUND picture, the owner: "suddenly goes back")
   var cover = document.body.appendChild(document.createElement("div"));
   cover.className = "menu-cover"; cover.setAttribute("aria-hidden", "true");
-  var coverG = cover.appendChild(barCopy("g")), coverC = cover.appendChild(barCopy("c")), lastCover = -1, lastClip = null;
+  function clone(cls) {
+    var g = cover.appendChild(document.createElement("div")), b = g.appendChild(barCopy("mc-btn")), q = g.appendChild(document.createElement("div"));
+    g.className = cls; q.className = "mc-panel";
+    return { g: g, b: b, q: q };
+  }
+  var coverG = clone("g"), coverC = clone("c"), lastCover = -1, lastClip = null;
   // (the inverse and the lift lie over the cursor's square: under it, the lift brought letters out lighter than
   // #DCCBC3 and the square, inverting them again, folded their edges. Over it, all they are given is below
   // #DCCBC3, a straight line for both. So they also lie over the white sheet of a page change: they go as it sets off)
@@ -195,10 +203,10 @@
     // and the grey bars were both part-clear while the bars morphed, and the cursor's square and the panel showed
     // through them, a see-through smear — the owner: "not physical". On the paper the inverse is the bars' own
     // grey, so its going shows only on what lies beneath a bar, and the bars are solid all through the motion)
-    var may = !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
-      (T.y === M.y);
-    if (may && rest) go("i", 1, INV);
-    else if (may && calm && M.o > 0 && M.o < CLOSE_IN) set("i", 1 - M.o / CLOSE_IN);
+    // (opening, the same the other way: it goes over the open's first stretch, as the panel slides out of the bar)
+    var may = !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && (T.y === M.y);
+    if (may && rest && T.o === 0) go("i", 1, INV);
+    else if (may && calm && M.o < CLOSE_IN && (M.o > 0 || T.o === 1) && (T.o === 0 || M.i > 0)) set("i", 1 - M.o / CLOSE_IN);
     else if (M.i > 0 || T.i !== 0) set("i", 0);
     var a = M.i;
     // (the paper's mirrors under the content only at rest, on whole pixels: moving, between pixels, a mirror's soft
@@ -207,46 +215,61 @@
     if (a + "|" + fa !== lastInv) {
       lastInv = a + "|" + fa;
       for (var j = 0; j < copies.length; j++) copies[j].style.opacity = (folds.indexOf(copies[j]) >= 0 ? fa : a).toFixed(3);
-      btn.style.setProperty("--inv", a > 0 ? "0" : "1");                    // (the cover is the bars while it shows)
+      // (the cover is the bars while it shows. The button's own are hidden, not faded: js/menu-shade.js keeps
+      // tinting a bar while it is opaque, so the cover's clone of it carries the tint; faded to nothing, the tint
+      // was cleared off it and the clone came out plain grey for a frame)
+      btn.classList.toggle("covered", a > 0);
     }
     var cv = a > 0 ? 1 - a : 0;
     if (cv !== lastCover) { lastCover = cv; cover.style.opacity = cv.toFixed(3); }
-    var mid = ((M.o > 0 ? 0 : M.s) * (a > 0 ? 0 : 1)).toFixed(3);         // (the grey middle bar: the cover's while it shows)
+    var mid = (M.o > 0 ? 0 : M.s).toFixed(3);                               // (the middle bar, as shapeBars() has it)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
     var box = window.__cursorBox, clip = box && box[2] > 0 && cv > 0 ? "polygon(" + box[0] + "px " + box[1] + "px, " + (box[0] + box[2]) + "px " +
       box[1] + "px, " + (box[0] + box[2]) + "px " + (box[1] + box[2]) + "px, " + box[0] + "px " + (box[1] + box[2]) + "px)" : "";
-    if (clip !== lastClip) { lastClip = clip; coverC.style.clipPath = clip; coverC.style.display = clip ? "" : "none"; }
+    if (clip !== lastClip) { lastClip = clip; coverC.g.style.clipPath = clip; coverC.g.style.display = clip ? "" : "none"; }
+    if (cv > 0) { mirror(coverG); if (clip) mirror(coverC); }
     // each bar where the button draws it this frame: the inverse and the lift over it, every pixel beneath on its
     // own (the paper comes out the bars' grey, text and pictures lively through it). At rest on whole device pixels (an edge pixel a piece only partly covered
     // mixes mirrored and plain paper, and a letter's soft edge there folds). Moving — it fades out as the
     // hamburger sets off — exactly where the bars are, between pixels, reshaping with them: pieces kept in the
     // resting shape crossed the bars' own reshaping and read as parts snapping (the owner, on a phone).
     var r = window.devicePixelRatio || 1, snap = rest ? function (v) { return Math.round(v * r) / r; } : function (v) { return v; };
-    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, inv = [], tints = [];
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, inv = [];
     for (var i = 0; i < 3; i++) {
       // (closing, the middle bar is still the panel, folding into it: its piece is the panel's own box this frame)
       if (i === 1 && M.o > 0) {
         var f = seed(), ox = 1 - (1 - M.o) * (1 - M.o), oy = M.o * M.o;
         if (f && panel) inv.push([panel.left + tx + mix(f.x, 0, ox), panel.top + mix(f.y, 0, ox), panel.w * mix(f.sx, 1, ox), panel.h * mix(f.sy, 1, oy), 1, 0]);
-        tints.push(bg.style.backgroundColor || "");
         continue;
       }
       var c = barNow(i), op = i === 1 ? M.s : 1, turn = i === 1 ? 0 : (i === 0 ? 45 : -45) * M.o;
       if (!(op > 0)) continue;
       var x0 = snap(cx - w / 2), y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), x1 = snap(cx + w / 2), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
-      if (x1 > x0 && y1 > y0) { inv.push([x0, y0, x1 - x0, y1 - y0, op, turn]); tints.push(btn.children[i].style.backgroundImage || ""); }
+      if (x1 > x0 && y1 > y0) inv.push([x0, y0, x1 - x0, y1 - y0, op, turn]);
     }
-    var key = JSON.stringify([inv, tints]);
+    var key = JSON.stringify(inv);
     if (key === lastCopy) return;
     lastCopy = key;
     for (var p = 0; p < copies.length; p++) pieces(copies[p], inv);
-    pieces(coverG, inv); pieces(coverC, inv);
-    // (the cover in the bars' own colours: a tint from the picture beneath, js/menu-shade.js)
-    for (var t = 0; t < inv.length; t++) {
-      var cs = coverG.children[t].style, tint = tints[t];
-      if (/gradient|url/.test(tint)) { if (cs.backgroundImage !== tint) cs.backgroundImage = tint; cs.backgroundColor = ""; }
-      else { cs.backgroundImage = ""; cs.backgroundColor = tint; }
+  }
+  // the cover's clone, as the button and the panel are drawn this frame (only what changed is written)
+  function mirror(c) {
+    var w = function (el, prop, v) { if (el.style[prop] !== v) el.style[prop] = v; };
+    w(c.b, "cssText", btn.style.cssText);
+    var cls = "mc-btn" + (btn.classList.contains("scrolled") ? " scrolled" : "");
+    if (c.b.className !== cls) c.b.className = cls;
+    var ex = btn.getAttribute("aria-expanded") || "false";
+    if (c.b.getAttribute("aria-expanded") !== ex) c.b.setAttribute("aria-expanded", ex);
+    for (var i = 0; i < 3; i++) {
+      var d = c.b.children[i], css = btn.children[i].style.cssText + "; opacity: " + (i === 1 ? (M.o > 0 ? 0 : M.s) : 1);
+      if (d.__css !== css) { d.__css = css; d.style.cssText = css; }
+    }
+    w(c.q, "visibility", M.o > 0 && panel ? "visible" : "hidden");
+    if (M.o > 0 && panel) {
+      w(c.q, "left", (panel.left + tx) + "px"); w(c.q, "top", panel.top + "px");
+      w(c.q, "width", panel.w + "px"); w(c.q, "height", panel.h + "px");
+      w(c.q, "transform", bg.style.transform); w(c.q, "backgroundColor", bg.style.backgroundColor);
     }
   }
   // a group's spans, as many as the pieces (made as needed, the rest hidden)

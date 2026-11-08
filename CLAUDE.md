@@ -42,17 +42,19 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
     curtain's), mirroring the paper so letters under a bar stay clean.
 
   **The catch is the grey bars' own glide, untouched.** The inverse fades in once the hamburger rests in the
-  corner (`M.i`, 0.3 s); closing the menu, it comes in on the close's own clock instead (`1 - o / 0.3`, over the
-  close's last stretch), so it lands with the bars, never after them as a change of its own (the owner: it
-  "suddenly pops up"). Each is a true crossfade: while it comes in, the button's bars hide and `.menu-cover`, over
-  the copies, is the bars (their grey, the tint, the panel's folding line as the middle bar; inside the cursor's
-  square #291a12, the grey as the square shows it, cut to `window.__cursorBox` from `js/cursor.js`), fading off
-  as the inverse comes in. Faded as copies over part-clear bars, the page and the cursor's square showed through
-  mid-way. The paper's mirrors (`.menu-fold`) show only at rest, on whole pixels: between pixels their soft edges
-  under the inverse's left a dark rim round each bar. It goes at once, in the same frame, as soon as anything sets it moving: back to the
-  squares, the menu, the step aside. (Faded out, the copies and the bars were both part-clear while the bars
-  morphed, and the cursor's square and the panel showed through: "not physical". On paper the inverse is the
-  bars' own grey, so its going shows only on what lies beneath a bar.) **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
+  corner (`M.i`, 0.3 s). The menu carries it on its own clock both ways (`1 - o / 0.3`): opening, it goes over
+  the open's first stretch as the panel slides out of the bar; closing, it comes in over the close's last stretch
+  and lands with the bars, never after them as a change of its own (the owner: it "suddenly pops up", "suddenly
+  goes back", over a picture). Each is a true crossfade: while it shows, the button's bars are hidden
+  (`.menu-btn.covered`, by visibility, so `js/menu-shade.js` keeps their tint) and `.menu-cover`, over the copies,
+  is a live clone of the bars and the panel (`mirror()`: their inline styles, the picture's tint and the panel's
+  folding line included), fading off as the inverse comes in; inside the cursor's square a second clone, cut to
+  `window.__cursorBox` (`js/cursor.js`), each part inverted against #DCCBC3 as the square shows it. Faded as copies
+  over part-clear bars, the page and the cursor's square showed through mid-way; plain grey pieces as the cover
+  dropped the picture's tint in one frame. The paper's mirrors (`.menu-fold`) show only at rest, on whole pixels:
+  between pixels their soft edges under the inverse's left a dark rim round each bar. Back to the squares and the
+  step aside it goes at once, in the same frame (on paper the inverse is the bars' own grey, so its going shows
+  only on what lies beneath a bar). **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
   inverse lies a lift, `.menu-lift`, blended with `screen` in #a89e9c, a colour worked out so the paper,
   inverted, comes out exactly the bars' grey #b3b1b1 (the band within 4 levels of it). Ink comes out light, and a
   picture shows through, recoloured, pixel by pixel. Cutting the bars at the boxes of text lines (the version
