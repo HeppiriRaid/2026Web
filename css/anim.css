@@ -177,6 +177,16 @@ html.cursor-live .stage{will-change:transform}
 .menu-btn.scrolled span:nth-child(1){top:calc(var(--mk,4) * 12.75px)}
 .menu-btn.scrolled span:nth-child(2){top:calc(var(--mk,4) * 16.75px);opacity:1}
 .menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
+/* The bars' inverse (js/menu.js): copies of the button's bars, one over it with "difference" and two beneath
+   the page content that mirror the paper about #DCCBC3, as the cursor's square and its under-squares do. */
+.menu-inv,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
+  pointer-events:none;mix-blend-mode:difference;opacity:0;will-change:opacity}
+.menu-inv{z-index:90}
+.menu-fold{z-index:1}
+.menu-inv span,.menu-fold span{position:absolute;left:0;top:0;width:0;height:0;background:#dccbc3}
+.menu-btn span{opacity:var(--inv,1)}
+/* (the page lifted onto a layer of its own while the under-bars can show, as for the cursor: its text drawn the same throughout) */
+html.menu-inv-live .stage{will-change:transform}
 /* (3) open: hamburger -> X (from either state) */
 .menu-btn[aria-expanded="true"] span{height:max(2px,calc(var(--mk,4) * 2.4px));background:#b3b1b1}
 .menu-btn[aria-expanded="true"] span:nth-child(1){top:calc(var(--mk,4) * 16.75px);transform:rotate(45deg)}
@@ -213,6 +223,13 @@ html.cursor-live .stage{will-change:transform}
   opacity:0;transform:translateX(calc(var(--mk,4) * 5px));
   transition:color .2s ease;
 }
+/* Each label answers the pointer or a finger across its whole row of the panel (unseen): out to the panel's
+   edges, half the gap to the next label above and below, the first and last to the panel's top and bottom.
+   The rows tile the panel, none overlapping (--panel-w: the panel's width, js/menu.js). */
+.menu-nav a::before{content:"";position:absolute;right:calc(var(--mk,4) * -11px);left:auto;width:var(--panel-w,100%);
+  top:calc(var(--mk,4) * -2.5px);bottom:calc(var(--mk,4) * -2.5px)}
+.menu-nav a:first-of-type::before{top:calc(var(--mk,4) * -8px)}
+.menu-nav a:last-of-type::before{bottom:calc(var(--mk,4) * -8px)}
 /* (they come in as the panel arrives under them, together, on its clock: js/menu.js) */
 .menu-nav.open a{opacity:1;transform:translateX(0)}
 .menu-nav a:hover{color:var(--nav-hover,#000)}   /* (a light tint on a coloured panel: js/menu-shade.js) */

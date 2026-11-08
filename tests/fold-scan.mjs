@@ -53,7 +53,13 @@ export function decode(png) {
 }
 
 const DIRS = [[1, 0], [0, 1], [2, 0], [0, 2]];
-export function folds(plain, inverse, DIP) {
+// cuts: rectangles in device pixels [x0, y0, x1, y1) with crisp, whole-pixel edges where what lies inside is
+// inverted a different number of times from what lies around it — the hamburger's inverse bars (js/menu.js):
+// under the cursor's square the page is inverted twice inside a bar, once outside. A letter crossing a bar's
+// edge steps from one to the other there with no pixel mixing the two, so no fold can be there; the three
+// pixels a test reads must lie all inside or all outside each cut. (Every pixel is still tested, only not
+// across such an edge.)
+export function folds(plain, inverse, DIP, cuts) {
   const a = decode(plain), b = decode(inverse);
   if (a.w !== b.w || a.h !== b.h) throw new Error("fold-scan: the two shots differ in size");
   const W = a.w, H = a.h, P = a.data, L = b.data, P32 = new Uint32Array(P.buffer, P.byteOffset, W * H), out = [];
@@ -73,6 +79,10 @@ export function folds(plain, inverse, DIP) {
         const h = (dy * W + dx) / 2, near = (j) => Math.abs(P[j * 4] - P[q]) <= 4 && Math.abs(P[j * 4 + 1] - P[q + 1]) <= 4 && Math.abs(P[j * 4 + 2] - P[q + 2]) <= 4;
         if (near(i - h) || near(i + h)) continue;
       }
+      if (cuts && cuts.some(([x0, y0, x1, y1]) => {
+        const at = (u, v) => u >= x0 && u < x1 && v >= y0 && v < y1, m = at(x, y);
+        return at(x - dx, y - dy) !== m || at(x + dx, y + dy) !== m;
+      })) continue;
       const s = ((y - dy) * W + x - dx) * 4, e = ((y + dy) * W + x + dx) * 4;
       for (let k = 0; k < 3; k++) {
         const pa = P[s + k], pb = P[e + k], pq = P[q + k];
@@ -98,6 +108,6 @@ export function own(bare, black, px) {
 
 if (!isMainThread) parentPort.on("message", (m) => {
   try {
-    parentPort.postMessage({ id: m.id, result: m.op === "folds" ? folds(m.plain, m.inverse, m.DIP) : own(m.bare, m.black, m.px) });
+    parentPort.postMessage({ id: m.id, result: m.op === "folds" ? folds(m.plain, m.inverse, m.DIP, m.cuts) : own(m.bare, m.black, m.px) });
   } catch (e) { parentPort.postMessage({ id: m.id, error: String(e && e.stack || e) }); }
 });

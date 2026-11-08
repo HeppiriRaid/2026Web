@@ -108,7 +108,7 @@ const scan = (() => {
   }
   const run = (msg) => new Promise((resolve, reject) => { msg.id = ++id; queue.push({ msg, resolve, reject }); pump(); });
   return {
-    folds: (plain, inverse) => run({ op: "folds", plain, inverse, DIP }),
+    folds: (plain, inverse, cuts) => run({ op: "folds", plain, inverse, DIP, cuts }),
     own: (bare, black, px) => run({ op: "own", bare, black, px }),
     close: () => Promise.all(all.map((w) => w.terminate())),
   };
@@ -180,7 +180,12 @@ async function check(p, state, dpr) {
   await frame(p);
   const inverse = await job.shot();
   await p.evaluate(() => { window.__cursorProbe(0, 0, 0); });
-  let px = await scan.folds(plain, inverse);
+  // (the hamburger's inverse bars, in device pixels: crisp edges between twice- and once-inverted, fold-scan.mjs)
+  const cuts = await p.evaluate((dpr) => [...document.querySelectorAll(".menu-inv span")].filter((s) => +getComputedStyle(s.parentNode).opacity > 0 && +getComputedStyle(s).opacity > 0).map((s) => {
+    const r = s.getBoundingClientRect();
+    return [r.left, r.top, r.right, r.bottom].map((v) => Math.round(v * dpr));
+  }).filter((r) => r[2] > r[0] && r[3] > r[1]), dpr);
+  let px = await scan.folds(plain, inverse, cuts);
   // Which of those pixels are a picture's own: the same state with its pictures hidden, then painted
   // black (only when there are any to tell). A picture part-way through a fade is all picture still,
   // so whatever holds a visible picture is shown opaque for these two.
@@ -488,10 +493,18 @@ const FLOWS = {
     await check(p, "front page: text selected", dpr);
     await p.evaluate(() => { getSelection().removeAllRanges(); document.querySelector("[data-fold-known]").removeAttribute("data-fold-known"); });
 
-    // -- the hamburger over the BACK GROUND picture, in each of its colour variations
-    // (js/menu-shade.js): the bars alone, then the menu open over it with a label under the pointer
+    // -- the hamburger over the BACK GROUND picture. Visitors see its bars' inverse, pixel by pixel (js/menu.js):
+    // the picture's own detail inverted. Then, as while testing colours
+    // (index.html?shader: html.shade-test), the bars tinted in each colour variation (js/menu-shade.js): the
+    // bars alone, then the menu open over it with a label under the pointer
     const shades = await p.evaluate(() => (window.__menuShade ? window.__menuShade.names : []));
     if (shades.length) {
+      const yPic0 = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, yPic0);
+      await quiet(p);
+      await expect(p, () => getComputedStyle(document.querySelector(".menu-inv")).opacity === "1", null, "the hamburger's bars inverted over the picture");
+      await check(p, "front page: hamburger over the picture, its bars inverted", dpr);
+      await p.evaluate(() => document.documentElement.classList.add("shade-test"));
       const was = await p.evaluate(() => window.__menuShade.get());
       const yPic = await p.evaluate(() => Math.round(document.querySelector("[data-menu-shade]").getBoundingClientRect().top + scrollY - 6));
       const coloured = () => [...document.getElementById("menuBtn").children].some((s) => s.style.backgroundImage);
@@ -514,7 +527,7 @@ const FLOWS = {
         await p.mouse.move(700, 500);
         await quiet(p);
       }
-      await p.evaluate((was) => { window.__menuShade.set(was); }, was);
+      await p.evaluate((was) => { window.__menuShade.set(was); document.documentElement.classList.remove("shade-test"); }, was);
       // A KNOWN LIMIT, reported but not failed: over a real painting, a deep bar's soft edge
       // next to a bright part of the painting straddles #DCCBC3 (as today's grey bars would).
       // (A real work stands in for the picture here, as the test panel's preview does.)
@@ -936,7 +949,7 @@ const FLOWS = {
         document.getElementById("menuBtn").setAttribute("data-fold-known", "the hamburger over a painting");
       else document.getElementById("menuBtn").removeAttribute("data-fold-known");
     });
-    await check(p, "front page photos: the BACK GROUND photo coming up, the hamburger above it, its tint half-faded", dpr);
+    await check(p, "front page photos: the BACK GROUND photo coming up, the hamburger above it, inverted", dpr);
     await p.evaluate(() => { const f = document.querySelector('.zoom-fig[data-fold-known]'); if (f) f.removeAttribute("data-fold-known"); });
     await known(false);
     await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "the BACK GROUND photo zoomed again");
@@ -946,8 +959,8 @@ const FLOWS = {
     await expect(p, () => !document.documentElement.classList.contains("zoom-open"), null, "the zoom closed again");
     await quiet(p);
     await underMenu();
-    await expect(p, () => !!document.getElementById("menuBtn").children[0].style.backgroundImage, null, "the hamburger's tint back");
-    await check(p, "front page photos: home from the zoom, the hamburger's tint back over the BACK GROUND photo", dpr);
+    await expect(p, () => getComputedStyle(document.querySelector(".menu-inv")).opacity === "1", null, "the hamburger's bars inverted");
+    await check(p, "front page photos: home from the zoom, the hamburger's bars inverted over the BACK GROUND photo", dpr);
     await known(false);
   },
 

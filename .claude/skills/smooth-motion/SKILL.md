@@ -133,9 +133,13 @@ over ~25 ms is a long frame) and look at the rest state after the motion against
 ## 5. The smooth scroll (`js/glide.js`)
 
 Lenis turns input into where the page is heading; `js/glide.js` decides how it gets there. Following the
-wheel/trackpad/keys/a fling, the page is an exact overdamped spring (time constants 35 ms and 159 ms,
+wheel/trackpad/keys/a fling, the page is an exact overdamped spring (time constants 6 ms and 159 ms,
 the second the old easing's own), so a new notch bends the speed instead of restarting it: Lenis's own
-way started each notch afresh at full speed — 10px on the first frame, a kick per notch. A scroll *sent
+way started each notch afresh at full speed — 10px on the first frame, a kick per notch. **Keep the first
+constant under a frame.** The page's instant grip on the wheel is the site's "sticky" feel, and the owner
+wants it. At 35 ms the page answered a notch with 2% and 6.9% in its first frames, and it floated; the
+hamburger, riding with the page back to its squares, lost its stick too. A gentle start belongs to a motion
+that sets off on its own, never to one that follows the hand. A scroll *sent
 somewhere* (`scrollTo(x, { duration })`) runs on stepEase from the speed it had. A drag let go calls
 `lenis.__fling(speed)`: it carries on at the hand's speed and slows to rest. Don't hand Lenis an easing
 for the wheel; give `easing: stepEase` (or nothing) to scrolls with a duration.

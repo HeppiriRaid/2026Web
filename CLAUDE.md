@@ -34,6 +34,20 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   is a 100px box (a whole number: a 7.5px box was snapped to 7 before being scaled five times into a square)
   shaped by `translateY / rotate / scaleY`; `js/menu-shade.js`'s `barAt()` reads that transform. Nothing is read
   back from the page mid-motion (the panel's start is worked out from the button's numbers).
+- **The hamburger's bars invert what lies beneath them, pixel by pixel, like the cursor's square** (the owner's
+  choice): once it has caught the corner, the page under a bar shows |colour − #DCCBC3|. `js/menu.js` draws copies
+  of the bars in #DCCBC3:
+  - `.menu-inv` over the button, blended with `difference`;
+  - two `.menu-fold` under the page content, beside the page's own under-squares (`body > .cursor-fold`, not the
+    curtain's), mirroring the paper so letters under a bar stay clean.
+
+  The copies are plain boxes on whole device pixels (`copyBars()`), worked out from the button's numbers each
+  frame; a soft edge there folded the letters crossing it. The inverse comes in with the catch and gives way as
+  the menu opens (`M.w * (1 - M.o)`), the grey bars fading the other way. Over the grey squares at the top it is
+  off. While the `?shader` test runs (`html.shade-test`) it stays off, so the variations' tints show on the bars;
+  visitors no longer see the 墨分五色 tint.
+- **Each menu label answers across its whole row of the panel** (`.menu-nav a::before`, `--panel-w` from
+  `measurePanel()`): out to the panel's edges, half the gap to its neighbours. The rows tile the panel.
 - **The hamburger is always the top layer.** The zoom (z 88) lies beneath it and its menu (89–90), so a
   picture flies in and home under the hamburger, which never vanishes and reappears. While a picture is
   up (`html.zoom-open`) the zoom has the input: a click on the hamburger closes it, as a click anywhere
@@ -146,8 +160,9 @@ Every motion of the site now moves this way (the owner asked for it, after the h
   2x. Shapes that move and rest crisp rest on whole pixels (`round()`, `css/style.css`), so nothing moves as the
   motion lets go of them. Pictures still never get a layer at rest.
 - **The smooth scroll follows; it never restarts** (`js/glide.js`). Following the wheel, the trackpad, the keys or a
-  fling, the page is an exact overdamped spring (35 ms and 159 ms, the second the old easing's own): a new notch
-  bends the speed. Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
+  fling, the page is an exact overdamped spring (6 ms and 159 ms, the second the old easing's own): a new notch
+  bends the speed. The first is under a frame, on purpose: the page takes hold of a notch at once, the old scroll's
+  sticky grip, which the owner wants kept (at 35 ms the page floated, and the hamburger riding with it lost its stick). Lenis's own way started every notch afresh at full speed — 10% of a notch on the first frame, a
   kick per notch. A scroll sent somewhere (`scrollTo(x, { duration })`) runs on stepEase from the speed it had; the
   works' row let go mid-drag carries on at the hand's speed (`lenis.__fling`).
 - **What moves while the page loads moves on the compositor.** The name on the curtain sets off as the page is
@@ -290,6 +305,9 @@ Three layers, so an outline can't ship again — and the console's own check rid
    `data/front.json` and `data/illustration.json` are replaced per flow by fixed lists (`FRONT`, `WORKS`), and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)
+   Inside the hamburger's inverse bars the inverse shot is inverted twice. Across a bar's crisp edge a letter
+   steps from twice- to once-inverted with no mixed pixel, so the scanner reads no three pixels across a bar's
+   edge (`cuts`, `tests/fold-scan.mjs`). Every pixel inside and outside is still tested.
    How it stays fast without testing less: each flow at each pixel ratio is a job, run side by side (as many as
    the machine has cores, `FOLD_JOBS`; the console's check beside them); screenshots are Chromium's own, encoded
    for speed (the same pixels as `page.screenshot()`, checked once per job); the pixel test runs in worker

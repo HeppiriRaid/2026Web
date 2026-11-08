@@ -75,3 +75,11 @@ the mask opened so the centroid is the motion alone):
 - The rule: a motion that runs while the page loads goes on the compositor (a CSS animation or transition of a
   layer's transform or opacity), and its text waits for its face.
 
+## The scroll's grip ("the sticky nuance destroyed")
+Owner, after the rework: the original motion's sticky smooth nuance had gone, the hamburger's ride back to
+the grey squares most of all. The spring's first constant, 35 ms, had rounded each notch's start so far that
+the page answered it slowly. Its first frames for a notch: Lenis `10.0 18.9 27.0 34.3`; spring at 35 ms
+`2.1 6.9 13.2 19.9` (it floated); spring at 6 ms `6.7 15.8 24.2 31.7`. At 6 ms it keeps the grip and loses
+only the kick's corner. A motion that follows the hand takes hold at once; only a motion that sets off on
+its own starts gently.
+

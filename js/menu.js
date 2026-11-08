@@ -28,6 +28,27 @@
   nav.insertBefore(bg, nav.firstChild);
   var midSpan = btn.children[1];   // the hamburger's middle bar
 
+  // The bars' inverse, pixel by pixel, as the cursor's square shows the page (the owner's choice): once the
+  // hamburger has caught the corner, what lies beneath its bars shows |colour - #DCCBC3|. A copy of the bars
+  // in #DCCBC3, blended with "difference", lies over the button (.menu-inv), and two more beneath the page
+  // content (.menu-fold) mirror the paper about #DCCBC3, as the cursor's under-squares do, so letters under a
+  // bar stay clean (CLAUDE.md). All three take the bars' exact transform each frame (copyBars()); the inverse
+  // comes in with the catch and gives way as the menu opens, on their clocks (amount M.w * (1 - M.o)). Over the
+  // grey squares at the top it is off: the hamburger is the squares there.
+  function barCopy(cls) {
+    var g = document.createElement("div");
+    g.className = cls; g.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 3; i++) g.appendChild(document.createElement("span"));
+    return g;
+  }
+  var inv = document.body.appendChild(barCopy("menu-inv"));
+  // (beside the page's own under-squares, beneath its content — not the curtain's pair, inside #preloader)
+  var under = document.querySelector("body > .cursor-fold") || document.querySelector(".stage, .strip");
+  var folds = [barCopy("menu-fold"), barCopy("menu-fold")];
+  folds.forEach(function (f) { if (under) under.parentNode.insertBefore(f, under); else document.body.insertBefore(f, document.body.firstChild); });
+  var copies = [inv].concat(folds), lastInv = -1;
+  document.documentElement.classList.add("menu-inv-live");
+
   // Custom scrollbar (the native one is hidden in CSS). We draw it ourselves so
   // the hamburger's yield (gutterNow) can read its EXACT on-screen state instead
   // of guessing at the native overlay rail.
@@ -142,6 +163,39 @@
     btn.style.transform =
       "translate(calc(-50% + " + tx.toFixed(2) + "px), calc(-50% + " + ty.toFixed(2) +
       "px)) scale(" + scl.toFixed(3) + ")";
+  }
+  // the inverse's copies: each bar where the button draws it, as a plain box on whole device pixels (as the
+  // cursor's square is: an edge pixel a copy only partly covered mixes mirrored and plain paper, and a letter's
+  // soft edge there folds), worked out from the button's numbers — never read back from the page; and how far
+  // the inverse is in. The grey bars beneath glide between pixels as ever; the inverse is gone by the time
+  // they turn into the X (it gives way as the menu opens).
+  var lastCopy = "";
+  function copyBars() {
+    var a = document.documentElement.classList.contains("shade-test") ? 0 : M.w * (1 - M.o);
+    if (a !== lastInv) {
+      lastInv = a;
+      for (var j = 0; j < copies.length; j++) copies[j].style.opacity = a.toFixed(3);
+      btn.style.setProperty("--inv", (1 - a).toFixed(3));
+    }
+    var mid = ((M.o > 0 ? 0 : M.w) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
+    if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
+    if (a <= 0) return;
+    var r = window.devicePixelRatio || 1, snap = function (v) { return Math.round(v * r) / r; };
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, out = [];
+    for (var i = 0; i < 3; i++) {
+      var c = barNow(i), op = i === 1 ? (M.o > 0 ? 0 : M.w) : 1;
+      var y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
+      var x0 = snap(cx - w / 2), x1 = snap(cx + w / 2);
+      out.push([x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0), op]);
+    }
+    var key = JSON.stringify(out);
+    if (key === lastCopy) return;
+    lastCopy = key;
+    for (var p = 0; p < copies.length; p++) for (var k = 0; k < 3; k++) {
+      var st = copies[p].children[k].style, b = out[k];
+      st.transform = "translate(" + b[0] + "px," + b[1] + "px)";
+      st.width = b[2] + "px"; st.height = b[3] + "px"; st.opacity = b[4];
+    }
   }
 
   // ---- custom scrollbar: geometry, visibility, and the overlap test ----------
@@ -322,6 +376,7 @@
   function measurePanel() {
     var r = nav.getBoundingClientRect();
     panel = r.width && r.height ? { left: r.left - tx, top: r.top, w: r.width, h: r.height } : null;
+    if (panel) nav.style.setProperty("--panel-w", panel.w.toFixed(2) + "px");   // (each label's row: css/anim.css)
   }
   function seed() {
     if (!panel) return null;
@@ -392,6 +447,7 @@
     tx = -gut * M.y;
     apply();
     shapeBars();
+    copyBars();
     shapePanel();
   }
 

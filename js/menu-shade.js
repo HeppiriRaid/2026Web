@@ -391,6 +391,8 @@
   // testing (index.html?shader, then for the rest of the visit, on both pages)
   var wantLab = /[?&]shader\b/.test(location.search);
   try { if (wantLab) sessionStorage.setItem("kt-shade-lab", "1"); else wantLab = sessionStorage.getItem("kt-shade-lab") === "1"; } catch (e) {}
+  // (while testing, the hamburger shows the variations' tints on its own bars, not the inverse: js/menu.js)
+  document.documentElement.classList.toggle("shade-test", wantLab);
   if (wantLab) try { var saved = sessionStorage.getItem(KEY); if (saved !== null && VARIATIONS[+saved]) mode = +saved; } catch (e) {}
 
   var lab_ = null, chosen = mode;
@@ -603,6 +605,7 @@
     box.querySelector(".x").addEventListener("click", function () {     // the test ends: all back as visitors see it
       box.style.display = "none";
       wantLab = false;
+      document.documentElement.classList.remove("shade-test");
       try { ["kt-shade-lab", KEY, "kt-shade-cursor"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (e) {}
       setMode(DEFAULT, false);
       lens();

@@ -109,5 +109,3 @@
 .narrow .cstage>.bxrow{display:flex;flex-wrap:wrap;gap:calc(3 * var(--k));margin-top:calc(6 * var(--k));font-size:calc(4 * var(--k))}
 .narrow .cstage .bx{height:calc(6.6 * var(--k));padding:0 calc(3.8 * var(--k))}
 
-/* ---- the hamburger's menu, touched: each label answers a finger a little beyond its letters (unseen) ---- */
-.narrow .menu-nav a::before{content:"";position:absolute;inset:calc(-2.4 * var(--mk,4) * 1px) calc(-3 * var(--mk,4) * 1px)}

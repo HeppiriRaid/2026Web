@@ -4,12 +4,16 @@
    it turns the wheel, the trackpad and the arrow keys into where the page is
    heading. This decides how the page gets there.
    · Following the wheel, the trackpad, the keys or a fling: the page is an exact
-     damped spring, set by two time constants — 35 ms, and 159 ms, the old easing's
+     damped spring, set by two time constants — 6 ms, and 159 ms, the old easing's
      own (2^-10t over 1.1 s). A new notch moves where the page is heading; its speed
      carries on, so it never jumps. Lenis's own way started every notch afresh, at
-     full speed: a kick on each notch, and from a standstill a jump on the very first
-     frame (10% of a notch at once). Here a notch moves the page 2% in its first
-     frame, then 7%, 13%..., and after that the old glide, as long and as soft.
+     full speed: a hard kick on each notch (10% of it at once). The page's grip on the
+     wheel, though, is the site's sticky feel, and the owner wants it: the old glide
+     takes hold of a notch at once. So the first constant is under a frame — only
+     the kick's corner is rounded: a notch moves the page 6.7% in its first frame
+     (Lenis: 10%), then 15.8%, 24.2% (18.9%, 27.0%) — and after that the old glide,
+     as long and as soft. (At 35 ms the page answered 2%, 6.9%: it floated, and the
+     hamburger, riding with the page back to its squares, lost its stick.)
    · Sent somewhere (a link to a section: a scroll given a duration): on the flow's
      curve, stepEase, over that duration — and from the speed the page had, if it
      was still moving, so that hand-over doesn't jump either.
@@ -28,7 +32,7 @@
     };
   }
   var stepEase = cubicBezier(0.3, 0, 0.2, 1);       // the flow's curve: from a standstill, gently, to a long soft landing
-  var T1 = 0.035, T2 = 1.1 / (10 * Math.LN2);       // s: the spring's two time constants (T2 = 0.1587 s)
+  var T1 = 0.006, T2 = 1.1 / (10 * Math.LN2);       // s: the spring's two time constants (T2 = 0.1587 s)
   var R1 = -1 / T1, R2 = -1 / T2;
   // (the mark of a scroll that follows: Lenis passes its own easing for the wheel and for a scroll given no
   // duration. Were it ever run as a curve, it is the old one.)
