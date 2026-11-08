@@ -50,6 +50,13 @@
   // exactly the bars' grey — grey as usual, and every pixel of text or a picture beneath lively through it)
   var lift = document.body.appendChild(barCopy("menu-lift"));
   var copies = [inv, lift].concat(folds), lastInv = -1, leaving = false;
+  // (over them all, the cover: the bars' own grey, fading off as the inverse comes in — a true crossfade from the
+  // grey bars to the inverse, the bars solid throughout. Faded as copies over bars, each part-clear, the page and
+  // the cursor's square showed through mid-way. Inside the cursor's square the bars show as the square makes
+  // them, |grey - #DCCBC3|: there the cover's second group, cut to the square (js/cursor.js: window.__cursorBox))
+  var cover = document.body.appendChild(document.createElement("div"));
+  cover.className = "menu-cover"; cover.setAttribute("aria-hidden", "true");
+  var coverG = cover.appendChild(barCopy("g")), coverC = cover.appendChild(barCopy("c")), lastCover = -1, lastClip = null;
   // (the inverse and the lift lie over the cursor's square: under it, the lift brought letters out lighter than
   // #DCCBC3 and the square, inverting them again, folded their edges. Over it, all they are given is below
   // #DCCBC3, a straight line for both. So they also lie over the white sheet of a page change: they go as it sets off)
@@ -177,42 +184,70 @@
   // box on whole device pixels (as the cursor's square is: an edge pixel a copy only partly covered mixes
   // mirrored and plain paper, and a letter's soft edge there folds), worked out from the button's numbers. While
   // it fades out with the hamburger moving, the pieces follow the bars' own shape between pixels (copyBars()).
-  var INV = 0.3, lastCopy = "";
+  var INV = 0.3, CLOSE_IN = 0.3, lastCopy = "";
   function copyBars() {
     var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && !chasing;
+    // (closing the menu, it comes in on the menu's own clock over the close's last stretch, from when the panel
+    // has folded to a line into the middle bar: it lands with the bars, never after them as a change of its own —
+    // the owner: it "suddenly pops up". Quick off the mark, a long soft landing, as the close itself)
+    var calm = M.w >= 1 && M.s >= 1 && (M.y <= 0 || M.y >= 1) && !chasing;
     // (it fades in at rest, but goes at once the moment anything sets the hamburger moving: faded out, the copies
     // and the grey bars were both part-clear while the bars morphed, and the cursor's square and the panel showed
     // through them, a see-through smear — the owner: "not physical". On the paper the inverse is the bars' own
     // grey, so its going shows only on what lies beneath a bar, and the bars are solid all through the motion)
-    var on = !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
-      (T.y === M.y) && rest;
-    if (on) go("i", 1, INV); else if (M.i > 0 || T.i !== 0) set("i", 0);
+    var may = !leaving && !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
+      (T.y === M.y);
+    if (may && rest) go("i", 1, INV);
+    else if (may && calm && M.o > 0 && M.o < CLOSE_IN) set("i", 1 - M.o / CLOSE_IN);
+    else if (M.i > 0 || T.i !== 0) set("i", 0);
     var a = M.i;
-    if (a !== lastInv) {
-      lastInv = a;
-      for (var j = 0; j < copies.length; j++) copies[j].style.opacity = a.toFixed(3);
-      btn.style.setProperty("--inv", (1 - a).toFixed(3));
+    // (the paper's mirrors under the content only at rest, on whole pixels: moving, between pixels, a mirror's soft
+    // edge and the inverse's soft edge over it mixed into a dark rim round each bar)
+    var fa = rest ? a : 0;
+    if (a + "|" + fa !== lastInv) {
+      lastInv = a + "|" + fa;
+      for (var j = 0; j < copies.length; j++) copies[j].style.opacity = (folds.indexOf(copies[j]) >= 0 ? fa : a).toFixed(3);
+      btn.style.setProperty("--inv", a > 0 ? "0" : "1");                    // (the cover is the bars while it shows)
     }
-    var mid = ((M.o > 0 ? 0 : M.s) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
+    var cv = a > 0 ? 1 - a : 0;
+    if (cv !== lastCover) { lastCover = cv; cover.style.opacity = cv.toFixed(3); }
+    var mid = ((M.o > 0 ? 0 : M.s) * (a > 0 ? 0 : 1)).toFixed(3);         // (the grey middle bar: the cover's while it shows)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
+    var box = window.__cursorBox, clip = box && box[2] > 0 && cv > 0 ? "polygon(" + box[0] + "px " + box[1] + "px, " + (box[0] + box[2]) + "px " +
+      box[1] + "px, " + (box[0] + box[2]) + "px " + (box[1] + box[2]) + "px, " + box[0] + "px " + (box[1] + box[2]) + "px)" : "";
+    if (clip !== lastClip) { lastClip = clip; coverC.style.clipPath = clip; coverC.style.display = clip ? "" : "none"; }
     // each bar where the button draws it this frame: the inverse and the lift over it, every pixel beneath on its
     // own (the paper comes out the bars' grey, text and pictures lively through it). At rest on whole device pixels (an edge pixel a piece only partly covered
     // mixes mirrored and plain paper, and a letter's soft edge there folds). Moving — it fades out as the
     // hamburger sets off — exactly where the bars are, between pixels, reshaping with them: pieces kept in the
     // resting shape crossed the bars' own reshaping and read as parts snapping (the owner, on a phone).
     var r = window.devicePixelRatio || 1, snap = rest ? function (v) { return Math.round(v * r) / r; } : function (v) { return v; };
-    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, inv = [], plain = [];
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, inv = [], tints = [];
     for (var i = 0; i < 3; i++) {
-      var c = barNow(i), op = i === 1 ? M.s : 1;
+      // (closing, the middle bar is still the panel, folding into it: its piece is the panel's own box this frame)
+      if (i === 1 && M.o > 0) {
+        var f = seed(), ox = 1 - (1 - M.o) * (1 - M.o), oy = M.o * M.o;
+        if (f && panel) inv.push([panel.left + tx + mix(f.x, 0, ox), panel.top + mix(f.y, 0, ox), panel.w * mix(f.sx, 1, ox), panel.h * mix(f.sy, 1, oy), 1, 0]);
+        tints.push(bg.style.backgroundColor || "");
+        continue;
+      }
+      var c = barNow(i), op = i === 1 ? M.s : 1, turn = i === 1 ? 0 : (i === 0 ? 45 : -45) * M.o;
       if (!(op > 0)) continue;
       var x0 = snap(cx - w / 2), y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), x1 = snap(cx + w / 2), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
-      if (x1 > x0 && y1 > y0) inv.push([x0, y0, x1 - x0, y1 - y0, op]);
+      if (x1 > x0 && y1 > y0) { inv.push([x0, y0, x1 - x0, y1 - y0, op, turn]); tints.push(btn.children[i].style.backgroundImage || ""); }
     }
-    var key = JSON.stringify([inv, plain]);
+    var key = JSON.stringify([inv, tints]);
     if (key === lastCopy) return;
     lastCopy = key;
     for (var p = 0; p < copies.length; p++) pieces(copies[p], inv);
+    pieces(coverG, inv); pieces(coverC, inv);
+    // (the cover in the bars' own colours: a tint from the picture beneath, js/menu-shade.js)
+    for (var t = 0; t < inv.length; t++) {
+      var cs = coverG.children[t].style, tint = tints[t];
+      if (/gradient|url/.test(tint)) { if (cs.backgroundImage !== tint) cs.backgroundImage = tint; cs.backgroundColor = ""; }
+      else { cs.backgroundImage = ""; cs.backgroundColor = tint; }
+    }
   }
   // a group's spans, as many as the pieces (made as needed, the rest hidden)
   function pieces(g, list) {
@@ -222,7 +257,10 @@
       if (!b) { if (st.display !== "none") st.display = "none"; continue; }
       // (a 100px box scaled to the piece: its size is never rounded by layout, so a moving piece glides)
       st.display = ""; st.opacity = b[4] == null ? 1 : b[4];
-      st.transform = "translate(" + b[0] + "px," + b[1] + "px) scale(" + (b[2] / 100) + "," + (b[3] / 100) + ")";
+      // (a bar turning to or from the X turns about its middle, as the button's own does)
+      st.transform = !b[5] ? "translate(" + b[0] + "px," + b[1] + "px) scale(" + (b[2] / 100) + "," + (b[3] / 100) + ")" :
+        "translate(" + (b[0] + b[2] / 2) + "px," + (b[1] + b[3] / 2) + "px) rotate(" + b[5].toFixed(3) + "deg) translate(" + (-b[2] / 2) +
+        "px," + (-b[3] / 2) + "px) scale(" + (b[2] / 100) + "," + (b[3] / 100) + ")";
     }
   }
 
@@ -443,6 +481,9 @@
     bg.style.transform = !f || o >= 1 ? "none" : "translate(" + mix(f.x, 0, ox).toFixed(3) + "px," + mix(f.y, 0, ox).toFixed(3) +
       "px) scale(" + mix(f.sx, 1, ox).toFixed(5) + "," + mix(f.sy, 1, oy).toFixed(5) + ")";
     bg.style.opacity = twoBox ? o.toFixed(3) : "";      // from the two squares there is no bar: it fades into being
+    // (closing, as the inverse comes in the panel's line is the cover's middle piece, in its place: js/menu.js
+    // copyBars(), so the middle bar crosses over with the other two instead of at the hand-over)
+    if (M.i > 0) bg.style.opacity = "0";
     bg.style.boxShadow = "0 " + (2 * K).toFixed(2) + "px " + (9 * K).toFixed(2) + "px rgba(0,0,0," + (0.1 * o).toFixed(3) + ")";
     // the labels come in as the panel arrives under them, on its clock: over its second half, easing in
     // from nothing (a plain ramp would start at the panel's full speed)

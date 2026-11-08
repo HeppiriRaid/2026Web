@@ -187,6 +187,10 @@ html.cursor-live .stage{will-change:transform}
 .menu-lift{mix-blend-mode:screen}
 .menu-lift span{background:#a89e9c}
 .menu-fold{z-index:1}
+.menu-cover{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:10000;opacity:0;will-change:opacity}
+.menu-cover .g,.menu-cover .c{position:absolute;left:0;top:0;width:0;height:0;overflow:visible}
+.menu-cover span{position:absolute;left:0;top:0;width:100px;height:100px;transform-origin:0 0;background-color:#b3b1b1;background-size:100% 100%}
+.menu-cover .c span{background:#291a12}   /* (the bars' grey as the cursor's square shows it: |#b3b1b1 - #dccbc3|) */
 .menu-inv span,.menu-fold span,.menu-lift span{position:absolute;left:0;top:0;width:100px;height:100px;transform-origin:0 0}
 .menu-inv span,.menu-fold span{background:#dccbc3}
 .menu-btn span{opacity:var(--inv,1)}

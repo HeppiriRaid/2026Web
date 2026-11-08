@@ -49,6 +49,7 @@
       squares[i].style.transform = tf;
     }
     size = s;
+    window.__cursorBox = [l, t, s];      // (where the square is this frame: the hamburger's cover, js/menu.js)
     if (menuLive() || mirrored) mirrorLabels(l, t, s);
   }
 

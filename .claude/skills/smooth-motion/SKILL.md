@@ -1,6 +1,6 @@
 ---
 name: smooth-motion
-description: How every motion on Koki Takamatsu's portfolio (this repo, 2026Web) is built and proven smooth — the flow's curve (stepEase), one clock per thing, transform-only movement, a layer for good for moving text, velocity-continuous scrolling, and frame-by-frame measurement of the drawn pixels on a held clock. Use it whenever you add or change anything on this site that moves, fades, wipes, scrolls or morphs — a GSAP tween or timeline, a CSS transition or animation, a reveal, a hover or focus fade, the intro or curtain, a page change, the zoom, the smooth scroll or a drag, the hamburger or its menu — and whenever the owner says something looks jaggy, jittery, jiggly, stuttering, snapping, too slow or "not smooth", even if they never say "motion" or "animation".
+description: How every motion on Koki Takamatsu's portfolio (this repo, 2026Web) is built and proven smooth — the flow's curve (stepEase: power3.out, momentum), one clock per thing, transform-only movement, a layer for good for moving text, velocity-continuous scrolling, and frame-by-frame measurement of the drawn pixels on a held clock. Use it whenever you add or change anything on this site that moves, fades, wipes, scrolls or morphs — a GSAP tween or timeline, a CSS transition or animation, a reveal, a hover or focus fade, the intro or curtain, a page change, the zoom, the smooth scroll or a drag, the hamburger or its menu — and whenever the owner says something looks jaggy, jittery, jiggly, stuttering, snapping, too slow or "not smooth", even if they never say "motion" or "animation".
 ---
 
 # Smooth motion on this site
@@ -14,21 +14,30 @@ Read CLAUDE.md's "The flow of motion" and "The inverse cursor" first; this skill
 them. The hamburger (`js/menu.js`) is the owner-approved reference implementation of a complex motion.
 
 
-> **The owner's latest direction (overrides the curve below wherever they differ):** the flow's curve is now
-> power3.out, `cubic-bezier(0.215, 0.61, 0.355, 1)`: quick off the mark, with a long soft landing and contrast in
-> speed. The owner found the symmetric stepEase `(0.3, 0, 0.2, 1)` read as "line movement". The variable keeps its
-> name `stepEase`. The hamburger's catch runs on its old two clocks (an exponential chase, and
-> cubic-bezier(.4,0,.2,1) for the bars' shape). Everything else here still holds: layers, whole-pixel edges, one
-> clock, measured frame by frame. Where the text below says "sets off gently / from a standstill", read "quick off
-> the mark".
-## 1. The feel: from a standstill to a standstill
+## 1. The feel: momentum — quick off the mark, a long soft landing
 
-- **The curve is stepEase**, `cubic-bezier(0.3, 0, 0.2, 1)` — in JS
-  `var stepEase = cubicBezier(0.3, 0, 0.2, 1);` (each script carries the same bisection solver), in CSS
-  `cubic-bezier(.3,0,.2,1)`. It starts with zero speed (no jump on the first frame), peaks at about 31%
-  of the time, and lands long and soft (300 ms before the end under 5% is left; the last frames creep).
-  Curves that start at speed — `power*.out`, `expo`, CSS `ease`, GSAP's default `power1.out` when no
-  ease is given — move several pixels on their very first frame; the owner sees that as a jolt.
+**The owner's standing rule: every new motion uses the current style — momentum, an exponential curve.**
+It sets off at once with the hand's or the click's energy, then slows on and on into a long soft landing,
+with contrast in its speed. The owner rejected the symmetric, from-a-standstill curve `(0.3, 0, 0.2, 1)`:
+everything on it read as "line movement".
+
+- **The curve is power3.out**, `cubic-bezier(0.215, 0.61, 0.355, 1)` — in JS
+  `var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);` (the variable keeps its old name; each script carries
+  the same bisection solver), in CSS `cubic-bezier(.215,.61,.355,1)`. Use it for every new tween, CSS
+  transition or animation, fade, wipe, scroll sent somewhere and morph, and write it in the call itself (the
+  motion audit reads it there). Never a symmetric / ease-in-out curve, a linear ramp, `ease`, or GSAP's
+  default (no curve given).
+- **A motion driven by something else is a ramp read off that motion's own progress**, so it lands with it.
+  E.g. the hamburger's inverse closing the menu: `1 - o / 0.3` over the close's last stretch, `o` itself on
+  power3.out. Never a separate fade that starts when the motion ends: the owner sees that as a pop.
+- **What follows the hand is a chase or a spring** (the hamburger's catch: 7% of the gap a 60th of a second;
+  the smooth scroll: an overdamped spring). Exponential too: same style.
+- **The kept exceptions** (in the motion audit's `REVIEWED`; never add to them to get a motion past the audit):
+  the hamburger's catch on its two old clocks (the chase; `cubic-bezier(.4,0,.2,1)` for the bars' shape), its
+  colour fades, and the landing's exit (`power3.in` for the name, `power4.inOut` for the curtain), the original's.
+- Older notes below that say "sets off gently / from a standstill" or give `(0.3, 0, 0.2, 1)` describe the
+  curve before; read power3.out. The rest — layers, whole-pixel edges, one clock, measured frame by frame —
+  holds as written.
 - **Keep the pace.** Never make a motion slower than it was; the owner noticed at once ("it got slower,
   timing got worse"). Reuse the old duration when you change a curve. Today: UI answers 0.45–0.8 s
   (menu 0.6, hamburger catch 0.8, scrollbar step-aside 0.45, back after the zoom 0.75), page sheet
@@ -107,7 +116,7 @@ So:
   cut edge is what's snapped).
 - **Fades with GSAP, not a CSS transition**, for anything above the under-squares: a CSS opacity
   transition gave the chevrons a layer for the fade and their soft edges folded. CSS transitions are for
-  colour/hover fades, on `cubic-bezier(.3,0,.2,1)`.
+  colour/hover fades, on `cubic-bezier(.215,.61,.355,1)`.
 
 ## 4. Check it — measured, not guessed
 

@@ -41,8 +41,15 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   - two `.menu-fold` under the page content, beside the page's own under-squares (`body > .cursor-fold`, not the
     curtain's), mirroring the paper so letters under a bar stay clean.
 
-  **The catch is the grey bars' own glide, untouched.** The inverse fades in only once the hamburger rests in the
-  corner (`M.i`, 0.3 s), and goes at once, in the same frame, as soon as anything sets it moving: back to the
+  **The catch is the grey bars' own glide, untouched.** The inverse fades in once the hamburger rests in the
+  corner (`M.i`, 0.3 s); closing the menu, it comes in on the close's own clock instead (`1 - o / 0.3`, over the
+  close's last stretch), so it lands with the bars, never after them as a change of its own (the owner: it
+  "suddenly pops up"). Each is a true crossfade: while it comes in, the button's bars hide and `.menu-cover`, over
+  the copies, is the bars (their grey, the tint, the panel's folding line as the middle bar; inside the cursor's
+  square #291a12, the grey as the square shows it, cut to `window.__cursorBox` from `js/cursor.js`), fading off
+  as the inverse comes in. Faded as copies over part-clear bars, the page and the cursor's square showed through
+  mid-way. The paper's mirrors (`.menu-fold`) show only at rest, on whole pixels: between pixels their soft edges
+  under the inverse's left a dark rim round each bar. It goes at once, in the same frame, as soon as anything sets it moving: back to the
   squares, the menu, the step aside. (Faded out, the copies and the bars were both part-clear while the bars
   morphed, and the cursor's square and the panel showed through: "not physical". On paper the inverse is the
   bars' own grey, so its going shows only on what lies beneath a bar.) **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
@@ -161,6 +168,11 @@ pages. The audit's `REVIEWED` holds those two (`LANDING`).
 
 A scroll sent somewhere with no curve of its own (the nav links) runs on Lenis's own exponential,
 `1.001 − 2^(−10t)`, as before the rework (`js/glide.js`).
+
+**The owner's standing rule: every new motion uses this style — momentum, an exponential curve** (power3.out:
+quick off the mark, a long soft landing; a chase or a spring for what follows the hand). A change that rides on a
+motion (a fade, a tint) is read off that motion's own progress, so it lands with it, never a fade of its own
+after it ends. The `smooth-motion` skill holds the rule.
 
 The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held clock to film every motion.
 

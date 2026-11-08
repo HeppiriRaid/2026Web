@@ -372,7 +372,9 @@ async function stepTo(p, test, arg, what) {
     // (a GSAP tween under way, or a CSS animation held part-way — the name on the curtain rises by one: js/wipe.js)
     const under = () => tl.getChildren(true, true, false).some((x) => !x.paused() && x.progress() < 1) ||
       [...css].some((a) => a.playState === "paused" && (a.currentTime || 0) < a.effect.getComputedTiming().endTime);
-    for (let i = 0; i < 25; i++) {
+    // (25 steps a frame; or one, for something the page sets once a frame from the motion — the hamburger's
+    // cover, js/menu.js — which 25 steps between frames would skip past)
+    for (let i = 0, n = window.__foldPer || 25; i < n; i++) {
       if (t(arg)) { window.__foldStep = null; return "ok"; }
       if (!under()) return false;                       // (nothing to move on yet: wait for the page)
       if (++s.n > 2500) return "stepped through 20 s of animation";
@@ -558,6 +560,18 @@ const FLOWS = {
     await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
     await quiet(p);
     await check(p, "front page: menu open, pointer on WORK", dpr);
+
+    // -- the menu closing, the pointer on the hamburger: the inverse coming in on the close's own clock, under
+    // the cover fading off it (js/menu.js copyBars(): the bars' grey, and inside the cursor's square as it shows them)
+    await click(p, "#menuBtn");
+    await p.evaluate(() => { window.__foldPer = 1; });
+    await fadeAt(p, ".menu-cover", 0.3, 0.7);
+    await p.evaluate(() => { window.__foldPer = 0; });
+    await check(p, "front page: menu closing, the bars' inverse coming in", dpr);
+    await quiet(p);
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
 
     // -- leaving: the sheet half-way up over the page
     const il = await menuLink(p, "ILLUSTRATION");
