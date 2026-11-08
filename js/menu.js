@@ -174,7 +174,7 @@
   // gliding with the grey bars: snapped, it stepped a pixel at a time over their glide, and the catch read rough.
   var INV = 0.3, lastCopy = "", glided = null;
   function copyBars() {
-    var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && M.h >= 1;
+    var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && performance.now() >= chaseUntil;
     go("i", !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
       (T.y === M.y) && rest ? 1 : 0, INV);
     var a = M.i;
@@ -438,6 +438,7 @@
   // 1.2 s: an exponential, quick then long and soft (CATCH_GO, the same curve at any frame rate; 7% a 60th of a
   // second is a time constant of 0.23 s). The bars' shape morphed on their own: 0.8 s on cubic-bezier(.4,0,.2,1)
   // (BARS_GO). Now by transform, between pixels, as the rest of the hamburger.
+  var chaseUntil = 0, lastT = 0;
   var CATCH_K = 1.2 / (-1 / (60 * Math.log(1 - 0.07)));          // 1.2 s over the time constant: 5.2
   function CATCH_GO(t) { return t >= 1 ? 1 : (1 - Math.exp(-CATCH_K * t)) / (1 - Math.exp(-CATCH_K)); }
   var BARS_GO = cubicBezier(0.4, 0, 0.2, 1), CATCH_T = 1.2, BARS_T = 0.8;
@@ -528,7 +529,7 @@
     var up = !!zoomEl && zoomEl.getAttribute("aria-hidden") === "false";   // a picture up, not yet flying home
     if (up && heldAt === null) heldAt = scrollY();
     else if (!up && heldAt !== null) {
-      if (heldAt !== scrollY() && !REDUCE) { heldTy = ty; set("h", 0); go("h", 1, HOME); }   // ease to the page's new place
+      if (heldAt !== scrollY() && !REDUCE) chaseUntil = performance.now() + 1200;   // chase to the page's new place
       heldAt = null;
     }
     var sc = heldAt !== null ? heldAt : scrollY();
@@ -539,17 +540,28 @@
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
       if (first) { set("w", mode === "catch" ? 1 : 0); set("s", M.w); }
-      else { go("w", mode === "catch" ? 1 : 0, CATCH_T, CATCH_GO); go("s", mode === "catch" ? 1 : 0, BARS_T, BARS_GO); }
+      else {
+        go("w", mode === "catch" ? 1 : 0, CATCH_T, CATCH_GO); go("s", mode === "catch" ? 1 : 0, BARS_T, BARS_GO);
+        if (!REDUCE) chaseUntil = performance.now() + 1200;
+      }
       setOpen(false, true);                        // never leave the menu adrift
     } else if (mode === "scrub" && Math.abs(markCenterDoc - sc - 18 * K) > 2 && nav.classList.contains("open")) {
       setOpen(false, true);                        // scrolled off the top → close
     }
     // position and size: blended from riding with the page (the squares over their marks) to the corner,
     // so the hamburger takes over from the page's own motion with no jolt, and back
-    var ride = markCenterDoc - sc - 18 * K;
-    var live = mix(ride, 0, M.w);
-    ty = M.h < 1 ? mix(heldTy, live, M.h) : live;
-    scl = mix(1, HAMBURGER_SCALE, M.w);
+    // Place and size: the hamburger's own driver from before the rework, as the owner asked (its leaving the
+    // squares and coming back landed better). For 1.2 s after it changes between riding with the page and the
+    // corner (or after the zoom), it chases its target by 7% of the gap a 60th of a second — while riding, a
+    // target moving with the page, so it pursues the squares and lands on them as they slow. Otherwise it is
+    // exactly there. (The same 7% at any frame rate: 1 - 0.93^(dt * 60).)
+    var tyT = mode === "catch" ? 0 : markCenterDoc - sc - 18 * K, sT = mode === "catch" ? HAMBURGER_SCALE : 1;
+    var now = performance.now(), dt = lastT ? Math.min(0.1, (now - lastT) / 1000) : 0;
+    lastT = now;
+    if (now < chaseUntil) {
+      var k = 1 - Math.pow(0.93, dt * 60);
+      ty += (tyT - ty) * k; scl += (sT - scl) * k;
+    } else { ty = tyT; scl = sT; }
     // the scrollbar: stepped aside only once caught (never mid-catch), never under the zoom
     var zoomed = document.documentElement.classList.contains("zoom-open");
     var g = (mode === "catch" && M.w >= 1 && !zoomed) ? gutterNow() : 0;

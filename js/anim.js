@@ -399,10 +399,10 @@
           // ABOUT ME is the first section — scroll all the way to the top so the
           // top-right corner buttons (nav + marks) are covered too, not cut off.
           if (label === "ABOUT") {
-            if (lenis) lenis.scrollTo(0, { duration: 1.3, easing: stepEase });
+            if (lenis) lenis.scrollTo(0, { duration: 1.3 });   // (Lenis's own exponential, as before the rework: js/glide.js)
             else window.scrollTo({ top: 0, behavior: "smooth" });
           } else if (lenis) {
-            lenis.scrollTo(target, { offset: -48, duration: 1.3, easing: stepEase });
+            lenis.scrollTo(target, { offset: -48, duration: 1.3 });
           } else {
             target.scrollIntoView({ behavior: "smooth" });
           }

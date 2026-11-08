@@ -142,8 +142,14 @@ everything read as "line movement". The owner wants the old exponential motion b
 quick off the mark, then a long soft landing, and the smoothness kept. So the flow's curve is now **power3.out,
 `cubic-bezier(0.215, 0.61, 0.355, 1)`** (the site's own curve before the rework), at each motion's pace. The
 variable is still called `stepEase`. The hamburger's catch runs on its own two old clocks (`js/menu.js`):
-- its place: an exponential chase, 7% of the gap a frame for 1.2 s (`CATCH_GO`);
+- its place and size: the original driver itself. For 1.2 s after it changes between riding with the page and
+  the corner, it chases its target by 7% of the gap a 60th of a second (`chaseUntil`; while riding, a target moving
+  with the page), otherwise it is exactly there. Measured against the original commit (7fd2300~1), frame by frame
+  in real time, it now matches both ways;
 - its bars' shape: 0.8 s on `cubic-bezier(.4,0,.2,1)` (`BARS_GO`).
+
+A scroll sent somewhere with no curve of its own (the nav links) runs on Lenis's own exponential,
+`1.001 − 2^(−10t)`, as before the rework (`js/glide.js`).
 
 The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held clock to film every motion.
 

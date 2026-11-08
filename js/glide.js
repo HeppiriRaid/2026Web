@@ -65,7 +65,7 @@
         lenis.targetScroll = this.to;
       }
       curve = o.easing === FOLLOW && o.duration === opt.duration ? null
-        : { x0: from, v0: v, t: 0, d: Math.max(0.001, o.duration || opt.duration || 1), ease: curveOf || stepEase };
+        : { x0: from, v0: v, t: 0, d: Math.max(0.001, o.duration || opt.duration || 1), ease: curveOf || FOLLOW };   // (given none: Lenis's own exponential, the original's)
       this.isRunning = true;
       if (o.onStart) o.onStart();
       this.onUpdate = o.onUpdate;
