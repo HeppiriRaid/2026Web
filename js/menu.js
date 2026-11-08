@@ -46,8 +46,10 @@
   var under = document.querySelector("body > .cursor-fold") || document.querySelector(".stage, .strip");
   var folds = [barCopy("menu-fold"), barCopy("menu-fold")];
   folds.forEach(function (f) { if (under) under.parentNode.insertBefore(f, under); else document.body.insertBefore(f, document.body.firstChild); });
-  var grey = document.body.insertBefore(barCopy("menu-grey"), inv);   // (the grey pieces, at rest: copyBars())
-  var copies = [inv].concat(folds), lastInv = -1;
+  // (over the inverse, the lift: blended with "screen" in a colour worked out so the paper, inverted, comes out
+  // exactly the bars' grey — grey as usual, and every pixel of text or a picture beneath lively through it)
+  var lift = document.body.appendChild(barCopy("menu-lift"));
+  var copies = [inv, lift].concat(folds), lastInv = -1;
   document.documentElement.classList.add("menu-inv-live");
 
   // Custom scrollbar (the native one is hidden in CSS). We draw it ourselves so
@@ -180,55 +182,28 @@
     if (a !== lastInv) {
       lastInv = a;
       for (var j = 0; j < copies.length; j++) copies[j].style.opacity = a.toFixed(3);
-      grey.style.opacity = a.toFixed(3);
       btn.style.setProperty("--inv", (1 - a).toFixed(3));
     }
     var mid = ((M.o > 0 ? 0 : M.s) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
-    // each bar where the button draws it this frame, cut where text or a picture lies beneath it: pieces over them
-    // show the inverse, the rest grey. At rest on whole device pixels (an edge pixel a piece only partly covered
+    // each bar where the button draws it this frame: the inverse and the lift over it, every pixel beneath on its
+    // own (the paper comes out the bars' grey, text and pictures lively through it). At rest on whole device pixels (an edge pixel a piece only partly covered
     // mixes mirrored and plain paper, and a letter's soft edge there folds). Moving — it fades out as the
     // hamburger sets off — exactly where the bars are, between pixels, reshaping with them: pieces kept in the
     // resting shape crossed the bars' own reshaping and read as parts snapping (the owner, on a phone).
     var r = window.devicePixelRatio || 1, snap = rest ? function (v) { return Math.round(v * r) / r; } : function (v) { return v; };
-    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, under = beneath().map(function (u) { return u.map(snap); }), inv = [], plain = [];
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, inv = [], plain = [];
     for (var i = 0; i < 3; i++) {
       var c = barNow(i), op = i === 1 ? M.s : 1;
       if (!(op > 0)) continue;
-      var bar = [snap(cx - w / 2), snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), snap(cx + w / 2), snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl)];
-      if (bar[2] <= bar[0] || bar[3] <= bar[1]) continue;
-      var n0 = inv.length, m0 = plain.length;
-      split(bar, under, inv, plain);
-      for (var q = n0; q < inv.length; q++) inv[q].push(op);
-      for (q = m0; q < plain.length; q++) plain[q].push(op);
+      var x0 = snap(cx - w / 2), y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), x1 = snap(cx + w / 2), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
+      if (x1 > x0 && y1 > y0) inv.push([x0, y0, x1 - x0, y1 - y0, op]);
     }
     var key = JSON.stringify([inv, plain]);
     if (key === lastCopy) return;
     lastCopy = key;
-    pieces(grey, plain);
     for (var p = 0; p < copies.length; p++) pieces(copies[p], inv);
-  }
-  // a bar cut where what lies beneath it changes: rows at every edge crossing it, each row's spans over text or a
-  // picture (into `inv`) and between them (into `plain`)
-  function split(bar, under, inv, plain) {
-    var ys = [bar[1], bar[3]];
-    under.forEach(function (u) { [u[1], u[3]].forEach(function (y) { if (y > bar[1] && y < bar[3]) ys.push(y); }); });
-    ys.sort(function (a, b) { return a - b; });
-    for (var k = 0; k + 1 < ys.length; k++) {
-      var y0 = ys[k], y1 = ys[k + 1];
-      if (y1 <= y0) continue;
-      var xs = under.filter(function (u) { return u[1] <= y0 && u[3] >= y1 && u[2] > bar[0] && u[0] < bar[2]; })
-        .map(function (u) { return [Math.max(bar[0], u[0]), Math.min(bar[2], u[2])]; })
-        .sort(function (a, b) { return a[0] - b[0]; });
-      var at = bar[0];
-      for (var j = 0; j < xs.length; j++) {
-        var x0 = Math.max(at, xs[j][0]), x1 = xs[j][1];
-        if (x0 > at) plain.push([at, y0, x0 - at, y1 - y0]);
-        if (x1 > x0) { inv.push([x0, y0, x1 - x0, y1 - y0]); at = x1; }
-      }
-      if (at < bar[2]) plain.push([at, y0, bar[2] - at, y1 - y0]);
-    }
   }
   // a group's spans, as many as the pieces (made as needed, the rest hidden)
   function pieces(g, list) {
@@ -242,48 +217,7 @@
     }
   }
 
-  // what lies beneath the corner: the boxes of the lines of text and the pictures on the page, in the window's
-  // coordinates. Read from the page only now and then (built() below), never mid-motion: the hamburger rests.
-  var lines = [], linesAt = 0;
-  function beneath() {
-    var now = performance.now();
-    if (now - linesAt > 1500) { lines = built(); linesAt = now; }
-    var y = scrollY(), out = lines.map(function (l) { return l.fixed ? l.r : [l.r[0], l.r[1] - y, l.r[2], l.r[3] - y]; });
-    if (document.documentElement.classList.contains("zoom-open")) {
-      var z = document.querySelector(".zoom-fig:not(.is-warm)");
-      if (z) { var q = z.getBoundingClientRect(); out.push([q.left, q.top, q.right, q.bottom]); }
-    }
-    return out;
-  }
-  function built() {
-    var out = [], y = scrollY(), H = window.innerHeight;
-    var root = document.querySelector("main.stage, .strip, .cstage") ? document.body : null;
-    if (!root) return out;
-    var walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n, range = document.createRange();
-    while ((n = walk.nextNode())) {
-      var el = n.parentElement;
-      if (!/\S/.test(n.nodeValue) || !el || el.closest("#menuNav, #menuBtn, .menu-inv, .menu-fold, .menu-grey, #preloader, script, style, .zoom, .shade-lab, .sr-only, [aria-hidden=true]")) continue;
-      var fixed = !!el.closest(".istage"), lift = liftOf(el);
-      range.selectNodeContents(n);
-      [].forEach.call(range.getClientRects(), function (q) {
-        if (q.width && q.height) out.push({ fixed: fixed, r: [q.left, q.top - lift + (fixed ? 0 : y), q.right, q.bottom - lift + (fixed ? 0 : y)] });
-      });
-    }
-    [].forEach.call(document.querySelectorAll(".stage img, .cstage img"), function (im) {
-      var q = im.getBoundingClientRect(), lift = liftOf(im);
-      if (q.width && q.height && getComputedStyle(im).visibility !== "hidden") out.push({ fixed: false, r: [q.left, q.top - lift + y, q.right, q.bottom - lift + y] });
-    });
-    return out;
-  }
-  // (a part still rising in: where it will rest, its lift taken out)
-  function liftOf(el) {
-    var d = 0;
-    for (var e = el; e && e !== document.body; e = e.parentElement) {
-      var t = getComputedStyle(e).transform;
-      if (t && t !== "none") d += new DOMMatrix(t).m42;
-    }
-    return d;
-  }
+
 
 
   // ---- custom scrollbar: geometry, visibility, and the overlap test ----------

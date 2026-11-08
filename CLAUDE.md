@@ -43,16 +43,13 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 
   **The catch is the grey bars' own glide, untouched.** The inverse fades in only once the hamburger rests in the
   corner (`M.i`, 0.3 s), and goes as soon as anything sets it moving: back to the squares, the menu, the step
-  aside. **Grey as usual, inverted only over text and pictures** (the owner): at rest each bar is cut where the
-  lines of text and the pictures beneath it begin and end (`split()`, from boxes read now and then, `built()`).
-  Pieces over them show the inverse; the rest stay grey (`.menu-grey`). As they fade out with the hamburger moving,
-  they are cut from the bars' live shape each frame, between pixels (100px boxes scaled, so layout never rounds
-  them). Pieces kept in the resting shape crossed the bars' own reshaping back into the squares, and on a phone
-  read as parts snapping. At rest the copies are plain
-  boxes on whole device pixels (`copyBars()`), worked out from the button's
-  numbers; a soft edge there folded the letters crossing it. While they fade out with the hamburger moving, they
-  take its exact transforms and glide with it. The first version faded the inverse in during the catch, snapped,
-  and the owner saw the catch step a pixel at a time: "the motion is destroyed". Over the grey squares at the top it is
+  aside. **Grey as usual, and every pixel beneath lively through it** (the owner: "pixel to pixel"): over the
+  inverse lies a lift, `.menu-lift`, blended with `screen` in #a89e9c, a colour worked out so the paper,
+  inverted, comes out exactly the bars' grey #b3b1b1 (the band within 4 levels of it). Ink comes out light, and a
+  picture shows through, recoloured, pixel by pixel. Cutting the bars at the boxes of text lines (the version
+  before) inverted whole blocks, the letters lost in them. At rest the copies sit on whole device pixels (a soft
+  edge there folded the letters crossing it); moving, they follow the bars' live shape between pixels (100px
+  boxes scaled), worked out from the button's numbers each frame. Over the grey squares at the top it is
   off. While the `?shader` test runs (`html.shade-test`) it stays off, so the variations' tints show on the bars;
   visitors no longer see the 墨分五色 tint.
 - **Each menu label answers across its whole row of the panel** (`.menu-nav a::before`, `--panel-w` from

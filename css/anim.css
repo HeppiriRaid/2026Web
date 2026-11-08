@@ -179,13 +179,15 @@ html.cursor-live .stage{will-change:transform}
 .menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
 /* The bars' inverse (js/menu.js): copies of the button's bars, one over it with "difference" and two beneath
    the page content that mirror the paper about #DCCBC3, as the cursor's square and its under-squares do. */
-.menu-grey,.menu-inv,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
+.menu-inv,.menu-lift,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
   pointer-events:none;mix-blend-mode:difference;opacity:0;will-change:opacity}
-.menu-inv,.menu-grey{z-index:90}
-.menu-grey{mix-blend-mode:normal}
-.menu-grey span{background:#b3b1b1}
+.menu-inv,.menu-lift{z-index:90}
+/* (the lift: the inverse "screened" with a colour worked out so the paper comes out exactly the bars' grey,
+   #b3b1b1, the band within 4 levels of it, ink light — grey as usual, every pixel beneath lively through it) */
+.menu-lift{mix-blend-mode:screen}
+.menu-lift span{background:#a89e9c}
 .menu-fold{z-index:1}
-.menu-inv span,.menu-fold span,.menu-grey span{position:absolute;left:0;top:0;width:100px;height:100px;transform-origin:0 0}
+.menu-inv span,.menu-fold span,.menu-lift span{position:absolute;left:0;top:0;width:100px;height:100px;transform-origin:0 0}
 .menu-inv span,.menu-fold span{background:#dccbc3}
 .menu-btn span{opacity:var(--inv,1)}
 /* (the page lifted onto a layer of its own while the under-bars can show, as for the cursor: its text drawn the same throughout) */
