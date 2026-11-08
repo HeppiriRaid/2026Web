@@ -30,7 +30,10 @@
 /* the header: the name, and the links beneath it, beside the squares */
 .narrow .stage [data-sec=head]{height:calc(36 * var(--k));padding:calc(3 * var(--k)) calc(18 * var(--k)) 0 calc(3 * var(--k));   /* (the corner: a quarter each way) */
   align-content:flex-start}
-.narrow .brand{font-size:calc(4.4 * var(--k))}
+.narrow .brand{font-size:calc(4.4 * var(--k));
+  /* (a quarter from the corner as the eye measures it: from the letters' ink, not their box — the line has room above
+     the capitals, 0.09em, and the K a little side bearing, 0.05em: measured in the page's face) */
+  margin-top:-.09em;margin-left:-.05em}
 .narrow .stage [data-sec=head]>.nav{flex:0 0 auto;margin:calc(6 * var(--k)) calc(6 * var(--k)) 0 0;font-size:calc(3.4 * var(--k))}
 
 /* type: the headings scaled down from the artboard's (a 32px heading beside 15px copy), the copy opened up */
