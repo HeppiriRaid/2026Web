@@ -43,7 +43,11 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 
   **The catch is the grey bars' own glide, untouched.** The inverse fades in only once the hamburger rests in the
   corner (`M.i`, 0.3 s), and goes as soon as anything sets it moving: back to the squares, the menu, the step
-  aside. At rest the copies are plain boxes on whole device pixels (`copyBars()`), worked out from the button's
+  aside. **Grey as usual, inverted only over text and pictures** (the owner): at rest each bar is cut where the
+  lines of text and the pictures beneath it begin and end (`split()`, from boxes read now and then, `built()`).
+  Pieces over them show the inverse; the rest stay grey (`.menu-grey`). As they fade out with the hamburger moving,
+  the pieces ride on the button's own transform (`btnMatrix()`, from its numbers). At rest the copies are plain
+  boxes on whole device pixels (`copyBars()`), worked out from the button's
   numbers; a soft edge there folded the letters crossing it. While they fade out with the hamburger moving, they
   take its exact transforms and glide with it. The first version faded the inverse in during the catch, snapped,
   and the owner saw the catch step a pixel at a time: "the motion is destroyed". Over the grey squares at the top it is
@@ -133,15 +137,22 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 
 ## The flow of motion — every new motion follows it
 
-The owner, on the zoom's step to the next picture as it is now: perfect, and the way every motion should move.
-Every motion of the site now moves this way (the owner asked for it, after the hamburger was rebuilt on it).
+**The owner's latest word on the curve:** with every motion on the symmetric stepEase, `(0.3, 0, 0.2, 1)`,
+everything read as "line movement". The owner wants the old exponential motion back, with contrast in its speed:
+quick off the mark, then a long soft landing, and the smoothness kept. So the flow's curve is now **power3.out,
+`cubic-bezier(0.215, 0.61, 0.355, 1)`** (the site's own curve before the rework), at each motion's pace. The
+variable is still called `stepEase`. The hamburger's catch runs on its own two old clocks (`js/menu.js`):
+- its place: an exponential chase, 7% of the gap a frame for 1.2 s (`CATCH_GO`);
+- its bars' shape: 0.8 s on `cubic-bezier(.4,0,.2,1)` (`BARS_GO`).
+
+The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held clock to film every motion.
 
 **Before you add or change anything that moves, fades, wipes or scrolls, load the `smooth-motion` skill**
 (`.claude/skills/smooth-motion/`): how a motion is built here, how to film it frame by frame on a held clock
 (`scripts/probe.mjs`, with recipes for the site's motions), and the cases behind each rule below.
 
-- **From a standstill to a standstill.** A motion sets off gently, with no jump on its first frame. It lands long
-  and soft, slower and slower to the very end, so it never seems to stop at once. The zoom's step: `stepEase`,
+- **Quick off the mark, a long soft landing** (power3.out). It lands slower and slower to the very end, so it never
+  seems to stop at once. (Before, the rule here was "from a standstill": the owner found that flat.) The zoom's step: `stepEase`,
   `cubic-bezier(0.3, 0, 0.2, 1)` over 1 s (the picture leaving) and 1.1 s (the one arriving, on a 0.1 s cue).
   Its first frames and top speed match the panel wipes'; only the landing is longer: 300 ms before the end,
   under 5% of the way is left, and the last frames creep. The curve it replaced, `(0.38, 0, 0.5, 1)` over
@@ -181,13 +192,14 @@ Every motion of the site now moves this way (the owner asked for it, after the h
   the CPU slowed 4×, it follows stepEase exactly. The outline check's `stepTo()` steps held CSS animations too.
 - **Nothing heavy while anything moves.** Prepare before (decode, draw at size: `warm()`) and tidy after
   (`settle()`). A long frame mid-motion is a visible jump.
-- **Never jaggy, and checked by machine.** Every motion is on `stepEase` (CSS: `cubic-bezier(.3,0,.2,1)`; a scroll
+- **Never jaggy, and checked by machine.** Every motion is on `stepEase` (CSS: `cubic-bezier(.215,.61,.355,1)`; a scroll
   sent somewhere: `easing: stepEase`), one clock and one easing for whatever moves together: no other curve (most
   start at speed, a jump on the first frame), no tween without a curve (GSAP's default `power1.out` starts at speed),
   no overshoot (`back`, `elastic`, `bounce`) or `steps`, and a cascade (parts setting off in turn) only of parts on
   stepEase, each setting off from a standstill. Keep each motion's pace: never make one slower than it was.
   `tests/motion-audit.mjs` reads every motion from the code and fails on any that isn't; its `REVIEWED` holds only
-  the hamburger's own colour fades. Never add a motion to that list to get it past the audit: give it the curve.
+  the hamburger's own colour fades and its catch's two old clocks. Never add a motion to that list to get it past
+  the audit: give it the curve.
 - **Measured, not guessed.** Film the drawn pixels frame by frame on a held clock (the skill's `scripts/probe.mjs`):
   per-frame steps (no stills, hops or reversals; a small first step; the landing's last frames creep), frame
   times while moving (about 20 ms or less at 1x), and the pixels around every edge as the motion ends.

@@ -13,6 +13,14 @@ there because breaking it once showed on screen.
 Read CLAUDE.md's "The flow of motion" and "The inverse cursor" first; this skill is the how-to behind
 them. The hamburger (`js/menu.js`) is the owner-approved reference implementation of a complex motion.
 
+
+> **The owner's latest direction (overrides the curve below wherever they differ):** the flow's curve is now
+> power3.out, `cubic-bezier(0.215, 0.61, 0.355, 1)`: quick off the mark, with a long soft landing and contrast in
+> speed. The owner found the symmetric stepEase `(0.3, 0, 0.2, 1)` read as "line movement". The variable keeps its
+> name `stepEase`. The hamburger's catch runs on its old two clocks (an exponential chase, and
+> cubic-bezier(.4,0,.2,1) for the bars' shape). Everything else here still holds: layers, whole-pixel edges, one
+> clock, measured frame by frame. Where the text below says "sets off gently / from a standstill", read "quick off
+> the mark".
 ## 1. The feel: from a standstill to a standstill
 
 - **The curve is stepEase**, `cubic-bezier(0.3, 0, 0.2, 1)` — in JS
