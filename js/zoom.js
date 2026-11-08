@@ -204,7 +204,8 @@
     // …each one hamburger box's width (12 --mk) out from the picture's edge, or, where the margin is
     // too narrow for that, centred in it; the 12pt strip that takes its clicks centred on it
     function navAt(r) {
-      var mk = parseFloat(getComputedStyle(root).getPropertyValue("--mk")) || 4, w = 9.4 * mk, s = 12 * K();
+      var mk = parseFloat(getComputedStyle(root).getPropertyValue("--mk")) || 4, s = 12 * K();
+      var w = 9.4 * mk * (parseFloat(getComputedStyle(navs[0]).getPropertyValue("--nav-s")) || 1);   // (a quarter on a phone: css/narrow.css)
       var gl = Math.min(12 * mk, (r.left - w) / 2), gr = Math.min(12 * mk, (window.innerWidth - r.left - r.width - w) / 2);
       navs[0].style.left = r.left - gl - (w + s) / 2 + "px";
       navs[1].style.left = r.left + r.width + gr + (w - s) / 2 + "px";

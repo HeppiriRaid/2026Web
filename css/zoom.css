@@ -77,7 +77,7 @@ html.zoom-open .cscroll-rail.show,html.zoom-open .cscroll-thumb.show{opacity:0;p
    curve (js/zoom.js; a CSS transition would put it on a layer of its own for the fade, its edges folding
    meanwhile). (Keyboard: the arrows, and .zoom-ui.) */
 .zoom-nav{position:absolute;left:0;top:calc(50% - 12 * var(--k));width:calc(12 * var(--k));height:calc(24 * var(--k));cursor:pointer}
-.zoom-nav::before{content:"";position:absolute;left:calc(50% - var(--mk,4) * 4.7px);top:calc(50% - var(--mk,4) * 6px);width:calc(var(--mk,4) * 9.4px);height:calc(var(--mk,4) * 12px);background:var(--ph)}
+.zoom-nav::before{content:"";position:absolute;left:calc(50% - var(--mk,4) * 4.7px * var(--nav-s,1));top:calc(50% - var(--mk,4) * 6px * var(--nav-s,1));width:calc(var(--mk,4) * 9.4px * var(--nav-s,1));height:calc(var(--mk,4) * 12px * var(--nav-s,1));background:var(--ph)}
 .zoom-nav.prev::before{clip-path:polygon(50% 0,100% 0,50% 50%,100% 100%,50% 100%,0 50%)}
 .zoom-nav.next::before{clip-path:polygon(0 0,50% 0,100% 50%,50% 100%,0 100%,50% 50%)}
 .zoom-nav.is-end{pointer-events:none}

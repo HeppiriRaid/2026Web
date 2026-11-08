@@ -124,6 +124,8 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
     - its given shape is kept (`--iw` / `--ih` from `js/illustration.js`), so the row never changes as a picture
       loads.
   - Contact is one column under the header.
+  - The zoom's chevrons are a quarter of their size (`--nav-s: .25`, the owner); the strip that takes a tap stays
+    as it is, and `navAt()` reads `--nav-s` to set them beside the picture.
   - On any touch screen (`hover: none` and `pointer: coarse`) the drawn scrollbar stays away: the screen shows its
     own. So the hamburger never steps aside for it (`TOUCH`, `js/menu.js`). Taps get no grey box of the browser's
     own, and the type isn't enlarged on a phone turned on its side (`css/style.css`).

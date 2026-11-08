@@ -109,3 +109,6 @@
 .narrow .cstage>.bxrow{display:flex;flex-wrap:wrap;gap:calc(3 * var(--k));margin-top:calc(6 * var(--k));font-size:calc(4 * var(--k))}
 .narrow .cstage .bx{height:calc(6.6 * var(--k));padding:0 calc(3.8 * var(--k))}
 
+/* ---- the zoom's chevrons: a quarter of their size on a narrow screen (the owner); the strip that takes a tap
+   stays as it is (js/zoom.js navAt() reads --nav-s to set them beside the picture) ---------------------------- */
+.narrow .zoom-nav{--nav-s:.25}
