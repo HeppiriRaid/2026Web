@@ -68,7 +68,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* real artwork: same height, its own width (from the <img> width/height) */
 .work-btn img{display:block;height:100%;width:auto;max-width:none;object-fit:fill;background:var(--ph);-webkit-user-drag:none;pointer-events:none}
 .work-btn:focus{outline:none}
-.work-btn:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(1.5 * var(--k))}
+.work-btn:focus-visible{outline:max(1px,calc(.4 * var(--k))) solid var(--red);outline-offset:calc(-1 * max(1px,calc(.4 * var(--k))))}   /* (just inside the work, as a front-page photo's: the works stand 1.5pt apart, too close for a ring between them) */
 
 /* "+" (its look, hover and focus: css/zoom.css): centred 4.75pt in from the work's right
    edge, 4.05pt down */

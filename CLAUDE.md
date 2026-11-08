@@ -292,7 +292,7 @@ How the site avoids it:
   exactly its size wherever it sits.
 - Focus rings too: the browser's own ring has a white halo and round corners, so the site draws its own plain,
   square ring for every keyboard focus (`:focus-visible` in `css/style.css`: ink; the menu button and labels in
-  `css/anim.css`; a work, red and unmoved, in `css/illustration.css`; a front-page photo (just inside it, where
+  `css/anim.css`; a work, red and unmoved, just inside it (the works stand 1.5pt apart), in `css/illustration.css`; a front-page photo (just inside it, where
   the page's edge can't cut it off) and the zoom's buttons, in `css/zoom.css` — those sit in the zoom's top
   margin, never over the picture or its edge).
 - Text smoothing too: over an opaque layer (a fixed panel with its own background) the browser may smooth
