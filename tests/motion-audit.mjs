@@ -5,10 +5,11 @@
    (stagger), each CSS transition and animation (in the stylesheets, the pages and
    style.transition in scripts), and the smooth scroll's curve (Lenis `easing`).
 
-   A motion passes only on the flow's curve: stepEase, cubic-bezier(0.3, 0,
-   0.2, 1), defined as exactly that (in CSS: cubic-bezier(.3,0,.2,1); a smooth
-   scroll sent somewhere: easing: stepEase). It sets off gently, with no jump on
-   its first frame, and lands long and soft. Anything else fails unless it is in
+   A motion passes only on the flow's curve: stepEase, cubic-bezier(0.215, 0.61,
+   0.355, 1) — power3.out, the site's own curve before the rework, which the owner
+   asked back: it sets off quick and lands long and soft, a contrast in speed —
+   defined as exactly that (in CSS: cubic-bezier(.215,.61,.355,1); a smooth scroll
+   sent somewhere: easing: stepEase). Anything else fails unless it is in
    REVIEWED, used exactly as often as listed, with the reason it may be so:
      · another curve (power3.out, expo, CSS `ease`...): most start at speed, a jump
        on the first frame;
@@ -32,10 +33,15 @@ const REVIEWED = {
     "css ease": [3, "the hamburger's own colour fades, nothing moving (its bars' tint from the picture beneath, its labels' hover " +
       "colour and that colour's mirror): the hamburger as the owner approved it, left as it is"],
   },
+  "js/menu.js": {
+    "ease curve": [1, "the hamburger's catch on its own two clocks from before the rework, which the owner asked back " +
+      "(its leaving the squares and coming back were better then): its place an exponential chase (CATCH_GO), its bars' " +
+      "shape cubic-bezier(.4,0,.2,1) (BARS_GO); every other motion of it is on the flow's curve (go()'s default)"],
+  },
 };
 
 // ---- reading the motions -------------------------------------------------------------------
-const FLOW_CSS = /^cubic-bezier\(\s*0?\.3\s*,\s*0\s*,\s*0?\.2\s*,\s*1\s*\)$/;
+const FLOW_CSS = /^cubic-bezier\(\s*0?\.215\s*,\s*0?\.61\s*,\s*0?\.355\s*,\s*1\s*\)$/;
 // the arguments of a call: the text between its parentheses, strings and nesting respected
 function args(src, open) {
   let depth = 0, q = null;
@@ -67,7 +73,7 @@ function motionsIn(file, text, kind) {
   const add = (token, src, at) => found.push({ token, line: lineAt(src, at) });
   if (kind === "js") {
     const src = strip(text, true);
-    const flowDefined = /\bvar\s+stepEase\s*=\s*cubicBezier\(\s*0\.3\s*,\s*0\s*,\s*0\.2\s*,\s*1\s*\)/.test(src);
+    const flowDefined = /\bvar\s+stepEase\s*=\s*cubicBezier\(\s*0\.215\s*,\s*0\.61\s*,\s*0\.355\s*,\s*1\s*\)/.test(src);
     for (const m of src.matchAll(/\.(to|from|fromTo)\s*\(/g)) {
       const a = args(src, m.index + m[0].length - 1);
       const e = /\bease\s*:\s*("[^"]*"|'[^']*'|[A-Za-z_$][\w$.]*(?:\([^)]*\))?)/.exec(a);
@@ -117,7 +123,7 @@ export function audit(root) {
     [...Object.keys(found[f] || {}), ...Object.keys(REVIEWED[f] || {})].map((k) => f + "\u0000" + k)));
   for (const key of keys) {
     const [f, token] = key.split("\u0000"), lines = (found[f] || {})[token] || [], want = (REVIEWED[f] || {})[token];
-    if (!want) problems.push(`${f}: ${token} (line ${lines.join(", ")}) — not the flow's curve. Give it stepEase, cubic-bezier(0.3, 0, 0.2, 1)` +
+    if (!want) problems.push(`${f}: ${token} (line ${lines.join(", ")}) — not the flow's curve. Give it stepEase, cubic-bezier(0.215, 0.61, 0.355, 1)` +
       (/stagger/.test(token) ? ", and one clock for whatever moves together" : /back|elastic|bounce|steps/.test(token) ? " (an overshoot or a stepped motion is never smooth)" : ""));
     else if (lines.length !== want[0]) problems.push(`${f}: ${token} used ${lines.length} time${lines.length === 1 ? "" : "s"} (line ${lines.join(", ") || "none"}), reviewed for ${want[0]}` +
       (lines.length > want[0] ? " — a new motion on this curve: give it stepEase instead" : " — fewer than reviewed: take it off REVIEWED in tests/motion-audit.mjs"));
@@ -129,7 +135,7 @@ export function report(r) {
   console.log(`Motion audit: ${r.files.length} files of ${r.pages.join(", ")} — ${r.motions} motions off the flow's curve, ` +
     (r.problems.length ? `${r.problems.length} problem${r.problems.length > 1 ? "s" : ""}:` : "all of them reviewed (the hamburger's colour fades); every other motion is on stepEase."));
   for (const p of r.problems) console.log("  ✗ " + p);
-  if (r.problems.length) console.log("  Every new motion sets off gently and lands long and soft: stepEase, cubic-bezier(0.3, 0, 0.2, 1), one clock and\n" +
+  if (r.problems.length) console.log("  Every new motion sets off quick and lands long and soft: stepEase, cubic-bezier(0.215, 0.61, 0.355, 1), one clock and\n" +
     "  one easing for whatever moves together, no overshoot (CLAUDE.md, \"The flow of motion\"). Measure it frame by frame too.");
 }
 

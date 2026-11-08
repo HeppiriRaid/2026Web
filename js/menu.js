@@ -46,6 +46,7 @@
   var under = document.querySelector("body > .cursor-fold") || document.querySelector(".stage, .strip");
   var folds = [barCopy("menu-fold"), barCopy("menu-fold")];
   folds.forEach(function (f) { if (under) under.parentNode.insertBefore(f, under); else document.body.insertBefore(f, document.body.firstChild); });
+  var grey = document.body.insertBefore(barCopy("menu-grey"), inv);   // (the grey pieces, at rest: copyBars())
   var copies = [inv].concat(folds), lastInv = -1;
   document.documentElement.classList.add("menu-inv-live");
 
@@ -173,53 +174,129 @@
   // gliding with the grey bars: snapped, it stepped a pixel at a time over their glide, and the catch read rough.
   var INV = 0.3, lastCopy = "", glided = null;
   function copyBars() {
-    var rest = M.w >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && M.h >= 1;
+    var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && M.h >= 1;
     go("i", !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
       (T.y === M.y) && rest ? 1 : 0, INV);
     var a = M.i;
     if (a !== lastInv) {
       lastInv = a;
       for (var j = 0; j < copies.length; j++) copies[j].style.opacity = a.toFixed(3);
+      grey.style.opacity = a.toFixed(3);
       btn.style.setProperty("--inv", (1 - a).toFixed(3));
     }
-    var mid = ((M.o > 0 ? 0 : M.w) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
+    var mid = ((M.o > 0 ? 0 : M.s) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
     var p, k, st;
-    if (!rest) {                                         // moving: exactly the button's glide
-      for (p = 0; p < copies.length; p++) {
-        st = copies[p].style;
-        st.left = btn.style.left; st.top = btn.style.top; st.transform = btn.style.transform;
-        st.width = 12 * K + "px"; st.height = 36 * K + "px";
-        for (k = 0; k < 3; k++) {
-          var cs = copies[p].children[k].style, bs = btn.children[k].style;
-          cs.width = "100%"; cs.height = "100px"; cs.transform = bs.transform; cs.opacity = k === 1 ? (M.o > 0 ? 0 : M.w) : 1;
-        }
+    if (!rest) {                                         // moving: the pieces carried by the button's own motion
+      var now = btnMatrix();
+      if (restM) {
+        var m = now.multiply(restM.inverse()), tf = "matrix(" + [m.a, m.b, m.c, m.d, m.e, m.f].map(function (v) { return v.toFixed(4); }).join(",") + ")";
+        [grey].concat(copies).forEach(function (g) { g.style.transformOrigin = "0 0"; g.style.transform = tf; });
       }
       glided = true; lastCopy = "";
       return;
     }
+    // at rest: each bar grey, but where text or a picture lies beneath it, the inverse (the owner: grey as usual,
+    // inverted only over text and images). Every piece a plain box on whole device pixels.
     var r = window.devicePixelRatio || 1, snap = function (v) { return Math.round(v * r) / r; };
-    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, out = [];
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, under = beneath(), inv = [], plain = [];
     for (var i = 0; i < 3; i++) {
-      var c = barNow(i), op = i === 1 ? M.w : 1;
-      var y0 = snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), y1 = snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl);
-      var x0 = snap(cx - w / 2), x1 = snap(cx + w / 2);
-      out.push([x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0), op]);
+      var c = barNow(i);
+      var bar = [snap(cx - w / 2), snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), snap(cx + w / 2), snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl)];
+      if (bar[2] <= bar[0] || bar[3] <= bar[1]) continue;
+      split(bar, under.map(function (u) { return [snap(u[0]), snap(u[1]), snap(u[2]), snap(u[3])]; }), inv, plain);
     }
-    var key = JSON.stringify(out);
+    restM = btnMatrix();
+    var key = JSON.stringify([inv, plain]);
     if (key === lastCopy && !glided) return;
     lastCopy = key;
-    for (p = 0; p < copies.length; p++) {
-      st = copies[p].style;
-      if (glided !== false) { st.left = "0px"; st.top = "0px"; st.transform = "none"; st.width = "0px"; st.height = "0px"; }
-      for (k = 0; k < 3; k++) {
-        var s2 = copies[p].children[k].style, b = out[k];
-        s2.transform = "translate(" + b[0] + "px," + b[1] + "px)";
-        s2.width = b[2] + "px"; s2.height = b[3] + "px"; s2.opacity = b[4];
-      }
+    if (glided !== false) {
+      [grey].concat(copies).forEach(function (g) { var st = g.style; st.left = "0px"; st.top = "0px"; st.transform = "none"; st.width = "0px"; st.height = "0px"; });
     }
+    pieces(grey, plain);
+    for (p = 0; p < copies.length; p++) pieces(copies[p], inv);
     glided = false;
+  }
+  // the button's whole transform, in the window's coordinates (its box, then its transform about its middle)
+  var restM = null;
+  function btnMatrix() {
+    var bw = 12 * K, bh = 36 * K, l = parseFloat(btn.style.left) || 0, t = parseFloat(btn.style.top) || 0;
+    var tm = new DOMMatrix().translate(-bw / 2 + tx, -bh / 2 + ty).scale(scl);   // (apply()'s transform, from its numbers)
+    return new DOMMatrix().translate(l + bw / 2, t + bh / 2).multiply(tm).translate(-bw / 2, -bh / 2);
+  }
+  // a bar cut where what lies beneath it changes: rows at every edge crossing it, each row's spans over text or a
+  // picture (into `inv`) and between them (into `plain`)
+  function split(bar, under, inv, plain) {
+    var ys = [bar[1], bar[3]];
+    under.forEach(function (u) { [u[1], u[3]].forEach(function (y) { if (y > bar[1] && y < bar[3]) ys.push(y); }); });
+    ys.sort(function (a, b) { return a - b; });
+    for (var k = 0; k + 1 < ys.length; k++) {
+      var y0 = ys[k], y1 = ys[k + 1];
+      if (y1 <= y0) continue;
+      var xs = under.filter(function (u) { return u[1] <= y0 && u[3] >= y1 && u[2] > bar[0] && u[0] < bar[2]; })
+        .map(function (u) { return [Math.max(bar[0], u[0]), Math.min(bar[2], u[2])]; })
+        .sort(function (a, b) { return a[0] - b[0]; });
+      var at = bar[0];
+      for (var j = 0; j < xs.length; j++) {
+        var x0 = Math.max(at, xs[j][0]), x1 = xs[j][1];
+        if (x0 > at) plain.push([at, y0, x0 - at, y1 - y0]);
+        if (x1 > x0) { inv.push([x0, y0, x1 - x0, y1 - y0]); at = x1; }
+      }
+      if (at < bar[2]) plain.push([at, y0, bar[2] - at, y1 - y0]);
+    }
+  }
+  // a group's spans, as many as the pieces (made as needed, the rest hidden)
+  function pieces(g, list) {
+    while (g.children.length < list.length) g.appendChild(document.createElement("span"));
+    for (var k = 0; k < g.children.length; k++) {
+      var st = g.children[k].style, b = list[k];
+      if (!b) { if (st.display !== "none") st.display = "none"; continue; }
+      st.display = ""; st.opacity = 1;
+      st.transform = "translate(" + b[0] + "px," + b[1] + "px)"; st.width = b[2] + "px"; st.height = b[3] + "px";
+    }
+  }
+  // what lies beneath the corner: the boxes of the lines of text and the pictures on the page, in the window's
+  // coordinates. Read from the page only now and then (built() below), never mid-motion: the hamburger rests.
+  var lines = [], linesAt = 0;
+  function beneath() {
+    var now = performance.now();
+    if (now - linesAt > 1500) { lines = built(); linesAt = now; }
+    var y = scrollY(), out = lines.map(function (l) { return l.fixed ? l.r : [l.r[0], l.r[1] - y, l.r[2], l.r[3] - y]; });
+    if (document.documentElement.classList.contains("zoom-open")) {
+      var z = document.querySelector(".zoom-fig:not(.is-warm)");
+      if (z) { var q = z.getBoundingClientRect(); out.push([q.left, q.top, q.right, q.bottom]); }
+    }
+    return out;
+  }
+  function built() {
+    var out = [], y = scrollY(), H = window.innerHeight;
+    var root = document.querySelector("main.stage, .strip, .cstage") ? document.body : null;
+    if (!root) return out;
+    var walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n, range = document.createRange();
+    while ((n = walk.nextNode())) {
+      var el = n.parentElement;
+      if (!/\S/.test(n.nodeValue) || !el || el.closest("#menuNav, #menuBtn, .menu-inv, .menu-fold, .menu-grey, #preloader, script, style, .zoom, .shade-lab, .sr-only, [aria-hidden=true]")) continue;
+      var fixed = !!el.closest(".istage"), lift = liftOf(el);
+      range.selectNodeContents(n);
+      [].forEach.call(range.getClientRects(), function (q) {
+        if (q.width && q.height) out.push({ fixed: fixed, r: [q.left, q.top - lift + (fixed ? 0 : y), q.right, q.bottom - lift + (fixed ? 0 : y)] });
+      });
+    }
+    [].forEach.call(document.querySelectorAll(".stage img, .cstage img"), function (im) {
+      var q = im.getBoundingClientRect(), lift = liftOf(im);
+      if (q.width && q.height && getComputedStyle(im).visibility !== "hidden") out.push({ fixed: false, r: [q.left, q.top - lift + y, q.right, q.bottom - lift + y] });
+    });
+    return out;
+  }
+  // (a part still rising in: where it will rest, its lift taken out)
+  function liftOf(el) {
+    var d = 0;
+    for (var e = el; e && e !== document.body; e = e.parentElement) {
+      var t = getComputedStyle(e).transform;
+      if (t && t !== "none") d += new DOMMatrix(t).m42;
+    }
+    return d;
   }
 
 
@@ -344,18 +421,26 @@
       return bz(p, y1, y2);
     };
   }
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the zoom step's
+  var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);     // the zoom step's
   var CATCH = 0.8, OPEN = 0.6, YIELD = 0.45, HOME = 0.75;   // seconds (HOME: as the zoom's picture flies home)
-  var M = { w: 0, o: 0, y: 0, h: 1, i: 0 }, T = { w: 0, o: 0, y: 0, h: 1, i: 0 };     // where each is, where it is heading
+  var M = { w: 0, s: 0, o: 0, y: 0, h: 1, i: 0 }, T = { w: 0, s: 0, o: 0, y: 0, h: 1, i: 0 };     // where each is, where it is heading
   var gsap = window.gsap;
   // a new heading only when it changes (asked again each frame, it would start again from rest each frame)
-  function go(key, to, dur) {
+  function go(key, to, dur, curve) {
     if (T[key] === to) return;
     T[key] = to;
     if (!gsap || REDUCE) { M[key] = to; return; }
     var v = {}; v[key] = to;
-    gsap.to(M, Object.assign({ duration: dur, ease: stepEase, overwrite: "auto" }, v));
+    gsap.to(M, Object.assign({ duration: dur, ease: curve || stepEase, overwrite: "auto" }, v));
   }
+  // The catch, on the hamburger's own two clocks from before the rework (the owner: its leaving the squares and
+  // coming back to them were better then). Its place and size chased the corner by 7% of the gap a frame for
+  // 1.2 s: an exponential, quick then long and soft (CATCH_GO, the same curve at any frame rate; 7% a 60th of a
+  // second is a time constant of 0.23 s). The bars' shape morphed on their own: 0.8 s on cubic-bezier(.4,0,.2,1)
+  // (BARS_GO). Now by transform, between pixels, as the rest of the hamburger.
+  var CATCH_K = 1.2 / (-1 / (60 * Math.log(1 - 0.07)));          // 1.2 s over the time constant: 5.2
+  function CATCH_GO(t) { return t >= 1 ? 1 : (1 - Math.exp(-CATCH_K * t)) / (1 - Math.exp(-CATCH_K)); }
+  var BARS_GO = cubicBezier(0.4, 0, 0.2, 1), CATCH_T = 1.2, BARS_T = 0.8;
   function set(key, v) { if (gsap) gsap.killTweensOf(M, key); M[key] = T[key] = v; }
   function mix(a, b, t) { return a + (b - a) * t; }
   var heldTy = 0, gut = 0, twoBox = false, lastO = "", lastShape = "";
@@ -379,11 +464,11 @@
     lastShape = "";
   }
   function barNow(i) {
-    var w = M.w, o = M.o, a = BAR.cam[i], b = BAR.ham[i], x = BAR.x[i];
+    var w = M.s, o = M.o, a = BAR.cam[i], b = BAR.ham[i], x = BAR.x[i];
     return [mix(mix(a[0], b[0], w), x[0], o), mix(mix(a[1], b[1], w), x[1], o)];
   }
   function shapeBars() {
-    var key = M.w + "|" + M.o;
+    var key = M.s + "|" + M.o;
     if (key === lastShape) return;
     lastShape = key;
     for (var i = 0; i < 3; i++) {
@@ -392,7 +477,7 @@
         "deg) scaleY(" + (c[1] / BAR.base).toFixed(4) + ")";
       // the middle bar: drawn in as the squares split; while the menu is open (or opening) the panel,
       // seeded exactly over it, is the bar
-      if (i === 1) s.style.opacity = M.o > 0 ? "0" : M.w.toFixed(3);
+      if (i === 1) s.style.opacity = M.o > 0 ? "0" : M.s.toFixed(3);
     }
   }
   // the panel: out of the middle bar to its own box, on the menu's clock. Its box is measured once, as a
@@ -453,7 +538,8 @@
       var first = mode === null;
       mode = nm;
       btn.classList.toggle("scrolled", mode === "catch");
-      if (first) set("w", mode === "catch" ? 1 : 0); else go("w", mode === "catch" ? 1 : 0, CATCH);
+      if (first) { set("w", mode === "catch" ? 1 : 0); set("s", M.w); }
+      else { go("w", mode === "catch" ? 1 : 0, CATCH_T, CATCH_GO); go("s", mode === "catch" ? 1 : 0, BARS_T, BARS_GO); }
       setOpen(false, true);                        // never leave the menu adrift
     } else if (mode === "scrub" && Math.abs(markCenterDoc - sc - 18 * K) > 2 && nav.classList.contains("open")) {
       setOpen(false, true);                        // scrolled off the top → close

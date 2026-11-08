@@ -31,7 +31,7 @@
       return bz(p, y1, y2);
     };
   }
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);       // the flow's curve: from a standstill, gently, to a long soft landing
+  var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);       // the flow's curve: from a standstill, gently, to a long soft landing
   var T1 = 0.006, T2 = 1.1 / (10 * Math.LN2);       // s: the spring's two time constants (T2 = 0.1587 s)
   var R1 = -1 / T1, R2 = -1 / T2;
   var TF = 0.32;                                    // s: a finger's let-go slows on this one, about a phone's own momentum

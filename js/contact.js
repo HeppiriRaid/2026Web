@@ -30,7 +30,7 @@
       return bz(p, y1, y2);
     };
   }
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the zoom step's: sets off gently, lands long and soft
+  var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);     // the zoom step's: sets off gently, lands long and soft
 
   // the whole page rises in as one motion: one clock, one easing, nothing starting on its own
   function intro() {

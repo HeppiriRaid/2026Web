@@ -34,7 +34,7 @@
   }
   // the flow's curve (CLAUDE.md): sets off from a standstill, gently, and lands long and soft — the zoom's
   // step was the first on it; every motion here is now (the flight in and home, the grey, the "+", the nudge)
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);
+  var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);
 
   // the "+" in whole device pixels — its size and its bars' thickness, with the bars exactly
   // centred — so all its edges land on pixels (css/zoom.css)

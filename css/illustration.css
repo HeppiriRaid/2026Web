@@ -38,7 +38,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   width:calc(460.807 * var(--k));height:calc(36 * var(--k));
   aspect-ratio:auto;overflow:visible;background:none;
 }
-.istage a{pointer-events:auto;text-decoration:none;transition:color .25s cubic-bezier(.3,0,.2,1)}
+.istage a{pointer-events:auto;text-decoration:none;transition:color .25s cubic-bezier(.215,.61,.355,1)}
 .istage a:hover{color:#000}
 
 /* ---- the row ------------------------------------------------------------------ */

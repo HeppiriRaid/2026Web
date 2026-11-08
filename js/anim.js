@@ -88,7 +88,7 @@
     }
     // The flow's curve (CLAUDE.md): from a standstill, gently, to a long soft landing. Every
     // motion here is on it; the panels' wipe had its start already (0.38, 0, 0.5, 1).
-    var stepEase = cubicBezier(0.3, 0, 0.2, 1);
+    var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);
 
     // (2D transforms, force3D: false: in 3D a browser may put the part on a layer of its own just
     // for the motion, and the switch shows as it starts and stops. Text has its layer for good.)

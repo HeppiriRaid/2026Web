@@ -47,7 +47,7 @@
       return bz(p, y1, y2);
     };
   }
-  var stepEase = cubicBezier(0.3, 0, 0.2, 1);     // the flow's curve: from a standstill, gently, to a long soft landing
+  var stepEase = cubicBezier(0.215, 0.61, 0.355, 1);     // the flow's curve: from a standstill, gently, to a long soft landing
 
   /* ---------- the works: data/illustration.json (edited in console.html) -------
      Fetched on every visit, the newest copy there is (js/fresh.js): GitHub's the

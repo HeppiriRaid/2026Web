@@ -55,7 +55,7 @@
 html:not(.anim) .preloader{display:none}
 /* (its rise: by the compositor, once its face is in — js/wipe.js rise(): nothing the page does as it loads can stall it) */
 @keyframes pl-rise{from{transform:translate(0,110%)}to{transform:translate(0,0)}}
-.pl-name.rise{animation:pl-rise .9s cubic-bezier(.3,0,.2,1) both}
+.pl-name.rise{animation:pl-rise .9s cubic-bezier(.215,.61,.355,1) both}
 
 /* ---- custom cursor (fine pointers only; driven by js/cursor.js) -- */
 /* A small rhombus marks the exact point. Around it, Maison Auge's inverse square:
@@ -118,7 +118,7 @@ html.cursor-live .stage{will-change:transform}
   width:6px;height:6px;background:#dccbc3;mix-blend-mode:difference;
   clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
   transform:translate3d(-50%,-50%,0);
-  opacity:0;transition:opacity .3s cubic-bezier(.3,0,.2,1);
+  opacity:0;transition:opacity .3s cubic-bezier(.215,.61,.355,1);
 }
 @media (pointer:fine){
   html.cursor-ready,html.cursor-ready *{cursor:none !important}
@@ -179,9 +179,11 @@ html.cursor-live .stage{will-change:transform}
 .menu-btn.scrolled span:nth-child(3){top:calc(var(--mk,4) * 20.75px)}
 /* The bars' inverse (js/menu.js): copies of the button's bars, one over it with "difference" and two beneath
    the page content that mirror the paper about #DCCBC3, as the cursor's square and its under-squares do. */
-.menu-inv,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
+.menu-grey,.menu-inv,.menu-fold{position:fixed;left:0;top:0;width:0;height:0;overflow:visible;
   pointer-events:none;mix-blend-mode:difference;opacity:0;will-change:opacity}
-.menu-inv{z-index:90}
+.menu-inv,.menu-grey{z-index:90}
+.menu-grey{mix-blend-mode:normal}
+.menu-grey span{position:absolute;left:0;top:0;width:0;height:0;background:#b3b1b1}
 .menu-fold{z-index:1}
 .menu-inv span,.menu-fold span{position:absolute;left:0;top:0;width:0;height:0;background:#dccbc3}
 .menu-btn span{opacity:var(--inv,1)}
@@ -252,7 +254,7 @@ html::-webkit-scrollbar{width:0;height:0}
 .cscroll-rail{
   position:fixed;top:0;right:0;bottom:0;width:calc(var(--mk,4) * 2.64px);z-index:91;
   background:rgba(67,67,67,.05);opacity:0;pointer-events:none;
-  transition:opacity .25s cubic-bezier(.3,0,.2,1);
+  transition:opacity .25s cubic-bezier(.215,.61,.355,1);
 }
 .cscroll-rail.show{opacity:1}
 /* The thumb is as wide as it grows over the rail (1.92), cut to its width (1.2, a pill) by a clip: it grows by
@@ -265,10 +267,10 @@ html::-webkit-scrollbar{width:0;height:0}
   opacity:0;pointer-events:none;
   /* vertical position is driven by transform:translateY (set in menu.js) so it
      tracks scroll on the compositor without forcing a layout each frame. */
-  transition:opacity .35s cubic-bezier(.3,0,.2,1),clip-path .16s cubic-bezier(.3,0,.2,1),background-color .2s cubic-bezier(.3,0,.2,1);
+  transition:opacity .35s cubic-bezier(.215,.61,.355,1),clip-path .16s cubic-bezier(.215,.61,.355,1),background-color .2s cubic-bezier(.215,.61,.355,1);
 }
 .cscroll-thumb.show{opacity:1;pointer-events:auto}
 .cscroll-thumb.rail{clip-path:inset(0 0 round calc(var(--mk,4) * 0.72px));background:rgba(67,67,67,.62)}
 @media (prefers-reduced-motion:reduce){
-  .cscroll-rail,.cscroll-thumb{transition:opacity .15s cubic-bezier(.3,0,.2,1)}
+  .cscroll-rail,.cscroll-thumb{transition:opacity .15s cubic-bezier(.215,.61,.355,1)}
 }
