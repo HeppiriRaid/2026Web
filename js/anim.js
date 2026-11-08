@@ -367,8 +367,8 @@
         Promise.all([entered, heroReady]).then(function () {
           landOnSection();
           var exit = gsap.timeline();
-          exit.to(name, { y: "-115%", duration: 0.55, ease: stepEase, force3D: false }, "+=0.15")
-              .to(pre, { yPercent: -100, duration: 0.85, ease: stepEase, force3D: false, modifiers: window.__wipe && window.__wipe.sheet }, "-=0.25")
+          exit.to(name, { y: "-115%", duration: 0.55, ease: "power3.in", force3D: false }, "+=0.15")
+              .to(pre, { yPercent: -100, duration: 0.85, ease: "power4.inOut", force3D: false, modifiers: window.__wipe && window.__wipe.sheet }, "-=0.25")
               .add(function () {
                 pre.style.display = "none";
                 if (lenis) lenis.start();

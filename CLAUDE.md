@@ -148,6 +148,10 @@ variable is still called `stepEase`. The hamburger's catch runs on its own two o
   in real time, it now matches both ways;
 - its bars' shape: 0.8 s on `cubic-bezier(.4,0,.2,1)` (`BARS_GO`).
 
+**The landing (a first visit) is the original's:** the name rises on power3.out (0.9 s, on the compositor,
+`rise()`), then quickens away (`power3.in`, 0.55 s) as the curtain lifts on `power4.inOut` (0.85 s), on all three
+pages. The audit's `REVIEWED` holds those two (`LANDING`).
+
 A scroll sent somewhere with no curve of its own (the nav links) runs on Lenis's own exponential,
 `1.001 − 2^(−10t)`, as before the rework (`js/glide.js`).
 

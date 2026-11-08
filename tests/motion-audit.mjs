@@ -28,11 +28,17 @@ import path from "node:path";
 import url from "node:url";
 import { strip, sources } from "./colour-audit.mjs";
 
+// (the landing on a first visit, as the owner asked it back exactly as before the rework: the name leaving the
+// curtain quickening away, power3.in, and the curtain lifting, power4.inOut — its rise is on the flow's curve)
+const LANDING = "the landing, the owner's own from before the rework: the name quickening away (power3.in), the curtain lifting (power4.inOut)";
 const REVIEWED = {
   "css/anim.css": {
     "css ease": [3, "the hamburger's own colour fades, nothing moving (its bars' tint from the picture beneath, its labels' hover " +
       "colour and that colour's mirror): the hamburger as the owner approved it, left as it is"],
   },
+  "js/anim.js": { "ease power3.in": [1, LANDING], "ease power4.inOut": [1, LANDING] },
+  "js/contact.js": { "ease power3.in": [1, LANDING], "ease power4.inOut": [1, LANDING] },
+  "js/illustration.js": { "ease power3.in": [1, LANDING], "ease power4.inOut": [1, LANDING] },
   "js/menu.js": {
     "ease curve": [1, "the hamburger's catch on its own two clocks from before the rework, which the owner asked back " +
       "(its leaving the squares and coming back were better then): its place an exponential chase (CATCH_GO), its bars' " +
@@ -86,7 +92,8 @@ function motionsIn(file, text, kind) {
     }
     // (a stagger outside a tween call — handed to a tween elsewhere in the file: a cascade of whatever that tween is,
     // so it passes where every tween in the file is on the flow's curve)
-    const offFlow = found.some((f) => f.token !== "stagger");
+    // (motions reviewed for this file are known and not cascades: set aside)
+    const offFlow = found.some((f) => f.token !== "stagger" && !(REVIEWED[file] && REVIEWED[file][f.token]));
     for (const m of src.matchAll(/\bstagger\s*:/g)) {
       const inCall = found.some((f) => f.token === "stagger" && f.line === lineAt(src, m.index));
       if (offFlow && !inCall && !/\.(to|from|fromTo)\s*\([^;]*$/.test(src.slice(Math.max(0, m.index - 400), m.index))) add("stagger", src, m.index);
