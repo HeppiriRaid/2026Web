@@ -183,9 +183,10 @@ html.cursor-live .stage{will-change:transform}
   pointer-events:none;mix-blend-mode:difference;opacity:0;will-change:opacity}
 .menu-inv,.menu-grey{z-index:90}
 .menu-grey{mix-blend-mode:normal}
-.menu-grey span{position:absolute;left:0;top:0;width:0;height:0;background:#b3b1b1}
+.menu-grey span{background:#b3b1b1}
 .menu-fold{z-index:1}
-.menu-inv span,.menu-fold span{position:absolute;left:0;top:0;width:0;height:0;background:#dccbc3}
+.menu-inv span,.menu-fold span,.menu-grey span{position:absolute;left:0;top:0;width:100px;height:100px;transform-origin:0 0}
+.menu-inv span,.menu-fold span{background:#dccbc3}
 .menu-btn span{opacity:var(--inv,1)}
 /* (the page lifted onto a layer of its own while the under-bars can show, as for the cursor: its text drawn the same throughout) */
 html.menu-inv-live .stage{will-change:transform}

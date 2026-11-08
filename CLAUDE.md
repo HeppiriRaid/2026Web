@@ -46,7 +46,9 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   aside. **Grey as usual, inverted only over text and pictures** (the owner): at rest each bar is cut where the
   lines of text and the pictures beneath it begin and end (`split()`, from boxes read now and then, `built()`).
   Pieces over them show the inverse; the rest stay grey (`.menu-grey`). As they fade out with the hamburger moving,
-  the pieces ride on the button's own transform (`btnMatrix()`, from its numbers). At rest the copies are plain
+  they are cut from the bars' live shape each frame, between pixels (100px boxes scaled, so layout never rounds
+  them). Pieces kept in the resting shape crossed the bars' own reshaping back into the squares, and on a phone
+  read as parts snapping. At rest the copies are plain
   boxes on whole device pixels (`copyBars()`), worked out from the button's
   numbers; a soft edge there folded the letters crossing it. While they fade out with the hamburger moving, they
   take its exact transforms and glide with it. The first version faded the inverse in during the catch, snapped,

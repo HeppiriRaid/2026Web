@@ -170,9 +170,8 @@
   // anything sets it moving again (back to the squares, the menu, the step aside). At rest each copy is a plain
   // box on whole device pixels (as the cursor's square is: an edge pixel a copy only partly covered mixes
   // mirrored and plain paper, and a letter's soft edge there folds), worked out from the button's numbers. While
-  // it fades out with the hamburger moving, each copy takes the button's and its bar's exact transforms instead,
-  // gliding with the grey bars: snapped, it stepped a pixel at a time over their glide, and the catch read rough.
-  var INV = 0.3, lastCopy = "", glided = null;
+  // it fades out with the hamburger moving, the pieces follow the bars' own shape between pixels (copyBars()).
+  var INV = 0.3, lastCopy = "";
   function copyBars() {
     var rest = M.w >= 1 && M.s >= 1 && M.o <= 0 && (M.y <= 0 || M.y >= 1) && !chasing;
     go("i", !document.documentElement.classList.contains("shade-test") && mode === "catch" && T.w === 1 && T.o === 0 &&
@@ -187,43 +186,28 @@
     var mid = ((M.o > 0 ? 0 : M.s) * (1 - a)).toFixed(3);                  // (the grey middle bar fades with the others)
     if (btn.children[1].style.opacity !== mid) btn.children[1].style.opacity = mid;
     if (a <= 0) return;
-    var p, k, st;
-    if (!rest) {                                         // moving: the pieces carried by the button's own motion
-      var now = btnMatrix();
-      if (restM) {
-        var m = now.multiply(restM.inverse()), tf = "matrix(" + [m.a, m.b, m.c, m.d, m.e, m.f].map(function (v) { return v.toFixed(4); }).join(",") + ")";
-        [grey].concat(copies).forEach(function (g) { g.style.transformOrigin = "0 0"; g.style.transform = tf; });
-      }
-      glided = true; lastCopy = "";
-      return;
-    }
-    // at rest: each bar grey, but where text or a picture lies beneath it, the inverse (the owner: grey as usual,
-    // inverted only over text and images). Every piece a plain box on whole device pixels.
-    var r = window.devicePixelRatio || 1, snap = function (v) { return Math.round(v * r) / r; };
-    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, under = beneath(), inv = [], plain = [];
+    // each bar where the button draws it this frame, cut where text or a picture lies beneath it: pieces over them
+    // show the inverse, the rest grey. At rest on whole device pixels (an edge pixel a piece only partly covered
+    // mixes mirrored and plain paper, and a letter's soft edge there folds). Moving — it fades out as the
+    // hamburger sets off — exactly where the bars are, between pixels, reshaping with them: pieces kept in the
+    // resting shape crossed the bars' own reshaping and read as parts snapping (the owner, on a phone).
+    var r = window.devicePixelRatio || 1, snap = rest ? function (v) { return Math.round(v * r) / r; } : function (v) { return v; };
+    var cx = btnLeft + tx, cy = 18 * K + ty, w = 12 * K * scl, under = beneath().map(function (u) { return u.map(snap); }), inv = [], plain = [];
     for (var i = 0; i < 3; i++) {
-      var c = barNow(i);
+      var c = barNow(i), op = i === 1 ? M.s : 1;
+      if (!(op > 0)) continue;
       var bar = [snap(cx - w / 2), snap(cy + (c[0] - c[1] / 2 - 18 * K) * scl), snap(cx + w / 2), snap(cy + (c[0] + c[1] / 2 - 18 * K) * scl)];
       if (bar[2] <= bar[0] || bar[3] <= bar[1]) continue;
-      split(bar, under.map(function (u) { return [snap(u[0]), snap(u[1]), snap(u[2]), snap(u[3])]; }), inv, plain);
+      var n0 = inv.length, m0 = plain.length;
+      split(bar, under, inv, plain);
+      for (var q = n0; q < inv.length; q++) inv[q].push(op);
+      for (q = m0; q < plain.length; q++) plain[q].push(op);
     }
-    restM = btnMatrix();
     var key = JSON.stringify([inv, plain]);
-    if (key === lastCopy && !glided) return;
+    if (key === lastCopy) return;
     lastCopy = key;
-    if (glided !== false) {
-      [grey].concat(copies).forEach(function (g) { var st = g.style; st.left = "0px"; st.top = "0px"; st.transform = "none"; st.width = "0px"; st.height = "0px"; });
-    }
     pieces(grey, plain);
-    for (p = 0; p < copies.length; p++) pieces(copies[p], inv);
-    glided = false;
-  }
-  // the button's whole transform, in the window's coordinates (its box, then its transform about its middle)
-  var restM = null;
-  function btnMatrix() {
-    var bw = 12 * K, bh = 36 * K, l = parseFloat(btn.style.left) || 0, t = parseFloat(btn.style.top) || 0;
-    var tm = new DOMMatrix().translate(-bw / 2 + tx, -bh / 2 + ty).scale(scl);   // (apply()'s transform, from its numbers)
-    return new DOMMatrix().translate(l + bw / 2, t + bh / 2).multiply(tm).translate(-bw / 2, -bh / 2);
+    for (var p = 0; p < copies.length; p++) pieces(copies[p], inv);
   }
   // a bar cut where what lies beneath it changes: rows at every edge crossing it, each row's spans over text or a
   // picture (into `inv`) and between them (into `plain`)
@@ -252,10 +236,12 @@
     for (var k = 0; k < g.children.length; k++) {
       var st = g.children[k].style, b = list[k];
       if (!b) { if (st.display !== "none") st.display = "none"; continue; }
-      st.display = ""; st.opacity = 1;
-      st.transform = "translate(" + b[0] + "px," + b[1] + "px)"; st.width = b[2] + "px"; st.height = b[3] + "px";
+      // (a 100px box scaled to the piece: its size is never rounded by layout, so a moving piece glides)
+      st.display = ""; st.opacity = b[4] == null ? 1 : b[4];
+      st.transform = "translate(" + b[0] + "px," + b[1] + "px) scale(" + (b[2] / 100) + "," + (b[3] / 100) + ")";
     }
   }
+
   // what lies beneath the corner: the boxes of the lines of text and the pictures on the page, in the window's
   // coordinates. Read from the page only now and then (built() below), never mid-motion: the hamburger rests.
   var lines = [], linesAt = 0;
