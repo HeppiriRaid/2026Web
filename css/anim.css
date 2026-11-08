@@ -124,6 +124,10 @@ html.cursor-live .stage{will-change:transform}
 @media (hover:none),(pointer:coarse){
   .cursor-dot,.cursor-lens,.cursor-fold,.cursor-tone{display:none}
 }
+/* (a touch screen shows its own scroll indicator: the drawn bar stays away there, js/menu.js) */
+@media (hover:none) and (pointer:coarse){
+  .cscroll-rail,.cscroll-thumb{display:none}
+}
 
 /* ---- reduced motion: everything static, instantly ------------- */
 @media (prefers-reduced-motion:reduce){

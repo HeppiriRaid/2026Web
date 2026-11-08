@@ -30,6 +30,10 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:var(--paper)}
+/* (a touch screen: the type stays the size it is set, also on a phone turned on its side, which would enlarge it;
+   and a tap shows no grey box of the browser's own over a link — the page answers it) */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+a,button{-webkit-tap-highlight-color:transparent}
 /* position:relative so the full-width background bands (direct children of body)
    are positioned in document space, scrolling with the page. */
 body{position:relative;font-family:var(--text);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
@@ -51,6 +55,9 @@ img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* placement primitive: --x --y (--w --h) in artboard points */
 .a{position:absolute;left:calc(var(--x) * var(--k));top:calc(var(--y) * var(--k));width:calc(var(--w,0) * var(--k))}
+/* the page's sections: nothing on the artboard (each element is placed by its own points); a column of
+   their own on a narrow screen (css/narrow.css) */
+.sec{display:contents}
 .wh{height:calc(var(--h) * var(--k))}
 
 /* background bands (the grey section backgrounds — BACK GROUND, CALLIGRAPHY).

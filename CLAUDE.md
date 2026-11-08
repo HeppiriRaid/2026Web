@@ -74,6 +74,35 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   pixel can't be split).
 - Links: CONTACT (top nav and menu) goes to `contact.html`; the front page's sections are `#about`, `#works`,
   `#calligraphy`. `js/wipe.js` knows the site's pages with or without `.html` (Cloudflare Pages serves `/contact`).
+- **Narrow screens** (a phone, a tablet upright, a phone on its side) get the pages in one column. Each page's
+  head script (`fitK()`) sets `html.narrow` before the first paint when `w < 760`, `w < h && w < 1100` or
+  `h < 520 && w < 1000`. Then `--k` is px per point of *type*, fitted to the width: `max(3.6, min(4.4, w / 104))`,
+  3.6 on a phone on its side. That gives body copy 14.4–17.6px and captions 12px and up. `window.__fit.narrow` and
+  `.k` carry it to the scripts. **The desktop artboard is untouched:** every rule in `css/narrow.css` starts with
+  `.narrow`.
+  - The front page's parts sit in section wrappers, `.sec[data-sec]` (`display: contents` on the artboard, so each
+    part still places itself by its points). On a narrow screen each wrapper is a flex column, its parts in reading
+    order (`order`).
+  - The column's right gutter is the grey squares' width, so no text or photo runs under the hamburger once it has
+    caught the corner. Where the column has margins of its own (on its side, a tablet), it keeps 6pt.
+  - **A new part on the front page goes inside its `.sec`, and gets its narrow place in `css/narrow.css`.**
+  - `js/narrow.js` (front page, contact):
+    - lays each grey band under its `.sec[data-band]`; the bands stay beneath the cursor's under-squares;
+    - nudges the shapes that pop in (the triangles, the red square) onto whole pixels, as `round()` does on the
+      artboard. In the column they fall between pixels, and would hop as their motion let go; their sizes are
+      whole.
+  - The hamburger and the cursor take `__fit.k` as their unit there (`js/menu.js`, `js/cursor.js`). The hamburger
+    sits flush in the top-right corner, over the squares.
+  - The works' row:
+    - each work is as tall as `--row` allows, but never wider than the column, so a wide one fits the width;
+    - its given shape is kept (`--iw` / `--ih` from `js/illustration.js`), so the row never changes as a picture
+      loads.
+  - Contact is one column under the header.
+  - On any touch screen (`hover: none` and `pointer: coarse`) the drawn scrollbar stays away: the screen shows its
+    own. So the hamburger never steps aside for it (`TOUCH`, `js/menu.js`). Taps get no grey box of the browser's
+    own, and the type isn't enlarged on a phone turned on its side (`css/style.css`).
+  - A phone has no cursor (`js/cursor.js` runs for fine pointers only), but a narrow window on a computer has the
+    square, so the check covers both shapes (the `narrow` and `sideways` flows).
 - The owner commits to `Main` too (every console Save). Before pushing: `git fetch origin Main` and rebase onto it.
   Never force-push `Main`.
 - Pages caches the code for 10 minutes: after a deploy, check with a hard refresh.
@@ -246,7 +275,10 @@ Three layers, so an outline can't ship again — and the console's own check rid
    (the test panel, and the harmony cursor in every
    variation, both ways it is drawn), `photos` (a photo in every front-page holder, three cropped off-centre, opened in the zoom,
    wiping in and at rest, the longest caption, and the hamburger above the zoom, its tint half-faded with the
-   grey and then gone), `focus` (each kind of keyboard focus ring). The owner's
+   grey and then gone), `focus` (each kind of keyboard focus ring), `narrow` (a phone held upright, 393×852,
+   with the owner's photos: every screen of the front page, photos wiping in, the zoom, the caught hamburger and
+   its menu, keyboard focus, the page changes, the works' row, contact) and `sideways` (852×393: every screen,
+   the menu, the works' captions all on screen, contact). The owner's
    `data/front.json` and `data/illustration.json` are replaced per flow by fixed lists (`FRONT`, `WORKS`), and GitHub is never asked (the pages' own copies are
    used), so the check never depends on what was uploaded or on the network.
    (A picture part-way through a fade counts as picture: the scanner tells picture pixels apart with it opaque.)

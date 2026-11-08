@@ -100,6 +100,7 @@
         cap.appendChild(make("span", "f", f));
       });
     li.setAttribute("data-title", d.title || "");
+    li.style.setProperty("--iw", w); li.style.setProperty("--ih", h);   // (its shape, for a narrow screen: css/narrow.css)
     li.appendChild(btn); li.appendChild(cap);
     return li;
   }

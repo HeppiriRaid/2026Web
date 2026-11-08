@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="css/anim.css" />
 <link rel="stylesheet" href="css/zoom.css" />
 <link rel="stylesheet" href="css/illustration.css" />
+<link rel="stylesheet" href="css/narrow.css" />
 <!-- the works as new as they are: GitHub's copy the moment the console saves (js/illustration.js) -->
 <script src="js/fresh.js"></script>
 <script>
@@ -26,9 +27,15 @@
   (function () {
     var d = document.documentElement;
     var DW = 460.807, FIRST = 259.2, lastDPR = window.devicePixelRatio || 1;
-    window.__fit = { dw: DW, clampPt: FIRST };
+    window.__fit = { dw: DW, clampPt: FIRST, narrow: false, k: 0 };
+    // (a narrow screen: the page in one column, --k the size of its type — as index.html, css/narrow.css)
     function fitK() {
-      d.style.setProperty("--k", Math.min(window.innerWidth / DW, window.innerHeight / FIRST) + "px");
+      var w = window.innerWidth, h = window.innerHeight;
+      var narrow = w < 760 || (w < h && w < 1100) || (h < 520 && w < 1000);
+      var k = narrow ? (h < 520 ? 3.6 : Math.max(3.6, Math.min(4.4, w / 104))) : Math.min(w / DW, h / FIRST);   // (a phone on its side: the smallest type)
+      d.classList.toggle("narrow", narrow);
+      window.__fit.narrow = narrow; window.__fit.k = k;
+      d.style.setProperty("--k", k + "px");
     }
     fitK();
     window.addEventListener("resize", function () {

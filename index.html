@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/anim.css" />
 <link rel="stylesheet" href="css/zoom.css" />
+<link rel="stylesheet" href="css/narrow.css" />
 <!-- the owner's photos and captions as new as they are: GitHub's copy the moment the console saves -->
 <script src="js/fresh.js"></script>
 <script>
@@ -49,15 +50,22 @@
        A CSS fallback (:root{--k:calc(100vw/460.807)}) covers pre-JS.    */
     var DW = 460.807, FIRST = 259.2, lastDPR = window.devicePixelRatio || 1;
     // Expose the fit basis so the shared menu + scrollbar derive the SAME scale.
-    window.__fit = { dw: DW, clampPt: FIRST };
+    window.__fit = { dw: DW, clampPt: FIRST, narrow: false, k: 0 };
     // Fit the artboard to viewport WIDTH, but never let the first 16:9 screen
     // (460.807 x 259.2pt) grow TALLER than the viewport. A wide/short window — e.g.
     // a maximised 16:9 monitor, whose usable height after the browser chrome is
     // less than 9/16 of its width — would otherwise clip the bottom of the first
     // section. Clamp by height too; .stage{margin:0 auto} then centres the
     // (slightly narrower) artboard. On a taller window the width wins, unchanged.
+    // A narrow screen (a phone, a tablet upright, a phone on its side) gets the page in one column
+    // instead (html.narrow, css/narrow.css): there --k is px per point of type, fitted to the width —
+    // the body copy (4pt) 14.4–17.6px — not the artboard shrunk to the window (3.4px on a phone).
     function fitK() {
-      var k = Math.min(window.innerWidth / DW, window.innerHeight / FIRST);
+      var w = window.innerWidth, h = window.innerHeight;
+      var narrow = w < 760 || (w < h && w < 1100) || (h < 520 && w < 1000);
+      var k = narrow ? (h < 520 ? 3.6 : Math.max(3.6, Math.min(4.4, w / 104))) : Math.min(w / DW, h / FIRST);   // (a phone on its side: the smallest type)
+      d.classList.toggle("narrow", narrow);
+      window.__fit.narrow = narrow; window.__fit.k = k;
       d.style.setProperty("--k", k + "px");
     }
     fitK();
@@ -124,13 +132,18 @@
   <div class="a wh sqg" style="--x:448.8;--y:0;--w:12;--h:12"></div>
   <div class="a wh sqg" style="--x:448.8;--y:24;--w:12;--h:12"></div>
 
+  <!-- (the page in sections, .sec: on the artboard they are nothing — display: contents, every element placed
+       by its own points — and on a narrow screen each is a column of its own, css/narrow.css) -->
   <!-- header -->
+  <div class="sec" data-sec="head">
   <div class="a brand" style="--x:8.6;--y:6.2;--fs:6">KOKI TAKAMATSU</div>
   <a class="a nav" href="#about" style="--x:374.64;--y:8.1;--fs:4">ABOUT</a>
   <a class="a nav" href="#works" style="--x:397.66;--y:8.1;--fs:4">WORK</a>
   <a class="a nav" href="contact.html" style="--x:419.69;--y:8.1;--fs:4">CONTACT</a>
+  </div>
 
   <!-- ========================= ABOUT ME ========================= -->
+  <div class="sec" data-sec="about">
   <!-- data-slot: a photo holder the owner can fill or change in the console (data/front.json, js/photos.js) -->
   <figure class="a wh ph fr" data-slot="about" data-slot-name="About me" style="--x:81.9;--y:36;--w:137.8;--h:206.7">
     <img src="assets/img/about-portrait.webp" alt="Koki Takamatsu" data-noscale fetchpriority="high" />
@@ -167,8 +180,11 @@
     <p>Thank you for visiting!</p></div>
 
   <div class="a wh sq" style="--x:372.2;--y:230.7;--w:12;--h:12"></div>
+  </div>
 
   <!-- ========================= BACK GROUND ========================= -->
+  <!-- data-band: on a narrow screen the grey band lies under this section (js/narrow.js) -->
+  <div class="sec" data-sec="background" data-band>
   <h2 class="a h" style="--x:10.9;--y:271.3;--w:200;--fs:18">BACK GROUND</h2>
   <div class="tri" style="--x:152.5;--y:275.7"></div>
 
@@ -191,12 +207,15 @@
        its parts as the page gives them in data-title / -date / -medium / -location. It ends at the picture's right edge:
        a longer caption grows to the left, then onto a second line (.cap-r) -->
   <div class="a cap cap-r" data-caption-for="background" data-title="My House" data-date="6/15/2026" data-medium="Graphic Paint" data-location="Redmond, WA" style="--x:176.5;--y:486.4;--w:282.2">Title: &#8220;My House&#8221; | Date: 6/15/2026 | Made with: Graphic Paint | Location: Redmond, WA</div>
+  </div>
 
   <!-- ========================= SELECTED WORKS ========================= -->
+  <div class="sec" data-sec="works">
   <h2 id="works" class="a h" style="--x:11.7;--y:526.3;--w:260;--fs:18">SELECTED WORKS</h2>
   <div class="tri" style="--x:152.5;--y:530.5"></div>
 
   <!-- GRAPHIC PAINT -->
+  <div class="sec part" data-part="graphic">
   <h3 class="a h" style="--x:11.7;--y:561.5;--w:160;--fs:10">GRAPHIC PAINT</h3>
   <div class="a copy j" style="--x:12;--y:575.4;--w:152.5">
     <p>Every painting app fought me in the same places, so I&#8217;m building the one that
@@ -209,8 +228,10 @@
   <figure class="a wh box" data-slot="graphic" data-slot-name="Graphic Paint" data-fade style="--x:176.5;--y:530.5;--w:272.3;--h:111.7;--c:#d1d1d1"><button class="ph-open" type="button" aria-label="View Graphic Paint"><span class="plus" style="--px:3.95;--py:4" aria-hidden="true"></span></button></figure>
   <a class="a copy bx" style="--x:11.5;--y:635.5;--w:25;--h:7.2;--fs:5"><span>Details</span></a>
   <a class="a copy bx" style="--x:47.5;--y:635.5;--w:32.8;--h:7.1;--fs:5"><span>Kickstarter</span></a>
+  </div>
 
   <!-- RESSOLVE STEPS -->
+  <div class="sec part" data-part="resolve">
   <figure class="a wh box" data-slot="resolve" data-slot-name="Resolve Steps" data-fade data-rtl style="--x:12;--y:654;--w:273.1;--h:111.6;--c:#d1d1d1"><button class="ph-open" type="button" aria-label="View Resolve Steps"><span class="plus r" style="--px:4.45;--py:4.1" aria-hidden="true"></span></button></figure>
   <h3 class="a h" style="--x:296.5;--y:651.1;--w:170;--fs:10">RESSOLVE STEPS</h3>
   <div class="a copy j" style="--x:297.2;--y:665.9;--w:151.6">
@@ -219,8 +240,11 @@
     After release, I kept refining it based on player feedback.</p></div>
   <a class="a copy bx" style="--x:388.3;--y:758.9;--w:25;--h:7.1;--fs:5"><span>Details</span></a>
   <a class="a copy bx" style="--x:424.3;--y:759;--w:25;--h:7.2;--fs:5"><span>Steam</span></a>
+  </div>
+  </div>
 
   <!-- ========================= CALLIGRAPHY ========================= -->
+  <div class="sec" data-sec="calligraphy" data-band>
   <h2 id="calligraphy" class="a h" style="--x:88;--y:792.9;--w:240;--fs:18;letter-spacing:0">CALLIGRAPHY</h2>
   <div class="tri" style="--x:220;--y:797"></div>
 
@@ -239,6 +263,7 @@
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
   </figure>
   <a class="a copy bx" style="--x:88.5;--y:1016.5;--w:25;--h:7.2;--fs:5"><span>Details</span></a>
+  </div>
 
 </main>
 
@@ -261,6 +286,7 @@
 <script src="js/glide.js"></script>
 <script src="js/wipe.js"></script>
 <script src="js/photos.js"></script>
+<script src="js/narrow.js"></script>
 <script src="js/anim.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/menu-shade.js"></script>

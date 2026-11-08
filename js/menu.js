@@ -38,6 +38,9 @@
 
   var REDUCE = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // (a touch screen — a phone, a tablet — shows its own scroll indicator, and has no pointer to drag a bar
+  // with: there the bar is never drawn (css/anim.css), so the hamburger never steps aside for it)
+  var TOUCH = !!(window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches);
 
   var HAMBURGER_SCALE = 0.7; // the caught hamburger is 70% of the camouflage box
 
@@ -84,10 +87,14 @@
     // drifting to the bare viewport corner. On a tall window at default zoom this
     // is exactly innerWidth/460.807 with stageLeft 0 — unchanged.
     var FIT = window.__fit || { dw: 460.807, clampPt: 0 };
-    K = FIT.clampPt
+    // (a narrow screen, css/narrow.css: the page is a column and --k the size of its type; the hamburger takes
+    // that size, flush to the window's top-right corner, where the page puts its two grey squares)
+    var narrow = !!FIT.narrow;
+    K = narrow ? FIT.k : FIT.clampPt
       ? Math.min(window.innerWidth / FIT.dw, window.innerHeight / FIT.clampPt)
       : window.innerWidth / FIT.dw;
-    var stageLeft = Math.max(0, (window.innerWidth - FIT.dw * K) / 2); // centred-stage inset
+    var stageLeft = narrow ? window.innerWidth - FIT.dw * K                // (the corner, 12pt in from the right)
+      : Math.max(0, (window.innerWidth - FIT.dw * K) / 2);                 // centred-stage inset
     OVERLAY = 4.32 * K;        // dodge + hover-zone track the viewport scale, so they
     RAIL_ZONE = 3.36 * K;      // stay matched to the (constant) scrollbar under zoom
     document.documentElement.style.setProperty("--mk", K);
@@ -114,7 +121,7 @@
     pageSH = de.scrollHeight;
     var cw = de.clientWidth;
     sbSpace = window.innerWidth - cw > 0;          // classic (space-taking) scrollbar?
-    var ov = 460.8 * K - cw;                        // hamburger's overlap of it (≈0)
+    var ov = (narrow ? window.innerWidth : 460.8 * K) - cw;   // hamburger's overlap of it (≈0)
     classicGutter = ov > 0.5 ? ov + 2 : 0;
     layoutThumb();                                  // size/position the custom thumb
     barShapes(); measurePanel();                    // (the bars' rest shapes at this size, the panel's box)
@@ -162,6 +169,7 @@
   // scroll -> show the thumb, hold it briefly, then fade (drives thumbShown)
   function onScroll() {
     layoutThumb();
+    if (TOUCH) return;
     if (!thumbShown) { thumbShown = true; syncThumb(); }
     if (thumbFadeT) clearTimeout(thumbFadeT);
     thumbFadeT = setTimeout(function () { thumbFadeT = 0; thumbShown = false; syncThumb(); }, 1100);
@@ -191,7 +199,7 @@
     syncThumb();
   }
   function onMove(e) {
-    if (dragY !== null) return;                    // a thumb-drag drives the rail itself
+    if (dragY !== null || TOUCH) return;           // a thumb-drag drives the rail itself (a tap's own mousemove: no bar)
     var onBar = (window.innerWidth - e.clientX) <= RAIL_ZONE;
     if (onBar) {
       if (railShown) {

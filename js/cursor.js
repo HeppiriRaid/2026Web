@@ -39,7 +39,8 @@
   // the browser gives a layer whole-pixel bounds, so 41.5px would draw as 42.
   function place() {
     var r = window.devicePixelRatio || 1;
-    var k = Math.min(window.innerWidth / FIT.dw, FIT.clampPt ? window.innerHeight / FIT.clampPt : Infinity);
+    // (12pt of the artboard; on a narrow screen, of its type: css/narrow.css)
+    var k = FIT.narrow ? FIT.k : Math.min(window.innerWidth / FIT.dw, FIT.clampPt ? window.innerHeight / FIT.clampPt : Infinity);
     var s = Math.round(12 * k * Math.max(0, S.x));
     var l = Math.round((X.x - s / 2) * r) / r, t = Math.round((Y.x - s / 2) * r) / r, i;
     var tf = "translate(" + l + "px," + t + "px)";

@@ -18,7 +18,8 @@
 
    The states come in flows (FLOWS, at the bottom): the whole site in one
    visit, the colour test panel (index.html?shader), the front page's photos
-   as the console sets them, keyboard focus. Anything new on screen — a page,
+   as the console sets them, keyboard focus, and the pages on a narrow screen
+   (a phone upright and on its side). Anything new on screen — a page,
    a panel, a ?switch, a test tool — gets its states here before it ships.
    Before them, once, the console's own check (tests/console-check.mjs: the
    console end to end against a stand-in GitHub). A full run that is clean —
@@ -997,6 +998,232 @@ const FLOWS = {
     await tabTo(p, ".zoom-ui button");
     await check(p, "illustration page: keyboard focus on a zoom button", dpr);
   },
+
+  // the pages on a narrow screen (css/narrow.css, js/narrow.js) — a phone held upright (VIEWS): one column,
+  // every part in a new place and size. A phone has no cursor, but a narrow window on a computer has the
+  // square, so every state as everywhere: arriving, the photos wiping in and every screen of the front page
+  // with a photo in every holder (as in "photos": three cropped off-centre, the longest caption), the zoom,
+  // the hamburger caught and its menu, keyboard focus, the page changes, the works' row and its zoom, contact
+  async narrow(p, dpr) {
+    const park = () => p.mouse.move(3, 400, { steps: 2 });      // (the pointer in the column's margin, on nothing)
+    // (wherever the hamburger lies over a picture — the zoom's, as the page's photos keep clear of it — it is
+    // the known limit: its soft bar edges beside a bright patch, CLAUDE.md)
+    const overPicture = () => p.evaluate(() => {
+      const b = document.getElementById("menuBtn"), r = b.getBoundingClientRect();
+      const on = [...document.images].some((im) => {
+        const q = im.getBoundingClientRect();
+        return im.complete && q.width > 0 && getComputedStyle(im).visibility !== "hidden" && q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom;
+      });
+      if (on) b.setAttribute("data-fold-known", "the hamburger over a painting"); else b.removeAttribute("data-fold-known");
+    });
+    const scrollTo = async (y) => { await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y); await quiet(p); await overPicture(); };
+    const middle = (sel, at = 0.45) => p.evaluate(([sel, at]) => Math.max(0, Math.round(document.querySelector(sel).getBoundingClientRect().top + scrollY - innerHeight * at)), [sel, at]);
+
+    // -- arriving: the name on the curtain, the portrait wiping in, the top at rest
+    await p.goto(SITE + "/index.html");
+    await expect(p, () => document.documentElement.classList.contains("narrow"), null, "the narrow layout");
+    await stepTo(p, "name", null, "the name risen on a first visit");
+    await check(p, "narrow: first visit, the name", dpr);
+    await wipeAt(p, ".ph img");
+    await check(p, "narrow front page: the portrait wiping in", dpr);
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => document.documentElement.scrollWidth <= innerWidth && [...document.querySelectorAll("figure[data-slot] img")].length === 5, null, "the page no wider than the screen, a photo in every holder");
+    await check(p, "narrow front page: the top", dpr);
+
+    // -- a photo wiping in with its holder (the band's, and the calligraphy's, which wipes top to bottom), then at rest
+    for (const [name, sel, wiping] of [["BACK GROUND", '[data-slot="background"]', '[data-slot="background"]'], ["Calligraphy", '[data-slot="calligraphy"]', '[data-slot="calligraphy"] img']]) {
+      await scrollHeld(p, await middle(sel));
+      await wipeAt(p, wiping);
+      await check(p, `narrow front page: ${name} wiping in`, dpr);
+      await quiet(p);
+      await overPicture();
+      await check(p, `narrow front page: ${name} at rest`, dpr);
+    }
+
+    // -- every screen, top to bottom (each part in, at rest; the hamburger caught once it has left the squares)
+    const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight), step = Math.round(VIEWS.narrow.height * 0.8);
+    for (let y = 0; ; y = Math.min(H, y + step)) {
+      await scrollTo(y);
+      await check(p, `narrow front page: scrolled to ${y}px`, dpr);
+      if (y >= H) break;
+    }
+
+    // -- the BACK GROUND caption, rewritten as long as the console lets it be, on screen
+    await scrollTo(await middle('[data-caption-for="background"]', 0.6));
+    await expect(p, (want) => { const c = document.querySelector('[data-caption-for="background"]'), b = c.getBoundingClientRect(); return c.textContent === want && b.top > 0 && b.bottom < innerHeight; }, CAPTION, "the BACK GROUND caption rewritten, on screen");
+    await check(p, "narrow front page: the BACK GROUND caption, rewritten", dpr);
+
+    // -- a photo in the zoom: up, whole; half-way to the next; the next; home again
+    await scrollTo(await middle('[data-slot="background"]', 0.2));
+    await hover(p, '[data-slot="background"] .ph-open');
+    await check(p, "narrow front page: pointer on a photo", dpr);
+    await p.mouse.down(); await p.mouse.up();
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "the BACK GROUND photo zoomed");
+    await quiet(p);
+    await overPicture();
+    await check(p, "narrow front page: a photo zoomed, whole", dpr);
+    await p.keyboard.press("ArrowRight");
+    await wipeAt(p, ".zoom-fig");
+    await overPicture();
+    await check(p, "narrow front page: the zoom, half-way to the next photo", dpr);
+    await expect(p, () => document.querySelector('[data-slot="graphic"]').classList.contains("is-zoomed"), null, "the next photo in the zoom");
+    await quiet(p);
+    await overPicture();
+    await check(p, "narrow front page: the zoom, the next photo", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.documentElement.classList.contains("zoom-open"), null, "the zoom closed");
+    await park();
+    await quiet(p);
+    await overPicture();
+    await check(p, "narrow front page: back home from the zoom", dpr);
+
+    // -- the hamburger caught, its menu open, a label under the pointer
+    await scrollTo(await middle('[data-sec="works"]', 0));
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
+    await check(p, "narrow front page: menu open", dpr);
+    const lw = await menuLink(p, "WORK");
+    await p.mouse.move(lw.x, lw.y, { steps: 4 });
+    await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+    await quiet(p);
+    await check(p, "narrow front page: menu open, pointer on WORK", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("menuNav").classList.contains("open"), null, "the menu closed");
+    await park();
+    await quiet(p);
+
+    // -- keyboard focus: a photo, the address (the words in brackets: on contact, below)
+    await tabTo(p, ".ph-open");
+    await overPicture();
+    await check(p, "narrow front page: keyboard focus on a photo", dpr);
+    await tabTo(p, ".sec .copy a");
+    await overPicture();
+    await check(p, "narrow front page: keyboard focus on the address", dpr);
+    await p.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
+    await quiet(p);
+
+    // -- to the works' page from the menu: the sheet rising, lifting off it, a work wiping in
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
+    const il = await menuLink(p, "ILLUSTRATION");
+    await p.mouse.move(il.x, il.y, { steps: 2 });
+    let win = await p.evaluate(() => window.__foldWindow);
+    await holdNext(p, "leave", "arrive");
+    await p.mouse.down(); await p.mouse.up();
+    await sheetAt(p, 25, 5);
+    await check(p, "narrow page change: the sheet rising (front page)", dpr);
+    await p.waitForURL(/illustration\.html/, { waitUntil: "commit" });
+    await sheetAt(p, -35, -70);
+    await check(p, "narrow page change: the sheet lifting (illustration)", dpr);
+    await arrowHidden(p, "illustration", win);
+    await wipeAt(p, ".work-btn");
+    await check(p, "narrow illustration page: a work wiping in", dpr);
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => document.documentElement.classList.contains("narrow") && document.documentElement.scrollWidth <= innerWidth, null, "the works' page narrow, no wider than the screen");
+    await check(p, "narrow illustration page", dpr);
+    await hover(p, ".work .plus", 0);
+    await expect(p, () => !!document.querySelector(".work .plus:hover"), null, "the pointer on a +");
+    await check(p, "narrow illustration page: pointer on a +", dpr);
+    await p.keyboard.press("Home"); await quiet(p);
+    for (let i = 0; i < 3; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(60); }
+    await park();
+    await quiet(p);
+    await expect(p, () => { const w = document.querySelectorAll(".work")[3]; return w && Math.abs(w.getBoundingClientRect().left - parseFloat(getComputedStyle(document.getElementById("track")).paddingLeft)) < 2; }, null, "the row at work 4");
+    await check(p, "narrow illustration page: the row at work 4", dpr);
+    await click(p, ".work-btn", 0);
+    await expect(p, () => document.getElementById("zoom").classList.contains("is-open"), null, "a work zoomed");
+    await quiet(p);
+    await overPicture();
+    await check(p, "narrow illustration page: a work zoomed", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
+    await park();
+    await quiet(p);
+    await overPicture();
+
+    // -- to contact from the menu: the sheet lifting off it, then at rest, the pointer on the address and on a link
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
+    const ct = await menuLink(p, "CONTACT");
+    await p.mouse.move(ct.x, ct.y, { steps: 2 });
+    win = await p.evaluate(() => window.__foldWindow);
+    await holdNext(p, "arrive");
+    await p.mouse.down(); await p.mouse.up();
+    await p.waitForURL(/contact\.html/, { waitUntil: "commit" });
+    await sheetAt(p, -35, -70);
+    await check(p, "narrow page change: the sheet lifting (contact)", dpr);
+    await arrowHidden(p, "contact", win);
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => document.documentElement.classList.contains("narrow") && document.documentElement.scrollWidth <= innerWidth, null, "the contact page narrow, no wider than the screen");
+    await check(p, "narrow contact page", dpr);
+    await hover(p, ".cstage .copy a");
+    await check(p, "narrow contact page: pointer on the address", dpr);
+    await hover(p, ".bxrow .bx", 1);
+    await expect(p, () => !!document.querySelector(".bxrow .bx:hover"), null, "the pointer on a link");
+    await check(p, "narrow contact page: pointer on a link", dpr);
+    await park();
+    await tabTo(p, ".bxrow .bx");
+    await check(p, "narrow contact page: keyboard focus on a link", dpr);
+  },
+
+  // the pages on a phone turned on its side (VIEWS): the column centred, the smallest type, the works'
+  // row shorter under the links; the page's own photos (none set in the console). Every screen of the
+  // front page, the menu, the works' page and contact, at rest.
+  async sideways(p, dpr) {
+    const park = () => p.mouse.move(3, 200, { steps: 2 });
+    await p.goto(SITE + "/index.html");
+    await expect(p, () => document.documentElement.classList.contains("narrow"), null, "the narrow layout");
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => document.documentElement.scrollWidth <= innerWidth, null, "the page no wider than the screen");
+    const H = await p.evaluate(() => document.documentElement.scrollHeight - innerHeight), step = Math.round(VIEWS.sideways.height * 0.8);
+    for (let y = 0; ; y = Math.min(H, y + step)) {
+      await p.evaluate((y) => { window.__lenis.scrollTo(y, { immediate: true, force: true }); }, y);
+      await quiet(p);
+      await check(p, `sideways front page: scrolled to ${y}px`, dpr);
+      if (y >= H) break;
+    }
+    await click(p, "#menuBtn");
+    await expect(p, () => document.getElementById("menuNav").classList.contains("open"), null, "the menu open");
+    await quiet(p);
+    const lw = await menuLink(p, "WORK");
+    await p.mouse.move(lw.x, lw.y, { steps: 4 });
+    await expect(p, () => !!document.querySelector("#menuNav a:hover"), null, "the pointer on a menu label");
+    await quiet(p);
+    await check(p, "sideways front page: menu open, pointer on WORK", dpr);
+
+    await p.goto(SITE + "/illustration.html");
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => {
+      const c = [...document.querySelectorAll(".work-cap")].filter((e) => { const r = e.getBoundingClientRect(); return r.left < innerWidth && r.right > 0; });
+      return document.documentElement.classList.contains("narrow") && c.length > 0 && c.every((e) => e.getBoundingClientRect().bottom <= innerHeight);
+    }, null, "the works' page narrow, every caption in view on the screen");
+    await check(p, "sideways illustration page", dpr);
+    await p.keyboard.press("Home"); await quiet(p);
+    for (let i = 0; i < 3; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(60); }
+    await park();
+    await quiet(p);
+    await check(p, "sideways illustration page: the row moved on", dpr);
+
+    await p.goto(SITE + "/contact.html");
+    await settled(p);
+    await park();
+    await quiet(p);
+    await expect(p, () => document.documentElement.classList.contains("narrow") && document.documentElement.scrollWidth <= innerWidth, null, "the contact page narrow, no wider than the screen");
+    await check(p, "sideways contact page", dpr);
+  },
 };
 
 // The front page's photos and captions are the owner's (data/front.json, set in the console): every
@@ -1013,6 +1240,7 @@ const FRONT = {
     calligraphy: { image: "assets/img/about-portrait.webp", alt: "", focus: [25, 50] } },
     captions: { background: CAPTION_PARTS } },
 };
+FRONT.narrow = FRONT.photos;                   // (the pages on a phone, as the owner's photos make them)
 // The works on the illustration page are the owner's too (data/illustration.json, set in the console):
 // every flow gets this fixed row instead, sixteen works in three shapes (portrait, wide, tall), drawn from
 // the page's own two pictures (a picture fills its frame, so a wide one is the portrait stretched)
@@ -1027,7 +1255,9 @@ for (const f of ONLY) if (!FLOWS[f] && f !== "console") { console.log(`No flow "
 // (longest first, so the last to start isn't the last to finish; each job's lines are printed
 // together once it is done)
 const VIEW = { width: 1440, height: 810 };
-const LENGTH = { site: 4, shader: 4, photos: 2, focus: 1 };       // (roughly how long each flow takes)
+// (the narrow flows' own screens, css/narrow.css: a phone held upright, and on its side)
+const VIEWS = { narrow: { width: 393, height: 852 }, sideways: { width: 852, height: 393 } };
+const LENGTH = { site: 4, shader: 4, photos: 2, focus: 1, narrow: 3, sideways: 1.5 };       // (roughly how long each flow takes)
 const stopped = [];
 let consoleFails = [];
 const jobs = [];
@@ -1041,7 +1271,8 @@ if (!ONLY.length || ONLY.includes("console")) jobs.push({ name: "the console (te
 for (const dpr of [1, 2]) for (const [name, flow] of Object.entries(FLOWS)) {
   if (ONLY.length && !ONLY.includes(name)) continue;
   jobs.push({ name: `${name} @${dpr}x`, size: (LENGTH[name] || 2) * (dpr === 2 ? 1.5 : 1), run: async (log, job) => {
-    const ctx = await browser.newContext({ viewport: VIEW, deviceScaleFactor: dpr });
+    const view = VIEWS[name] || VIEW;
+    const ctx = await browser.newContext({ viewport: view, deviceScaleFactor: dpr });
     try {
       await ctx.route("**/data/front.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(FRONT[name] || { photos: {} }) }));
       await ctx.route("**/data/illustration.json*", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(WORKS) }));
@@ -1059,7 +1290,7 @@ for (const dpr of [1, 2]) for (const [name, flow] of Object.entries(FLOWS)) {
         }).observe(document, { subtree: true, attributes: true, attributeFilter: ["class"] });
       });
       const p = await ctx.newPage();
-      p.__job = Object.assign(job, { log }, await shooter(ctx, p, VIEW, dpr));
+      p.__job = Object.assign(job, { log }, await shooter(ctx, p, view, dpr));
       await flow(p, dpr);
     } finally { await ctx.close().catch(() => {}); }
   } });
