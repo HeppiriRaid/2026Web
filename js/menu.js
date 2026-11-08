@@ -99,7 +99,7 @@
   var thumbTop = 0, thumbH = 0; // the drawn thumb's current band (px, viewport space)
   var pageVH = 0, pageSH = 1; // viewport / scroll height — for the thumb position
   var sbSpace = false;       // does a classic scrollbar take layout space? (cached)
-  var classicGutter = 0;     // catch inset for a classic bar, ≈0 (cached)
+  var classicGutter = 0, reach = true;     // catch inset for a classic bar, ≈0 (cached)
   var _ax, _ay, _as;         // last-applied tx / ty / scl (skip redundant writes)
   var mode = null;           // "scrub" (over the marks) | "catch" (fixed corner)
   var btnLeft = 0;           // the button's layout left (its centre, before its own transform)
@@ -166,6 +166,11 @@
     sbSpace = window.innerWidth - cw > 0;          // classic (space-taking) scrollbar?
     var ov = (narrow ? window.innerWidth : 460.8 * K) - cw;   // hamburger's overlap of it (≈0)
     classicGutter = ov > 0.5 ? ov + 2 : 0;
+    // Does the caught hamburger reach the drawn scrollbar's column at all (its rail, the widest it gets, at the
+    // window's right edge)? Where the artboard fills the width (a Mac's taller window) its bars lie over it, and it
+    // steps aside; where the window's height sets the artboard's size (a 16:9 screen), the artboard sits centred
+    // and the hamburger far in from the edge: it never overlaps, so it never moves (the owner)
+    reach = btnLeft + 6 * K * HAMBURGER_SCALE > window.innerWidth - 2.64 * K;
     layoutThumb();                                  // size/position the custom thumb
     barShapes(); measurePanel();                    // (the bars' rest shapes at this size, the panel's box)
     apply();
@@ -308,6 +313,7 @@
   }
   function gutterNow() {
     if (sbSpace) return classicGutter;             // classic bar: hamburger sits clear
+    if (!reach) return 0;                          // the bars never reach the scrollbar's column
     if (railShown) return OVERLAY;                 // full-height rail (hover) overlaps
     return (thumbShown && thumbOverlapsMenu()) ? OVERLAY : 0; // thumb reaches the menu
   }

@@ -28,7 +28,9 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   catch (squares ↔ hamburger: position, size and the bars' shape, 0.8 s; its position blended from riding with the
   page to the corner, so it takes over from the page's own motion), the menu (0.6 s: the panel slides out of the
   middle bar as a line — its place and width lead, `1-(1-o)²` — then drops open, its height following, `o²`; the X,
-  the shadow, the labels easing in last), the step aside for the scrollbar (0.45 s), back after the zoom (0.75 s).
+  the shadow, the labels easing in last), the step aside for the scrollbar (0.45 s; only where the caught bars reach the drawn scrollbar's column, `reach`:
+  a window whose height sets the artboard's size, a 16:9 screen, has it centred and the hamburger far in from the
+  edge, so it never moves), back after the zoom (0.75 s).
   **Never move or size anything with `top`/`height` in a motion**: the browser snaps those to whole pixels, so a
   slow bar stood still, then hopped (measured: the X's bars jiggled back and forth a dozen times a morph). Each bar
   is a 100px box (a whole number: a 7.5px box was snapped to 7 before being scaled five times into a square)
