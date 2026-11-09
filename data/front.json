@@ -1,34 +1,30 @@
 {
-  "saveId": "mw65kv93chf6",
+  "saveId": "mw9wndljryb9",
   "photos": {
     "background": {
-      "image": "assets/img/front/background-mw65kv93wo06.webp",
-      "width": 1200,
-      "height": 1697,
-      "alt": "",
-      "focus": [
-        50,
-        24.2
-      ]
+      "image": "assets/img/front/background-mw9wndljhvt2.webp",
+      "width": 2354,
+      "height": 1324,
+      "alt": ""
     },
     "graphic": {
-      "image": "assets/img/front/graphic-mw65g19nls5m.webp",
+      "image": "assets/img/front/graphic-mw9wnemz1ymf.webp",
       "width": 2000,
-      "height": 1252,
+      "height": 1500,
       "alt": "",
       "focus": [
         50,
-        0
+        100
       ]
     },
     "resolve": {
-      "image": "assets/img/front/resolve-mw65kgd9g3hb.webp",
-      "width": 1024,
-      "height": 642,
+      "image": "assets/img/front/resolve-mw9wnf6pvl32.webp",
+      "width": 2000,
+      "height": 3556,
       "alt": "",
       "focus": [
         50,
-        43.9
+        9.8
       ]
     }
   }
