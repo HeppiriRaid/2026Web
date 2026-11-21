@@ -306,7 +306,7 @@ async function quiet(p) {
     else if (document.fonts && document.fonts.status !== "loaded") why = "the fonts";
     // (what moves by hand or by its own smooth scroll: the hamburger, the page, the works' row)
     const b = document.getElementById("menuBtn"), r = b && b.getBoundingClientRect(), row = document.getElementById("strip");
-    const sig = [r ? [r.left, r.top, r.width, r.height, getComputedStyle(b).transform].join() : "", row ? row.scrollLeft : "", scrollX, scrollY].join("|");
+    const sig = [r ? [r.left, r.top, r.width, r.height, getComputedStyle(b).transform].join() : "", row ? (row.__x != null ? row.__x : row.scrollLeft) : "", scrollX, scrollY].join("|");
     if (!why && sig !== s.sig) why = "the hamburger, the page or the row moving";
     s.sig = sig; s.why = why; s.n = why ? 0 : s.n + 1;
     if (why || s.n === 1) s.since = performance.now();
@@ -682,7 +682,7 @@ const FLOWS = {
     // -- the browser's Back: the illustration page comes in the same way, the row where it was
     // left; and Back again, the front page where it was left (900px down, js/wipe.js noted both)
     for (const [page, at, there, where] of [
-      ["illustration", /illustration\.html$/, () => { const x = history.state && history.state.kt && history.state.kt.x; return x > 0 && Math.abs(document.getElementById("strip").scrollLeft - x) < 2; }, "the row where it was left"],
+      ["illustration", /illustration\.html$/, () => { const x = history.state && history.state.kt && history.state.kt.x; return x > 0 && (() => { const s = document.getElementById("strip"); return Math.abs((s.__x != null ? s.__x : s.scrollLeft) - x) < 2; })(); }, "the row where it was left"],
       ["front", /index\.html$/, () => Math.abs(scrollY - 900) < 2, "900px down, where it was left"],
     ]) {
       await p.mouse.move(700, 450, { steps: 2 });

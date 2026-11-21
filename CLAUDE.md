@@ -225,7 +225,9 @@ The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held
   anti-aliased); a light edge in view is snapped to a device pixel, never coarser; a scroll set at once goes
   through `lenis.__set()` (`js/glide.js`), exact — Lenis's own `scrollTo` rounds to a whole CSS pixel, and a slow
   autoscroll or a drag stood still every other frame on a 2x screen, then moved two device pixels (the browser
-  keeps a scroll to the device pixel itself). The zoom's chevrons move by transform with the picture's edge, on a
+  keeps a scroll to the device pixel itself). The works' row, with a mouse or a trackpad, is moved by a transform
+  instead of being scrolled (`.strip.by-transform`: Lenis's `setScroll`, `actualScroll` and `limit` taken over), so
+  it glides between pixels, and lands on a device pixel; a touch screen keeps the strip's own scrolling. The zoom's chevrons move by transform with the picture's edge, on a
   device pixel at rest; layout (`left`, `top`) is snapped to whole pixels and is never moved in a motion. A picture
   moving slowly is never snapped to whole pixels (it stands still, then
   hops). Only edges in view are snapped (the cursor's rule, below). So the picture glides inside a still
@@ -333,7 +335,8 @@ How the site avoids it:
 - Not fixable, and accepted: detail *inside* photos and artworks (the same happens on Maison Auge's site),
   highlighted (selected) text — the browser paints a selection in one go; only other highlight colours would
   avoid it — the zoom picture's edges during its 0.9 s flight in and out (it is scaling; its edges are
-  rarely under the cursor), and the hamburger's soft bar edges right next to bright parts of a real picture
+  rarely under the cursor), the works' row while it moves (with a mouse or trackpad it moves by a transform,
+  between pixels — the owner's choice, for the smoother motion; it lands on a device pixel, `js/illustration.js`), and the hamburger's soft bar edges right next to bright parts of a real picture
   beneath it (deep bars on a bright patch straddle #DCCBC3; the old grey bars did too).
 
 ## The hamburger over the BACK GROUND picture

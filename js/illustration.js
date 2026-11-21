@@ -158,6 +158,31 @@
     });
     if (window.__glide) window.__glide(lenis);
     window.__rowLenis = lenis;            // (the row, for middle-click autoscroll: js/autoscroll.js)
+    // With a mouse or a trackpad, the row moves by a transform, between pixels (the owner): the browser scrolls only
+    // in whole device pixels, a whole CSS pixel a step on a 1x screen. Lenis is left as it is but for where it puts
+    // the row (setScroll) and reads it back (actualScroll, limit); the strip itself no longer scrolls
+    // (.by-transform). At rest the row lands on a device pixel (rest()): the pictures' edges crisp under the
+    // cursor's square. While it moves they lie between pixels, and inside the square a picture's soft edge may
+    // show a faint dark line — accepted by the owner for the smoother motion. A touch screen keeps the strip's own
+    // scrolling: the finger moves it, natively.
+    if (window.matchMedia && window.matchMedia("(pointer:fine)").matches) {
+      var rowX = 0;
+      strip.classList.add("by-transform");
+      strip.scrollLeft = 0;
+      Object.defineProperty(lenis, "actualScroll", { configurable: true, get: function () { return rowX; } });
+      Object.defineProperty(lenis, "limit", { configurable: true, get: function () { return maxScroll(); } });
+      lenis.setScroll = function (v) {
+        rowX = v; strip.__x = v;
+        track.style.transform = v ? "translate(" + (-v).toFixed(3) + "px, 0px)" : "";
+      };
+      // (at rest, on a device pixel)
+      gsap.ticker.add(function rest() {
+        if (!document.contains(strip)) { gsap.ticker.remove(rest); return; }
+        if (lenis.animate.isRunning || (typeof drag !== "undefined" && drag) || lenis.isStopped) return;
+        var s = dp(rowX);
+        if (Math.abs(s - rowX) > 1e-3) { lenis.animatedScroll = lenis.targetScroll = s; lenis.setScroll(s); }
+      });
+    }
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
     gsap.ticker.lagSmoothing(0);
   } else {
@@ -172,7 +197,7 @@
   }
 
   function maxScroll() { return Math.max(0, track.scrollWidth - strip.clientWidth); }
-  function nowScroll() { return lenis ? lenis.scroll : strip.scrollLeft; }          // where the row is
+  function nowScroll() { return lenis ? lenis.scroll : strip.scrollLeft; }          // where the row is (lenis.scroll: by transform too)
   function aimScroll() { return lenis ? lenis.targetScroll : strip.scrollLeft; }    // where it is heading
   function setScroll(x, immediate) {
     x = clamp(x, 0, maxScroll());

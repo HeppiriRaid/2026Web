@@ -51,6 +51,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   scrollbar-width:none;-webkit-user-select:none;user-select:none;
 }
 .strip::-webkit-scrollbar{display:none}
+/* (a mouse or a trackpad: the row moves by a transform, between pixels — the strip itself never scrolls:
+   js/illustration.js) */
+.strip.by-transform{overflow-x:hidden}
 .strip-track{
   display:flex;align-items:flex-start;gap:calc(1.5 * var(--k));
   width:max-content;margin:0;list-style:none;

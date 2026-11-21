@@ -196,7 +196,7 @@
     try {
       var row = document.getElementById("strip");
       history.scrollRestoration = "manual";
-      if (push) history.replaceState({ kt: { y: Math.round(window.scrollY), x: row ? Math.round(row.scrollLeft) : 0 } }, "");
+      if (push) history.replaceState({ kt: { y: Math.round(window.scrollY), x: row ? Math.round(row.__x != null ? row.__x : row.scrollLeft) : 0 } }, "");
     } catch (err) {}
     gsap.globalTimeline.timeScale(1);
     if (name) { gsap.killTweensOf(name); gsap.set(name, { y: "110%" }); }
