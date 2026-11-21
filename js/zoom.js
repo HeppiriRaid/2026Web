@@ -77,7 +77,7 @@
   window.__zoom = function (o) {
     var zoom = o.el, zoomBg = zoom.querySelector(".zoom-bg"), zoomUi = zoom.querySelector(".zoom-ui");
     var zoomTitle = document.getElementById("zoomTitle"), navs = zoom.querySelectorAll(".zoom-nav");
-    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, pend: false, q: [], nav: null, navTo: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
+    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, pend: false, q: [], nav: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
     /* the "+": it never moves, it only fades — out the moment its picture is opened, back in
        once the picture has returned to its place */
@@ -219,7 +219,7 @@
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
       var f = makeFig(it); place(f, r1); Z.fig = f; navAt(r1);
-      Z.live = {}; Z.live[i] = f; f.__w = { L: 0, R: 0 }; Z.nav = null; Z.navTo = null; Z.pend = false; Z.q = [];
+      Z.live = {}; Z.live[i] = f; f.__w = { L: 0, R: 0 }; Z.nav = null; Z.pend = false; Z.q = [];
       zoomTitle.textContent = it.title; ends();
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
@@ -287,12 +287,17 @@
     // starts on time from a standstill; and what is left (the page following underneath, the places
     // swapping, all under the grey) waits until everything is still. (A long frame mid-motion is a
     // visible jump.)
-    // A step can be asked for while one is still under way (the owner: "swipe even mid-motion"): it takes over
-    // from there. Each picture on screen keeps its own window — how far it is wiped in from its left and right
-    // edges (f.__w: L, R, fractions of its width) — and its own tweens. A new step closes the window of the
-    // picture that was arriving from wherever its edge has got to, and opens the next one's; stepping back to a
-    // picture still on its way out turns its wipe and drift round where they are, so nothing jumps. The page
-    // follows underneath only once every picture has come to rest (settle()).
+    // A step can be asked for at any moment, mid-step too (the owner), and no picture's motion is ever cut short
+    // or hurried for it: each picture on screen runs its own two motions, each whole, on the flow's curve at the
+    // step's own pace — it opens (1.1 s), and it leaves (1 s). Each keeps its own window — how far it is wiped in
+    // from its left and right edges (f.__w: L, R, fractions of its width) — and its own tweens.
+    //  · A step asked for while a picture is still opening leaves that picture alone: it goes on opening, to its
+    //    full width, and leaves only then (f.__to.done); the next picture opens over it meanwhile, at once.
+    //    (Closed from its edge, a picture cut off mid-way never showed whole; finished off quickly instead, its
+    //    fast end read as a flaw: the owner, both.)
+    //  · Stepping back turns round what is under way: the picture that was opening retreats the way it came,
+    //    the one that was leaving opens again, each from where its edge is.
+    // The page follows underneath only once every picture has come to rest (settle()).
     function clipLR(f, L, R) {
       if (L <= 0 && R <= 0) return "";
       var r = f.getBoundingClientRect();
@@ -300,21 +305,20 @@
       return "inset(0px " + (r.right - dp(r.right - r.width * R)) + "px 0px " + (dp(r.left + r.width * L) - r.left) + "px)";
     }
     function wipeTo(f, L, R, dur, delay, done) {
-      var w = f.__w || (f.__w = { L: 0, R: 0 });
-      f.__to = { L: L, R: R, done: done };
+      var w = f.__w || (f.__w = { L: 0, R: 0 }), to = f.__to = { L: L, R: R, done: done };
       gsap.to(w, { L: L, R: R, duration: dur, delay: delay, ease: stepEase, overwrite: true,
         onUpdate: function () { f.style.clipPath = clipLR(f, w.L, w.R); },
-        onComplete: function () { f.style.clipPath = clipLR(f, w.L, w.R); if (done) done(); } });
-    }
-    // (anything of the steps still moving: read off GSAP itself, so nothing can leave it counted wrong)
-    function moving() {
-      return Z.pend || Object.keys(Z.live).some(function (k) { var w = Z.live[k].__w; return !!w && gsap && gsap.getTweensOf(w).length > 0; });
+        // (what follows it is read as it lands: a step taken meanwhile may have changed it)
+        onComplete: function () { f.style.clipPath = clipLR(f, w.L, w.R); if (to.done) to.done(); } });
     }
     function driftTo(f, x, dur, delay) {
       var im = f.querySelector("img");
-      f.__dx = x;
       if (im) gsap.to(im, { xPercent: x, duration: dur, delay: delay, ease: stepEase, force3D: false, overwrite: true });
     }
+    function wiping(f) { return !!(f && f.__w && gsap && gsap.getTweensOf(f.__w).length > 0); }
+    function opening(f) { return wiping(f) && !!f.__to && f.__to.L === 0 && f.__to.R === 0; }
+    // (anything of the steps still moving: read off GSAP itself, so nothing can leave it counted wrong)
+    function moving() { return Z.pend || Object.keys(Z.live).some(function (k) { return wiping(Z.live[k]); }); }
     // (once nothing moves: the pictures that left go, the places swap under the grey, the page follows)
     function settle() {
       if (moving()) return;
@@ -327,28 +331,15 @@
       upgrade(Z.fig);
       warm(Z.i);
     }
-    // A step asked for while a picture is still opening waits for it — but that picture finishes quickly, from
-    // where its edge is (HURRY), so every picture is seen whole on the way and the next sets off from it at once.
-    // (Closed from its edge instead, a picture cut off mid-way never showed whole: the owner.)
-    var HURRY = 0.3;
-    function hurry() {
-      Object.keys(Z.live).forEach(function (k) {
-        var f = Z.live[k];
-        if (!f.__to || !f.__w || !gsap.getTweensOf(f.__w).length) return;
-        wipeTo(f, f.__to.L, f.__to.R, HURRY, 0, f.__to.done);
-        driftTo(f, f.__dx || 0, HURRY, 0);
-      });
-      if (Z.nav && Z.navTo) gsap.to(Z.nav, { l: Z.navTo.l, r: Z.navTo.r, duration: HURRY, ease: stepEase, overwrite: true,
-        onUpdate: function () { navAt({ left: Z.nav.l, width: Z.nav.r - Z.nav.l }); } });
+    // a picture leaves the way of the step, d: its window closes toward that side, from where its edges are
+    function leave(f, d) {
+      var w = f.__w || (f.__w = { L: 0, R: 0 });
+      wipeTo(f, d > 0 ? w.L : 1, d > 0 ? 1 : w.R, 1, 0, function () { nextFrame().then(settle); });
+      driftTo(f, -5 * d, 1, 0);
     }
-    function opening() { var w = Z.fig && Z.fig.__w; return Z.pend || (!!w && !!gsap && gsap.getTweensOf(w).length > 0); }
     function step(d) {
       if (!Z.open || Z.busy) return;
-      if (gsap && !REDUCE && opening()) {                       // (one still opening: it finishes, then this one)
-        if (Z.q.length < 4) Z.q.push(d);
-        if (!Z.pend) hurry();
-        return;
-      }
+      if (Z.pend) { if (Z.q.length < 6) Z.q.push(d); return; }  // (a step is getting its picture ready, a few frames: then this one)
       var j = Z.i + d;
       if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, out and back, nothing more
         if (gsap && !REDUCE && !moving()) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: stepEase, yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
@@ -374,44 +365,38 @@
       // (a new picture: drawn, too faint to see, until it is decoded and a frame has passed — then the step sets
       // off. The drift in 2D, force3D: false — in 3D the picture would be put on a layer of its own)
       if (!back) { nf.__w = d > 0 ? { L: 1, R: 0 } : { L: 0, R: 1 }; if (ni) gsap.set(ni, { xPercent: 5 * d, force3D: false }); }
+      function landed() {                                       // (the arriving picture, open)
+        if (Z.fig !== nf) return;
+        nf.style.clipPath = "";
+        nextFrame().then(settle);
+      }
       function go() {
-        // (a picture still on its way out from a step before this one clears off quickly, from where its edge is:
-        // left to its own long landing it crept for most of a second under the newer ones, and read as stuck)
-        Object.keys(Z.live).forEach(function (k) {
-          var f = Z.live[k];
-          if (f === of || f === nf || !f.__to || !f.__w || !gsap.getTweensOf(f.__w).length) return;
-          wipeTo(f, f.__to.L, f.__to.R, 0.35, 0, f.__to.done);
-          driftTo(f, gsap.getProperty(f.querySelector("img") || f, "xPercent") < 0 ? -5 : 5, 0.35, 0);
-        });
         nf.style.clipPath = clipLR(nf, nf.__w.L, nf.__w.R);
         nf.classList.remove("is-warm");
-        // the one leaving: its window closes toward the side it is going (from where its edges are now)
-        var ow = of.__w || (of.__w = { L: 0, R: 0 });
-        wipeTo(of, d > 0 ? ow.L : 1, d > 0 ? 1 : ow.R, 1, 0, settle);
-        driftTo(of, -5 * d, 1, 0);
-        // the one arriving (on a 0.1s cue; a picture turned round on its way out, at once)
-        wipeTo(nf, 0, 0, 1.1, back ? 0 : 0.1, function () {
-          if (Z.fig !== nf) return;
-          nf.style.clipPath = "";
-          // (the next one asked for, from here — once this tween has let go: inside its own callback GSAP still counts it)
-          if (Z.q.length) { Promise.resolve().then(function () { step(Z.q.shift()); if (Z.q.length && !Z.pend) hurry(); }); return; }
-          nextFrame().then(settle);
-        });
-        driftTo(nf, 0, 1.1, back ? 0 : 0.1);
+        // the one leaving. Still opening, and this step goes the way it came in: it opens to its full width
+        // first, untouched, and leaves as it lands. Otherwise (at rest; or the step turns back on it) it leaves
+        // now, from where its edges are — turned back on, that is the way it came
+        if (opening(of) && of.__dir === d) of.__to.done = function () { leave(of, d); };
+        else leave(of, d);
+        // the one arriving (on a 0.1s cue). A picture stepped back to: if it was still opening, it goes on, untouched;
+        // if it was leaving, it turns round where it is and opens again, at once
+        if (back && opening(nf)) nf.__to.done = landed;
+        else { wipeTo(nf, 0, 0, 1.1, back ? 0 : 0.1, landed); driftTo(nf, 0, 1.1, back ? 0 : 0.1); }
+        nf.__dir = d;
         ends(true);
         // (the chevrons, from where they are, to the new picture's edges)
         var n = Z.nav || (Z.nav = { l: parseFloat(of.style.left), r: parseFloat(of.style.left) + parseFloat(of.style.width) });
-        Z.navTo = { l: r.left, r: r.left + r.width };
         gsap.to(n, { l: r.left, r: r.left + r.width, duration: 1.1, delay: back ? 0 : 0.1, ease: stepEase, overwrite: true,
           onUpdate: function () { navAt({ left: n.l, width: n.r - n.l }); } });
       }
-      if (back) { go(); return; }
+      function then() { if (Z.q.length) step(Z.q.shift()); }   // (asked for meanwhile)
+      if (back) { go(); then(); return; }
       Z.pend = true;
       ready(nf).then(function () { return upgrade(nf) ? ready(nf) : null; })   // (its large file, if in already)
         .then(nextFrame).then(nextFrame).then(function () {
           Z.pend = false;
           go();
-          if (Z.q.length) hurry();
+          then();
         });
     }
 

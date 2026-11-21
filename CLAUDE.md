@@ -19,14 +19,15 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - **The "+" and the zoom view are one, shared by both pages** (`js/zoom.js`, `css/zoom.css`): a work on the
   illustration page, and a front-page photo holder with a `button.ph-open` inside (the whole photo is the
   button; its `span.plus` is centred `--px` / `--py` points in from the top-left corner, `.r` the top-right),
-  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for mid-step (the owner): it never cuts a picture off half-open
-  (closed from its edge, a picture never showed whole, the owner). The picture still opening finishes quickly from
-  where its edge is (`hurry()`, 0.3 s on the flow's curve), and the next step sets off from it whole, as many as
-  were asked for (`Z.q`, up to four). Each picture on screen keeps its own window (`__w`: how far it is wiped in
-  from either edge) and its own tweens, so stepping back turns a leaving picture round where it is (`step()`,
-  `wipeTo()`); an older picture still leaving clears off as quickly (on its own long landing it crept under the
-  newer ones and read as stuck). The page follows once every picture has come to rest (`settle()`; `moving()`
-  asks GSAP itself). A photo
+  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for at any moment, mid-step too (the owner), and no picture's
+  motion is cut short or hurried for it: each picture runs its own two motions whole, on the flow's curve at the
+  step's own pace — it opens (1.1 s), it leaves (1 s) — in its own window (`__w`: how far it is wiped in from
+  either edge) with its own tweens. A step asked for while a picture is still opening leaves that picture alone:
+  it opens to its full width and leaves only as it lands (`__to.done`), the next opening over it meanwhile, at
+  once. (Closed from its edge it never showed whole; finished off in 0.3 s its fast end read as a flaw; an older
+  one cleared off quickly likewise: the owner, each time.) Stepping back turns round what is under way: the one
+  opening retreats the way it came, the one leaving opens again, each from where its edge is (`step()`, `leave()`,
+  `wipeTo()`). The page follows once every picture has come to rest (`settle()`; `moving()` asks GSAP itself). A photo
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).
