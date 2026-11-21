@@ -548,6 +548,19 @@ const FLOWS = {
       }
     }
 
+    // -- middle-click autoscroll (js/autoscroll.js): its mark where the click was made, the pointer on it (the page
+    // still: the pointer in the mark's still zone), then Esc
+    await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
+    await quiet(p);
+    await p.mouse.move(700, 420, { steps: 2 });
+    await p.mouse.down({ button: "middle" }); await p.mouse.up({ button: "middle" });
+    await expect(p, () => document.querySelector(".autoscroll-mark.on") !== null, null, "the autoscroll mark");
+    await quiet(p);
+    await check(p, "front page: middle-click autoscroll, its mark", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => document.querySelector(".autoscroll-mark.on") === null, null, "autoscroll stopped");
+    await quiet(p);
+
     // -- the menu, open, and a label under the pointer
     await p.evaluate(() => { window.__lenis.scrollTo(900, { immediate: true, force: true }); });
     await quiet(p);
@@ -600,6 +613,15 @@ const FLOWS = {
 
     // -- the illustration page
     await check(p, "illustration page", dpr);
+    // (middle-click autoscroll over a work: its mark on the picture)
+    await hover(p, ".work-btn", 0);
+    await p.mouse.down({ button: "middle" }); await p.mouse.up({ button: "middle" });
+    await expect(p, () => document.querySelector(".autoscroll-mark.on") !== null, null, "the autoscroll mark");
+    await quiet(p);
+    await check(p, "illustration page: middle-click autoscroll over a work", dpr);
+    await p.keyboard.press("Escape");
+    await expect(p, () => document.querySelector(".autoscroll-mark.on") === null, null, "autoscroll stopped");
+    await quiet(p);
     await hover(p, ".work .plus", 0);
     await expect(p, () => !!document.querySelector(".work .plus:hover"), null, "the pointer on a +");
     await check(p, "illustration page: pointer on a +", dpr);

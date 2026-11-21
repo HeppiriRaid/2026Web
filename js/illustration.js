@@ -157,6 +157,7 @@
       smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 1.4
     });
     if (window.__glide) window.__glide(lenis);
+    window.__rowLenis = lenis;            // (the row, for middle-click autoscroll: js/autoscroll.js)
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
     gsap.ticker.lagSmoothing(0);
   } else {
@@ -325,7 +326,7 @@
 
   /* (leaving for another page — the white wipe — lives in js/wipe.js, shared with the front page;
      as the next page comes into this window, what would outlive this one lets go) */
-  document.addEventListener("kt:gone", function () { if (io) io.disconnect(); if (lenis) lenis.destroy(); });
+  document.addEventListener("kt:gone", function () { if (io) io.disconnect(); if (lenis) lenis.destroy(); try { delete window.__rowLenis; } catch (e) {} });
 
   /* (the custom cursor lives in js/cursor.js, shared with the front page) */
 

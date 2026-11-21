@@ -57,8 +57,9 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   /* top: y 60 (+ half of any extra height, so a taller window keeps the row centred
      in the screen); sides: the 12pt outer margin inside the centred screen on the right */
   /* (the first work's left edge: under the top-left grey square's left edge, the same margin from the window's
-     edge as the square's, on any window — the owner) */
-  padding:calc(60 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 var(--g);
+     edge as the square's — but never nearer that edge than half a square, where the square itself touches it,
+     a 16:10 window. The owner) */
+  padding:calc(60 * var(--k) + var(--e)) calc(12 * var(--k) + var(--g)) 0 max(calc(6 * var(--k)), var(--g));
 }
 .work{position:relative;flex:0 0 auto;margin:0}
 .work-btn{

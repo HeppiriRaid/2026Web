@@ -286,3 +286,14 @@ html::-webkit-scrollbar{width:0;height:0}
 @media (prefers-reduced-motion:reduce){
   .cscroll-rail,.cscroll-thumb{transition:opacity .15s cubic-bezier(.215,.61,.355,1)}
 }
+
+/* ---- middle-click autoscroll (js/autoscroll.js): its mark where the click was made ----------------------
+   An ink square outline with an ink dot: ink is under #DCCBC3, so the cursor's square over it stays clean;
+   whole pixels, placed by layout. It comes and goes on the flow's curve. */
+.autoscroll-mark{position:fixed;left:0;top:0;z-index:95;pointer-events:none;box-sizing:border-box;
+  width:round(calc(var(--mk,4) * 5px),2px);height:round(calc(var(--mk,4) * 5px),2px);
+  border:max(1px,round(calc(var(--mk,4) * .4px),1px)) solid #434343;opacity:0;
+  transition:opacity .25s cubic-bezier(.215,.61,.355,1)}
+.autoscroll-mark::after{content:"";position:absolute;left:50%;top:50%;width:max(2px,round(calc(var(--mk,4) * 1px),2px));
+  height:max(2px,round(calc(var(--mk,4) * 1px),2px));background:#434343;transform:translate(-50%,-50%)}
+.autoscroll-mark.on{opacity:1}

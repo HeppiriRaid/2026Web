@@ -77,6 +77,13 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   (`js/menu.js`); as the picture flies home, it eases to wherever the page now puts it. The scrollbar
   (above the menu) steps aside meanwhile (`css/zoom.css`), and the hamburger's tint from the BACK GROUND
   picture fades out and back with the grey (`js/menu-shade.js`).
+- **Middle-click autoscroll** (`js/autoscroll.js`, front page and works page; fine pointers only): the browser's
+  own didn't take hold here (Windows) and a Mac has none, so the site has its own. A middle click (not on a link,
+  which still opens in a new tab) sets an ink mark (`.autoscroll-mark`, whole pixels) and the page scrolls toward
+  the pointer, faster the further it is (a 10px still zone; the works' row sideways, through `window.__rowLenis`).
+  Any press, the wheel, Esc or the keys stop it; held and dragged, it stops as the button comes up. The speed
+  follows the hand on an exponential chase (0.12 s) and, let go, the page carries on and slows on the smooth
+  scroll's spring (`lenis.__fling`). Its mark is in the `site` flow, over the paper and over a work.
 - A Save is on the site at once: the pages read their data file from GitHub's API as well as from the site
   (`js/fresh.js`, Main the moment it is saved, raced against 1.5 s; the site's copy when GitHub can't answer),
   and a picture the site's copy doesn't name yet comes from raw.githubusercontent.com (with CORS, so the
