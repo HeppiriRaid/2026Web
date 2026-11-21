@@ -19,12 +19,14 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - **The "+" and the zoom view are one, shared by both pages** (`js/zoom.js`, `css/zoom.css`): a work on the
   illustration page, and a front-page photo holder with a `button.ph-open` inside (the whole photo is the
   button; its `span.plus` is centred `--px` / `--py` points in from the top-left corner, `.r` the top-right),
-  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be taken mid-step (the owner): each picture on
-  screen keeps its own window (`__w`: how far it is wiped in from either edge) and its own tweens, so a new step
-  closes the arriving one's window from where its edge has got to, and stepping back turns a leaving picture round
-  where it is (`step()`, `wipeTo()`); a picture still leaving from a step before that clears off in 0.35 s from
-  where its edge is (on its own long landing it crept under the newer ones and read as stuck, the owner); the page
-  follows once every picture has come to rest (`settle()`; `moving()` asks GSAP itself). A photo
+  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for mid-step (the owner): it never cuts a picture off half-open
+  (closed from its edge, a picture never showed whole, the owner). The picture still opening finishes quickly from
+  where its edge is (`hurry()`, 0.3 s on the flow's curve), and the next step sets off from it whole, as many as
+  were asked for (`Z.q`, up to four). Each picture on screen keeps its own window (`__w`: how far it is wiped in
+  from either edge) and its own tweens, so stepping back turns a leaving picture round where it is (`step()`,
+  `wipeTo()`); an older picture still leaving clears off as quickly (on its own long landing it crept under the
+  newer ones and read as stuck). The page follows once every picture has come to rest (`settle()`; `moving()`
+  asks GSAP itself). A photo
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).
