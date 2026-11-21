@@ -19,19 +19,21 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - **The "+" and the zoom view are one, shared by both pages** (`js/zoom.js`, `css/zoom.css`): a work on the
   illustration page, and a front-page photo holder with a `button.ph-open` inside (the whole photo is the
   button; its `span.plus` is centred `--px` / `--py` points in from the top-left corner, `.r` the top-right),
-  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for at any moment, mid-step too (the owner), and the steps play
-  out in the order they were asked for, each whole: no picture's motion is cut short, hurried or turned round.
-  Every step, on or back, brings its picture in as a **new layer on top** (`Z.layers`), opening from the side the
-  step comes from (1.1 s); what lies beneath keeps its own motions — still opening, it opens to its full width and
-  leaves (1 s) only as it lands (`landed()`, the way of the step after it); at rest it leaves at once. Each layer
-  has its own window (`__w`: how far it is wiped in from either edge) and tweens. (Closed from its edge a picture
-  never showed whole; finished off in 0.3 s its fast end read as a flaw; turned round in place, half-open pictures
-  slid against each other and one brought back to the top showed at once what had covered it: the owner, each
-  time.) The page follows once every layer has come to rest (`settle()`; `moving()` asks GSAP itself). No step
-  waits (the owner): one asked for while a picture is getting ready or still flying open is taken in turn
-  (`Z.q`); and the wheel knows a new gesture as it starts — a pause, a mouse wheel's click (a big step on its
-  own), or, on a trackpad still coasting, a turn the other way or the wheel picking up again after dying down —
-  still one picture a gesture. **Never start or
+  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. The pictures move on **one position, driven by a spring** (`Z.pos`, 0 the first
+  picture, 1 the second…; `draw()`): between k and k+1, at k + t, k shows from its left edge to (1 − t) of its
+  width and k+1 from t of its width in from its right edge, over it, each drifting 5% the same way — going on,
+  k+1 sweeps in over k; going back, the same backwards; each picture whole as the position passes it. The position
+  follows where it is heading (`Z.tgt`) on an exact overdamped spring like the smooth scroll's (`spring()`; 0.06 s
+  and 0.25 s: quick off the mark, a long soft landing, 60% at 0.3 s and 88% at 0.6 s, as the old 1.1 s step). A
+  step only moves where it is heading, at any moment, and the speed carries on and bends: turning back slows the
+  pictures, stops them and takes them back, steps one after another pass each picture in turn (the owner, after a
+  stutter on turning back, pops, pictures cut off or hurried: every one of those came from wipes of their own per
+  step). The spring runs on GSAP's clock, carried by a tween on the flow's curve alive only while it moves
+  (`Z.clock`), so the outline check holds and steps it with everything else; `window.__zoomAt()` (automation only)
+  reads the position. The page follows once it rests (`settle()`). No step waits (the owner): one asked for while
+  the picture is still flying open is taken as it lands (`Z.q`); and the wheel knows a new gesture as it starts —
+  a pause, a mouse wheel's click (a big step on its own), or, on a trackpad still coasting, a turn the other way
+  or the wheel picking up again after dying down — still one picture a gesture. **Never start or
   overwrite a tween from inside a GSAP callback** (`onComplete`, `onUpdate`): overwriting the tween next in GSAP's
   list from in there ends its pass early, and every tween after it stands still for that frame and makes it up
   in the next (measured: each picture hopped a frame as another landed). What follows a tween runs in a microtask
