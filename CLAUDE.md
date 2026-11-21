@@ -37,7 +37,7 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   overwrite a tween from inside a GSAP callback** (`onComplete`, `onUpdate`): overwriting the tween next in GSAP's
   list from in there ends its pass early, and every tween after it stands still for that frame and makes it up
   in the next (measured: each picture hopped a frame as another landed). What follows a tween runs in a microtask
-  (`wipeTo()`'s `done`, the step taken as the flight lands). A photo
+  (the spring's rest, the step taken as the flight lands). A photo
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).
