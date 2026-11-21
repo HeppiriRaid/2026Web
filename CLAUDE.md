@@ -27,7 +27,12 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
   once. (Closed from its edge it never showed whole; finished off in 0.3 s its fast end read as a flaw; an older
   one cleared off quickly likewise: the owner, each time.) Stepping back turns round what is under way: the one
   opening retreats the way it came, the one leaving opens again, each from where its edge is (`step()`, `leave()`,
-  `wipeTo()`). The page follows once every picture has come to rest (`settle()`; `moving()` asks GSAP itself). A photo
+  `wipeTo()`). The page follows once every picture has come to rest (`settle()`; `moving()` asks GSAP itself). A picture
+  stepped back to stays where it lies in the stack, the newer ones drawing back off it (brought to the top, what
+  they covered of it appeared in one frame: a pop). No step waits (the owner): one asked for while the picture
+  is still flying open is taken as it lands (`Z.q`); and the wheel knows a new gesture as it starts — a pause, a
+  mouse wheel's click (a big step on its own), or, on a trackpad still coasting, a turn the other way or the
+  wheel picking up again after dying down — still one picture a gesture. A photo
   its holder shows cropped opens whole, its crop opening out as it lifts (`cropOf()`). `illustration.js` hands
   its works to `window.__zoom()`; the front page's photos are wired in `js/zoom.js` itself. A new zoomable
   photo is one more `button.ph-open` in its holder (and its states in the check).

@@ -77,7 +77,7 @@
   window.__zoom = function (o) {
     var zoom = o.el, zoomBg = zoom.querySelector(".zoom-bg"), zoomUi = zoom.querySelector(".zoom-ui");
     var zoomTitle = document.getElementById("zoomTitle"), navs = zoom.querySelectorAll(".zoom-nav");
-    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, pend: false, q: [], nav: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
+    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, pend: false, q: [], nav: null, flying: null, dir: true, peak: 0, low: Infinity, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
     /* the "+": it never moves, it only fades — out the moment its picture is opened, back in
        once the picture has returned to its place */
@@ -214,7 +214,7 @@
     function open(i, kbd) {
       var list = o.items(), it = list[i];
       if (!it || Z.open || Z.busy) return;
-      Z.list = list; Z.open = true; Z.busy = true; Z.i = i; Z.kbd = !!kbd;
+      Z.list = list; Z.open = true; Z.busy = true; Z.flying = "open"; Z.i = i; Z.kbd = !!kbd;
       root.classList.add("zoom-open");                   // (the zoom has the input till it has closed: css/zoom.css)
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
@@ -224,7 +224,7 @@
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
       hidePlus(it);                                      // the "+" fades out the moment the picture is opened
-      if (!gsap || REDUCE) { it.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; warm(i); return; }
+      if (!gsap || REDUCE) { it.el.classList.add("is-zoomed"); zoomBg.style.opacity = 1; Z.busy = false; Z.flying = null; warm(i); return; }
       f.classList.add("flies");                          // (a layer of its own while it flies: css/zoom.css)
       gsap.set(f, cr ? cr.move : flip(r0, r1));          // sits exactly on its place (a crop: only that part)…
       if (cr) f.style.clipPath = inset(cr.clip);
@@ -234,7 +234,10 @@
         f.style.visibility = "";
         it.el.classList.add("is-zoomed");
         gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: stepEase,
-          onComplete: function () { f.classList.remove("flies"); Z.busy = false; upgrade(f); warm(Z.i); } });
+          onComplete: function () {
+            f.classList.remove("flies"); Z.busy = false; Z.flying = null; upgrade(f); warm(Z.i);
+            if (Z.q.length) step(Z.q.shift());
+          } });
         if (cr) gsap.to(cr.clip, { t: 0, r: 0, b: 0, l: 0, duration: 0.9, ease: stepEase,
           onUpdate: function () { f.style.clipPath = inset(cr.clip); }, onComplete: function () { f.style.clipPath = ""; } });
       });
@@ -243,7 +246,7 @@
     function close() {
       if (!Z.open || Z.busy || moving()) return;                  // (mid-step: the step finishes first)
       var it = Z.list[Z.i], f = Z.fig;
-      Z.busy = true;
+      Z.busy = true; Z.flying = "close"; Z.q = [];
       zoom.setAttribute("aria-hidden", "true");
       var r1 = { left: parseFloat(f.style.left), top: parseFloat(f.style.top), width: parseFloat(f.style.width), height: parseFloat(f.style.height) };
       var r0 = rectOf(it.box), cr = cropOf(it, r0, r1);
@@ -338,7 +341,9 @@
       driftTo(f, -5 * d, 1, 0);
     }
     function step(d) {
-      if (!Z.open || Z.busy) return;
+      if (!Z.open) return;
+      // (asked for while the picture is still flying open: it is taken as that lands, not lost)
+      if (Z.busy) { if (Z.flying === "open" && Z.q.length < 6) Z.q.push(d); return; }
       if (Z.pend) { if (Z.q.length < 6) Z.q.push(d); return; }  // (a step is getting its picture ready, a few frames: then this one)
       var j = Z.i + d;
       if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, out and back, nothing more
@@ -360,7 +365,9 @@
         if (of.parentNode && of !== nf) of.parentNode.removeChild(of);
         Z.live = {}; Z.live[j] = nf; navAt(r); ends(); settle(); return;
       }
-      if (nf.parentNode) nf.parentNode.appendChild(nf);        // (the arriving picture on top)
+      // (a new picture arrives on top. One stepped back to stays where it lies, under the newer ones: they draw
+      // back off it. Brought to the top instead, what the newer ones covered of it appeared in one frame: a pop)
+      if (!back && nf.parentNode) nf.parentNode.appendChild(nf);
       var ni = nf.querySelector("img");
       // (a new picture: drawn, too faint to see, until it is decoded and a frame has passed — then the step sets
       // off. The drift in 2D, force3D: false — in 3D the picture would be put on a layer of its own)
@@ -423,13 +430,24 @@
       if (!Z.open) return;
       e.preventDefault();
       if (e.ctrlKey) return;
-      var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY, a = Math.abs(d);
       var t = performance.now(), gap = t - Z.wt;
       Z.wt = t;
-      if (gap > 220) { Z.acc = 0; Z.used = false; }
-      if (Z.used || Z.busy) return;                            // (one picture a gesture; mid-step too)
+      // One picture a gesture — and a new gesture is known the moment it starts, so none has to wait (the owner):
+      //  · a pause (220 ms without the wheel), as before;
+      //  · a mouse wheel's click: a big step on its own (a trackpad's come every frame), so each click is a picture;
+      //  · a new flick on a trackpad still coasting from the last: the coast only ever dies away, so a turn the
+      //    other way, or the wheel picking up again after it has died down, is the hand.
+      function fresh() { Z.acc = 0; Z.used = false; }
+      if (gap > 220 || (a >= 50 && gap > 50)) fresh();
+      else if (Z.used) {
+        Z.peak = Math.max(Z.peak, a);
+        if (a < Z.peak * 0.5) Z.low = Math.min(Z.low, a);
+        if (((d > 0) !== Z.dir && a > 12) || (Z.low < Infinity && a > Z.low * 3 + 15)) fresh();
+      }
+      if (Z.used) return;
       Z.acc += d;
-      if (Math.abs(Z.acc) > 40) { Z.used = true; step(Z.acc > 0 ? 1 : -1); }
+      if (Math.abs(Z.acc) > 40) { Z.used = true; Z.dir = d > 0; Z.peak = a; Z.low = Infinity; step(Z.acc > 0 ? 1 : -1); }
     }, { passive: false });
     // the keyboard, while the view is up (the page's own keys wait: isOpen())
     window.addEventListener("keydown", function (e) {
