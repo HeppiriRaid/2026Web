@@ -202,12 +202,15 @@
 
     // …each one hamburger box's width (12 --mk) out from the picture's edge, or, where the margin is
     // too narrow for that, centred in it; the 12pt strip that takes its clicks centred on it
-    function navAt(r) {
+    function navAt(r, moving) {
       var mk = parseFloat(getComputedStyle(root).getPropertyValue("--mk")) || 4, s = 12 * K();
       var w = 9.4 * mk * (parseFloat(getComputedStyle(navs[0]).getPropertyValue("--nav-s")) || 1);   // (a quarter on a phone: css/narrow.css)
       var gl = Math.min(12 * mk, (r.left - w) / 2), gr = Math.min(12 * mk, (window.innerWidth - r.left - r.width - w) / 2);
-      navs[0].style.left = r.left - gl - (w + s) / 2 + "px";
-      navs[1].style.left = r.left + r.width + gr + (w - s) / 2 + "px";
+      // (moved by transform, so they glide between pixels with the picture's edge; at rest, on a device pixel)
+      var x0 = r.left - gl - (w + s) / 2, x1 = r.left + r.width + gr + (w - s) / 2;
+      if (!moving) { x0 = dp(x0); x1 = dp(x1); }
+      navs[0].style.transform = "translate(" + x0.toFixed(3) + "px, 0px)";
+      navs[1].style.transform = "translate(" + x1.toFixed(3) + "px, 0px)";
     }
 
     function open(i, kbd) {
@@ -335,7 +338,7 @@
       if (a) {
         var l = parseFloat(a.style.left), w = parseFloat(a.style.width);
         if (b && t > 0) { var l2 = parseFloat(b.style.left), w2 = parseFloat(b.style.width); l += (l2 - l) * t; w += (w2 - w) * t; }
-        navAt({ left: l, width: w });
+        navAt({ left: l, width: w }, !(t === 0 && Z.pos === Z.tgt));
       }
     }
     function clipLR(f, L, R) {

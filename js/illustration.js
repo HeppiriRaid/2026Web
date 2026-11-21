@@ -178,7 +178,9 @@
     x = clamp(x, 0, maxScroll());
     // programmatic:false, like a wheel scroll: Lenis then keeps targetScroll = the destination,
     // so quick repeated arrow presses chain from where the row is heading, not where it is
-    if (lenis) lenis.scrollTo(x, { immediate: !!immediate, force: true, programmatic: false });
+    // (at once: exactly, to the device pixel — a drag follows the hand between whole CSS pixels: js/glide.js)
+    if (lenis && immediate && lenis.__set) lenis.__set(x);
+    else if (lenis) lenis.scrollTo(x, { immediate: !!immediate, force: true, programmatic: false });
     else strip.scrollLeft = x;
   }
   // a work "at rest" sits on the 12pt outer margin

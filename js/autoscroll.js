@@ -70,7 +70,7 @@
     if (Math.abs(v) > 0.5) {
       pos = Math.max(0, Math.min(lenis.limit, pos + v * dt));
       // (the page itself is set on whole pixels, as the browser scrolls; the speed is kept exactly)
-      lenis.scrollTo(pos, { immediate: true, force: true });
+      if (lenis.__set) lenis.__set(pos); else lenis.scrollTo(pos, { immediate: true, force: true });
     }
     raf = requestAnimationFrame(tick);
   }

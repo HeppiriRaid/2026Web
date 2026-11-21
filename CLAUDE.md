@@ -220,7 +220,14 @@ The smoothness stays: layers for moving text, whole-pixel edges, no hops, a held
   Whatever moves together shares one clock and one easing (the step's wipe and drift), and nothing shows past
   where the motion puts it. The step's clip stops exactly at the frame's edges; letting one more pixel through
   left a 1-px strip of the old picture for 0.2 s after its wipe had ended.
-- **Smooth between pixels.** A picture moving slowly is never snapped to whole pixels (it stands still, then
+- **Smooth between pixels: nothing moves in whole CSS pixels.** The finest step a screen shows is a device pixel
+  (half a CSS pixel on a 2x screen). Whatever moves by transform moves between pixels (the browser draws it
+  anti-aliased); a light edge in view is snapped to a device pixel, never coarser; a scroll set at once goes
+  through `lenis.__set()` (`js/glide.js`), exact — Lenis's own `scrollTo` rounds to a whole CSS pixel, and a slow
+  autoscroll or a drag stood still every other frame on a 2x screen, then moved two device pixels (the browser
+  keeps a scroll to the device pixel itself). The zoom's chevrons move by transform with the picture's edge, on a
+  device pixel at rest; layout (`left`, `top`) is snapped to whole pixels and is never moved in a motion. A picture
+  moving slowly is never snapped to whole pixels (it stands still, then
   hops). Only edges in view are snapped (the cursor's rule, below). So the picture glides inside a still
   frame, and only the frame's cut edge is snapped.
 - **The same look from start to stop.** Never switch a layer on or off around a motion (`will-change`, or

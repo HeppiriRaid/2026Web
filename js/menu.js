@@ -304,7 +304,7 @@
     thumbH = Math.max(pageVH * pageVH / pageSH, 36);
     thumbTop = maxScroll > 0 ? (pageVH - thumbH) * scrollY() / maxScroll : 0;
     scThumb.style.height = thumbH.toFixed(1) + "px";                        // constant — a no-op once set
-    scThumb.style.transform = "translateY(" + thumbTop.toFixed(1) + "px)";  // per-scroll: compositor, no layout
+    scThumb.style.transform = "translateY(" + thumbTop.toFixed(3) + "px)";  // per-scroll: compositor, no layout; between pixels
   }
   function syncThumb() { scThumb.classList.toggle("show", thumbShown || railShown); }
   function thumbOverlapsMenu() {

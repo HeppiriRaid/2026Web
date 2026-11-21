@@ -103,6 +103,15 @@
     // A fling (the works' row let go while it was being dragged): the page carries on at the hand's speed
     // (px per second) and slows to a standstill, with no push: heading exactly as far as the spring takes
     // that speed, v (T1 + T2). (`most`: the farthest it may go.)
+    // Set where it is, exactly, at once (what follows the hand: a drag, the autoscroll): Lenis's own scrollTo rounds
+    // to a whole CSS pixel, and the browser keeps a scroll to a device pixel — on a 2x screen, half the steps lost
+    // (a slow autoscroll stood still every other frame, then moved two device pixels)
+    lenis.__set = function (x) {
+      x = Math.max(0, Math.min(lenis.limit, x));
+      A.stop();
+      lenis.animatedScroll = lenis.targetScroll = x;
+      lenis.setScroll(x);
+    };
     lenis.__fling = function (speed, most) {
       var reach = T1 + T2, lim = most > 0 ? most / reach : Infinity;
       speed = Math.max(-lim, Math.min(lim, speed || 0));

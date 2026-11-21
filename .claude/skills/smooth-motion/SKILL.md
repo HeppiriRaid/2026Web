@@ -95,6 +95,9 @@ These were measured (drawn pixels, held clock), not assumed:
 | a picture | crisp; glides inside a still frame | drawn softer; a bright edge folds under the cursor |
 
 So:
+- **Nothing moves in whole CSS pixels.** The floor is the device pixel (half a CSS pixel at 2x). Round only to
+  `Math.round(v * dpr) / dpr`, and only light edges in view or things coming to rest. A scroll set at once
+  (a drag, the autoscroll) goes through `lenis.__set(x)`: Lenis's `scrollTo` rounds to whole CSS pixels.
 - **Move by transform only**, never `top`/`left`/`width`/`height`: layout snaps to whole pixels, so a slow
   motion stands still then hops (the X's bars jiggled a dozen times a morph). Size a box by scaling a
   base box that is a **whole number** of pixels tall (100px) — a 7.5px box was snapped to 7 *before*
