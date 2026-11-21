@@ -236,7 +236,8 @@
         gsap.to(f, { x: 0, y: 0, scaleX: 1, scaleY: 1, duration: 0.9, ease: stepEase,
           onComplete: function () {
             f.classList.remove("flies"); Z.busy = false; Z.flying = null; upgrade(f); warm(Z.i);
-            if (Z.q.length) step(Z.q.shift());
+            // (asked for during the flight: taken now — after GSAP's pass, as wipeTo()'s follow-ups are)
+            Promise.resolve().then(function () { if (Z.q.length && Z.open && !Z.busy) step(Z.q.shift()); });
           } });
         if (cr) gsap.to(cr.clip, { t: 0, r: 0, b: 0, l: 0, duration: 0.9, ease: stepEase,
           onUpdate: function () { f.style.clipPath = inset(cr.clip); }, onComplete: function () { f.style.clipPath = ""; } });
@@ -311,8 +312,14 @@
       var w = f.__w || (f.__w = { L: 0, R: 0 }), to = f.__to = { L: L, R: R, done: done };
       gsap.to(w, { L: L, R: R, duration: dur, delay: delay, ease: stepEase, overwrite: true,
         onUpdate: function () { f.style.clipPath = clipLR(f, w.L, w.R); },
-        // (what follows it is read as it lands: a step taken meanwhile may have changed it)
-        onComplete: function () { f.style.clipPath = clipLR(f, w.L, w.R); if (to.done) to.done(); } });
+        // (what follows it is read as it lands: a step taken meanwhile may have changed it. And it runs once
+        // GSAP's own pass over its tweens is through, not inside it: a tween started from in there overwrites
+        // its neighbour's, GSAP's pass then stops short, and every tween after it stood still for that frame and
+        // made it up in the next — each picture a frame's hop, measured)
+        onComplete: function () {
+          f.style.clipPath = clipLR(f, w.L, w.R);
+          Promise.resolve().then(function () { if (f.__to === to && to.done) to.done(); });
+        } });
     }
     function driftTo(f, x, dur, delay) {
       var im = f.querySelector("img");
