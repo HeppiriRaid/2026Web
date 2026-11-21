@@ -77,7 +77,7 @@
   window.__zoom = function (o) {
     var zoom = o.el, zoomBg = zoom.querySelector(".zoom-bg"), zoomUi = zoom.querySelector(".zoom-ui");
     var zoomTitle = document.getElementById("zoomTitle"), navs = zoom.querySelectorAll(".zoom-nav");
-    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, steps: 0, pend: false, next: 0, nav: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
+    var Z = { open: false, busy: false, kbd: false, i: -1, list: [], fig: null, warm: {}, live: {}, pend: false, next: 0, nav: null, wt: 0, acc: 0, used: false, sx: null, sy: 0, swiped: false };
 
     /* the "+": it never moves, it only fades — out the moment its picture is opened, back in
        once the picture has returned to its place */
@@ -219,7 +219,7 @@
       if (o.lock) o.lock();
       var r0 = rectOf(it.box), r1 = fit(aspect(it)), cr = cropOf(it, r0, r1);
       var f = makeFig(it); place(f, r1); Z.fig = f; navAt(r1);
-      Z.live = {}; Z.live[i] = f; f.__w = { L: 0, R: 0 }; Z.nav = null; Z.steps = 0; Z.pend = false; Z.next = 0;
+      Z.live = {}; Z.live[i] = f; f.__w = { L: 0, R: 0 }; Z.nav = null; Z.pend = false; Z.next = 0;
       zoomTitle.textContent = it.title; ends();
       zoom.classList.add("is-open"); zoom.setAttribute("aria-hidden", "false");
       focusIn(zoom);                                     // the dialog itself; Tab reaches the controls
@@ -241,7 +241,7 @@
     }
 
     function close() {
-      if (!Z.open || Z.busy || Z.steps > 0 || Z.pend) return;     // (mid-step: the step finishes first)
+      if (!Z.open || Z.busy || moving()) return;                  // (mid-step: the step finishes first)
       var it = Z.list[Z.i], f = Z.fig;
       Z.busy = true;
       zoom.setAttribute("aria-hidden", "true");
@@ -301,12 +301,14 @@
     }
     function wipeTo(f, L, R, dur, delay, done) {
       var w = f.__w || (f.__w = { L: 0, R: 0 });
-      gsap.killTweensOf(w);
-      Z.steps++;
+      f.__to = { L: L, R: R, done: done };
       gsap.to(w, { L: L, R: R, duration: dur, delay: delay, ease: stepEase, overwrite: true,
         onUpdate: function () { f.style.clipPath = clipLR(f, w.L, w.R); },
-        onInterrupt: function () { Z.steps--; },
-        onComplete: function () { Z.steps--; f.style.clipPath = clipLR(f, w.L, w.R); if (done) done(); } });
+        onComplete: function () { f.style.clipPath = clipLR(f, w.L, w.R); if (done) done(); } });
+    }
+    // (anything of the steps still moving: read off GSAP itself, so nothing can leave it counted wrong)
+    function moving() {
+      return Z.pend || Object.keys(Z.live).some(function (k) { var w = Z.live[k].__w; return !!w && gsap && gsap.getTweensOf(w).length > 0; });
     }
     function driftTo(f, x, dur, delay) {
       var im = f.querySelector("img");
@@ -314,7 +316,7 @@
     }
     // (once nothing moves: the pictures that left go, the places swap under the grey, the page follows)
     function settle() {
-      if (Z.steps > 0 || Z.pend) return;
+      if (moving()) return;
       Object.keys(Z.live).forEach(function (k) {
         var f = Z.live[k];
         if (f !== Z.fig) { if (f.parentNode) f.parentNode.removeChild(f); delete Z.live[k]; }
@@ -329,7 +331,7 @@
       if (Z.pend) { Z.next = d; return; }                       // (a step is getting its picture ready: then this one)
       var j = Z.i + d;
       if (j < 0 || j >= Z.list.length) {                       // the ends: a small nudge, out and back, nothing more
-        if (gsap && !REDUCE && !Z.steps) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: stepEase, yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
+        if (gsap && !REDUCE && !moving()) gsap.fromTo(Z.fig, { xPercent: 0 }, { xPercent: -1.2 * d, duration: 0.16, ease: stepEase, yoyo: true, repeat: 1, force3D: false, modifiers: slideX(Z.fig) });
         return;
       }
       var nw = Z.list[j], of = Z.fig, nf = Z.live[j], back = !!nf;
@@ -353,6 +355,14 @@
       // off. The drift in 2D, force3D: false — in 3D the picture would be put on a layer of its own)
       if (!back) { nf.__w = d > 0 ? { L: 1, R: 0 } : { L: 0, R: 1 }; if (ni) gsap.set(ni, { xPercent: 5 * d, force3D: false }); }
       function go() {
+        // (a picture still on its way out from a step before this one clears off quickly, from where its edge is:
+        // left to its own long landing it crept for most of a second under the newer ones, and read as stuck)
+        Object.keys(Z.live).forEach(function (k) {
+          var f = Z.live[k];
+          if (f === of || f === nf || !f.__to || !f.__w || !gsap.getTweensOf(f.__w).length) return;
+          wipeTo(f, f.__to.L, f.__to.R, 0.35, 0, f.__to.done);
+          driftTo(f, gsap.getProperty(f.querySelector("img") || f, "xPercent") < 0 ? -5 : 5, 0.35, 0);
+        });
         nf.style.clipPath = clipLR(nf, nf.__w.L, nf.__w.R);
         nf.classList.remove("is-warm");
         // the one leaving: its window closes toward the side it is going (from where its edges are now)
@@ -423,7 +433,7 @@
       e.preventDefault();
     });
     window.addEventListener("resize", function () {
-      if (!Z.open || !Z.fig || Z.busy || Z.steps > 0 || Z.pend) return;
+      if (!Z.open || !Z.fig || Z.busy || moving()) return;
       var r = fit(aspect(Z.list[Z.i]));
       place(Z.fig, r); navAt(r);
       Object.keys(Z.warm).forEach(function (k) { place(Z.warm[k], fit(aspect(Z.list[k]))); });
