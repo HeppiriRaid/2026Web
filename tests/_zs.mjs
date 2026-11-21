@@ -1,0 +1,20 @@
+import { chromium } from "playwright-core";
+import http from "node:http"; import fs from "node:fs"; import path from "node:path";
+const srv = http.createServer((q, r) => { const f = path.join(process.cwd(), decodeURIComponent(q.url.split("?")[0])); fs.readFile(f, (e, b) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { "content-type": { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2", ".json": "application/json", ".webp": "image/webp" }[path.extname(f)] || "application/octet-stream" }); r.end(b); }); }).listen(0);
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM });
+const p = await b.newPage({ viewport: { width: 1440, height: 810 } });
+const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+await p.goto(`http://127.0.0.1:${srv.address().port}/illustration.html`); await p.waitForTimeout(4500);
+await p.click(".work-btn"); await p.waitForTimeout(1500);
+const st = () => p.evaluate(() => ({ title: document.querySelector("#zoom").textContent.replace(/\s+/g, " ").trim().slice(0, 40), figs: document.querySelectorAll("#zoom .zoom-fig:not(.is-warm), #zoom figure:not(.is-warm)").length, zoomed: [...document.querySelectorAll(".work.is-zoomed")].map(w => w.getAttribute("data-i")) }));
+console.log("open", await st());
+for (const k of ["ArrowRight", "ArrowRight", "ArrowRight"]) { await p.keyboard.press(k); await p.waitForTimeout(180); }
+console.log("3 rights mid-motion", await st());
+await p.keyboard.press("ArrowLeft"); await p.waitForTimeout(120);
+await p.screenshot({ path: process.argv[2] + "/zs-mid.png" });
+console.log("left mid", await st());
+await p.waitForTimeout(2000);
+console.log("rest", await st());
+await p.keyboard.press("Escape"); await p.waitForTimeout(1500);
+console.log("closed", await p.evaluate(() => document.documentElement.classList.contains("zoom-open")), "errors", errs);
+await b.close(); srv.close();
