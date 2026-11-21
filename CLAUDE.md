@@ -19,20 +19,19 @@ Live at https://heppiriraid.github.io/2026Web/ — GitHub Pages serves the **`Ma
 - **The "+" and the zoom view are one, shared by both pages** (`js/zoom.js`, `css/zoom.css`): a work on the
   illustration page, and a front-page photo holder with a `button.ph-open` inside (the whole photo is the
   button; its `span.plus` is centred `--px` / `--py` points in from the top-left corner, `.r` the top-right),
-  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for at any moment, mid-step too (the owner), and no picture's
-  motion is cut short or hurried for it: each picture runs its own two motions whole, on the flow's curve at the
-  step's own pace — it opens (1.1 s), it leaves (1 s) — in its own window (`__w`: how far it is wiped in from
-  either edge) with its own tweens. A step asked for while a picture is still opening leaves that picture alone:
-  it opens to its full width and leaves only as it lands (`__to.done`), the next opening over it meanwhile, at
-  once. (Closed from its edge it never showed whole; finished off in 0.3 s its fast end read as a flaw; an older
-  one cleared off quickly likewise: the owner, each time.) Stepping back turns round what is under way: the one
-  opening retreats the way it came, the one leaving opens again, each from where its edge is (`step()`, `leave()`,
-  `wipeTo()`). The page follows once every picture has come to rest (`settle()`; `moving()` asks GSAP itself). A picture
-  stepped back to stays where it lies in the stack, the newer ones drawing back off it (brought to the top, what
-  they covered of it appeared in one frame: a pop). No step waits (the owner): one asked for while the picture
-  is still flying open is taken as it lands (`Z.q`); and the wheel knows a new gesture as it starts — a pause, a
-  mouse wheel's click (a big step on its own), or, on a trackpad still coasting, a turn the other way or the
-  wheel picking up again after dying down — still one picture a gesture. **Never start or
+  lift into the band grey; ← → / the wheel / a swipe / the chevrons beside the picture (`.zoom-nav`, gliding with its edges in a step; part of the grey, so they fade with it; the one at the row's end fades away) step between them, the page following underneath. A step can be asked for at any moment, mid-step too (the owner), and the steps play
+  out in the order they were asked for, each whole: no picture's motion is cut short, hurried or turned round.
+  Every step, on or back, brings its picture in as a **new layer on top** (`Z.layers`), opening from the side the
+  step comes from (1.1 s); what lies beneath keeps its own motions — still opening, it opens to its full width and
+  leaves (1 s) only as it lands (`landed()`, the way of the step after it); at rest it leaves at once. Each layer
+  has its own window (`__w`: how far it is wiped in from either edge) and tweens. (Closed from its edge a picture
+  never showed whole; finished off in 0.3 s its fast end read as a flaw; turned round in place, half-open pictures
+  slid against each other and one brought back to the top showed at once what had covered it: the owner, each
+  time.) The page follows once every layer has come to rest (`settle()`; `moving()` asks GSAP itself). No step
+  waits (the owner): one asked for while a picture is getting ready or still flying open is taken in turn
+  (`Z.q`); and the wheel knows a new gesture as it starts — a pause, a mouse wheel's click (a big step on its
+  own), or, on a trackpad still coasting, a turn the other way or the wheel picking up again after dying down —
+  still one picture a gesture. **Never start or
   overwrite a tween from inside a GSAP callback** (`onComplete`, `onUpdate`): overwriting the tween next in GSAP's
   list from in there ends its pass early, and every tween after it stands still for that frame and makes it up
   in the next (measured: each picture hopped a frame as another landed). What follows a tween runs in a microtask
