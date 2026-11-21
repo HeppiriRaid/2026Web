@@ -414,6 +414,8 @@ function stepping() {
       return y > Math.min(a, b) && y < Math.max(a, b);
     },
     wipe: (sel) => [...document.querySelectorAll(sel)].some((e) => share(e).some((f) => f > 0.3 && f < 0.7)),
+    // (n pictures of the zoom part-way through their wipes at once: a step taken mid-step, js/zoom.js)
+    wipes: (n) => [...document.querySelectorAll(".zoom-fig:not(.is-warm)")].filter((e) => share(e).some((f) => f > 0.1 && f < 0.9)).length >= n,
     fade: ([sel, a, b]) => {                            // something part-way through fading in or out
       const e = document.querySelector(sel), o = e ? parseFloat(getComputedStyle(e).opacity) : NaN;
       return o > a && o < b;
@@ -642,6 +644,16 @@ const FLOWS = {
     await wipeAt(p, ".zoom-fig");
     await check(p, "illustration page: the zoom, half-way to the next work", dpr);
     await expect(p, () => !!document.querySelector(".work.is-zoomed") && document.querySelectorAll(".zoom-fig:not(.is-warm)").length === 1, null, "the next work in the zoom");
+    await quiet(p);
+    // (a step taken mid-step: the next work, and before it has landed the one after — three pictures' edges at once)
+    await p.keyboard.press("ArrowRight");
+    await wipeAt(p, ".zoom-fig");
+    await p.keyboard.press("ArrowRight");
+    await stepTo(p, "wipes", 2, "two zoom pictures part-way through their wipes");
+    await check(p, "illustration page: the zoom, a step taken mid-step", dpr);
+    await quiet(p);
+    await p.keyboard.press("ArrowLeft"); await p.keyboard.press("ArrowLeft");
+    await expect(p, () => document.querySelectorAll(".work.is-zoomed").length === 1 && document.querySelectorAll(".zoom-fig:not(.is-warm)").length >= 1, null, "back in the zoom");
     await quiet(p);
     await p.keyboard.press("Escape");
     await expect(p, () => !document.getElementById("zoom").classList.contains("is-open"), null, "the zoom closed");
